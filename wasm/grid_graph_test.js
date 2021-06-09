@@ -54,7 +54,11 @@ function grid_test(exports){
 	
 	console.log("finish create graph object");
 	
-	let steps = 20;
+	exports.__unpin(positions_ptr);
+	exports.__unpin(vertices_ptr);
+	exports.__unpin(edges_ptr);
+	
+	let steps = 10;
 	for(let i = 0; i < steps; i++){
 		var time = performance.now();
 		let start = getRandomInt(0, n*m-1);
@@ -66,15 +70,12 @@ function grid_test(exports){
 	}
 	
 	exports.__unpin(graph_ptr);
-	exports.__unpin(positions_ptr);
-	exports.__unpin(vertices_ptr);
-	exports.__unpin(edges_ptr);
 }
 
 const fs = require("fs");
 const loader = require('@assemblyscript/loader');
-loader.instantiate(fs.readFileSync("./navmesh_graph.wasm"), {
-    navmesh_graph: {
+loader.instantiate(fs.readFileSync("./navmesh.wasm"), {
+    navmesh: {
         "console.log"(ptr) {
             console.log(exports.__getString(ptr));
         }
