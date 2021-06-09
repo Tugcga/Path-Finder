@@ -1,12 +1,4 @@
-namespace console
-{
-    declare function log(str: string): void;
-}
-
-export const Float32Array_ID = idof<Float32Array>()
-export const Int32Array_ID = idof<Int32Array>()
-
-export class NavmeshGraph{
+export class INavmeshGraph{
     m_positions: StaticArray<f32>;  // store by triples [x1, y1, z1, x2, y2, z2, ...]
     m_vertex_names: StaticArray<i32>;  // in the same order as positions
     m_vertex_count: i32;
@@ -30,24 +22,10 @@ export class NavmeshGraph{
     t_min_vertex: i32;
     t_min_vertex_index: i32;
 
-    constructor(vertex_positions: Float32Array, vertices: Int32Array, edges: Int32Array) {
-        //save positions
-        this.m_positions = new StaticArray<f32>(vertex_positions.length);
-        for(let i: i32 = 0; i < vertex_positions.length; i++){
-            this.m_positions[i] = vertex_positions[i];
-        }
-
-        //save names
-        this.m_vertex_names = new StaticArray<i32>(vertices.length);
-        for(let i: i32 = 0; i < vertices.length; i++){
-            this.m_vertex_names[i] = vertices[i];
-        }
-
-        //save edges
-        this.m_edges = new StaticArray<i32>(edges.length);
-        for(let i: i32 = 0; i < edges.length; i++){
-            this.m_edges[i] = edges[i];
-        }
+    constructor(vertex_positions: StaticArray<f32>, vertices: StaticArray<i32>, edges: StaticArray<i32>) {
+        this.m_positions = vertex_positions;
+        this.m_vertex_names = vertices;
+        this.m_edges = edges;
 
         this.m_vertex_count = vertices.length;
 
@@ -65,9 +43,9 @@ export class NavmeshGraph{
             temp_map.set(v, new Array<i32>());
         }
         //add vertex indices from edges
-        for(let e: i32 = 0; e < edges.length / 2; e++){
-            let v1: i32 = this.m_index_map.get(edges[2*e]);
-            let v2: i32 = this.m_index_map.get(edges[2*e + 1]);
+        for(let e: i32 = 0; e < this.m_edges.length / 2; e++){
+            let v1: i32 = this.m_index_map.get(this.m_edges[2*e]);
+            let v2: i32 = this.m_index_map.get(this.m_edges[2*e + 1]);
 
             temp_map.get(v1).push(v2);
             temp_map.get(v2).push(v1);
@@ -211,6 +189,8 @@ export class NavmeshGraph{
                 this.i_vertices_close[this.t_min_vertex] = true;
                 if(this.t_min_vertex == end){
                     //we find the end vertex, so, build back path and return it
+
+                    //TODO: use static buffer for constructing temp_path
                     let temp_path: Array<i32> = new Array<i32>();  // this path will be reversed
                     while(this.i_vertices_parent[this.t_min_vertex] != -1){
                         temp_path.push(this.t_min_vertex);
@@ -264,34 +244,4 @@ export class NavmeshGraph{
                ", incident: " + this._incident_to_string() +
                ">";
     }
-}
-
-export function create_navmesh_graph(vertex_positions: Float32Array, vertices: Int32Array, edges: Int32Array): NavmeshGraph{
-    return new NavmeshGraph(vertex_positions, vertices, edges);
-}
-
-
-export function main(): void{
-    /*let graph_vertices: Int32Array = new Int32Array(6);
-    graph_vertices[0]=2; graph_vertices[1]=3; graph_vertices[2]=5; graph_vertices[3]=7; graph_vertices[4]=12; graph_vertices[5]=18;
-    let graph_positions: Float32Array = new Float32Array(18);
-    graph_positions[0]=-1.0; graph_positions[1]=0.0; graph_positions[2]=2.0;
-    graph_positions[3]=-1.0; graph_positions[4]=0.0; graph_positions[5]=-2.0;
-    graph_positions[6]=4.0; graph_positions[7]=0.0; graph_positions[8]=0.0;
-    graph_positions[9]=2.0; graph_positions[10]=0.0; graph_positions[11]=2.0;
-    graph_positions[12]=-2.0; graph_positions[13]=0.0; graph_positions[14]=0.0;
-    graph_positions[15]=2.0; graph_positions[16]=0.0; graph_positions[17]=-2.0;
-    let graph_edges: Int32Array = new Int32Array(16);
-    graph_edges[0]=2; graph_edges[1]=12; 
-    graph_edges[2]=3; graph_edges[3]=12;
-    graph_edges[4]=2; graph_edges[5]=3;
-    graph_edges[6]=7; graph_edges[7]=18;
-    graph_edges[8]=2; graph_edges[9]=7;
-    graph_edges[10]=3; graph_edges[11]=18;
-    graph_edges[12]=5; graph_edges[13]=7;
-    graph_edges[14]=5; graph_edges[15]=18;
-    let graph = new NavmeshGraph(graph_positions, graph_vertices, graph_edges);
-    console.log(graph.to_string());
-
-    console.log(graph.search(3, 7).toString());*/
 }
