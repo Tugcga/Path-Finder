@@ -68,6 +68,13 @@ class NavmeshBVH:
                     left.append(node)
                 else:
                     right.append(node)
+            if len(left) == 0:
+                # move last right node to the left array
+                left.append(right.pop())
+            else:
+                # left array is not empty, but may be empty right array
+                if len(right) == 0:
+                    right.append(left.pop())
             self._left = NavmeshBVH(left)
             self._right = NavmeshBVH(right)
             l_aabb: Tuple[float, float, float, float, float, float] = self._left.get_aabb()

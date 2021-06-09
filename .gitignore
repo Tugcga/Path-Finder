@@ -4,3 +4,8 @@ python/__pycache__
 test_types.py
 wasm/node_modules
 wasm/run.js
+wasm/build command.txt
+wasm/navmesh_test.js
+wasm/grid_graph_test.js
+wasm/bvh_test.js
+*.js

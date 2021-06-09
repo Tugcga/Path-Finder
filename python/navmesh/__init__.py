@@ -13,10 +13,13 @@ class Navmesh:
         Input:
             vertices - array of the form [(x1, y1, z1), (x2, y2, z1), ...]
             polygons - array of the form [p1, p2, ...], where each pi is array [i1, i2, ..., in], ij - indexes of vertices
+                       the sequence [i1, i2, ..., in] should be in clockwise direction from the main point of view
+                       this is importatnt for search path algorithm
+                       if polygon orientation will be conter-clockwise, then the path will be incorrect
 
         Example of the simple square grid with two 4-sided polygons
             vertices = [(1.0, 0.0, 1.0), (-1.0, 0.0, 1.0), (-1.0, 0.0, -1.0), (1.0, 0.0, -1.0), (0.0, 0.0, 1.0), (0.0, 0.0, -1.0)]
-            polygons = [[0, 4, 5, 3], [4, 1, 2, 5]]
+            polygons = [[0, 3, 5, 4], [4, 5, 2, 1]]
         '''
         self._vertices: List[Tuple[float, float, float]] = vertices
         self._polygons: List[List[int]] = polygons
