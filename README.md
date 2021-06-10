@@ -5,7 +5,7 @@ This is an implementation of algorithm for path finding in navigation mesh. The 
 * find closest path between centers of polygons by using A* algorithm in dual graph (vertices of this graph are centers of polygons, and two vertices are incident to one edge, iff corresponding polygons have a common edge)
 * combine two previous concepts to find the path between input points
 
-Path, which return the algorithm, are not always optimal, but in most cases it is.
+It's important to understand that the algorithm does not guaranteer the optimality of the generated path. In most cases the path is plausible.
 
 This library does not contains methods for generating (or bakin) navigation meshes. It assumes that navigation mesh is already generated. There are many tools for this:
 * [Recast Navigation](https://github.com/recastnavigation/recastnavigation) This is the most famous navigation mesh solution. It allows generate mesh and find path in it
@@ -37,7 +37,7 @@ To find the path in the navigation mesh simply call
 path = navmesh.serach_path(start, finish)
 ```
 
-```start``` and ```finish``` are tuples with coordinates. it return the array ```path```, which contains the sequence of corners of it linear segments.
+```start``` and ```finish``` are tuples with coordinates. It return the array ```path```, which contains the sequence of corners of it linear segments.
 
 ### Examples
 
@@ -51,7 +51,7 @@ path = navmesh.serach_path(start, finish)
 
 ### Exploring application
 
-This application based on (Navmesh Explorer)[https://github.com/Tugcga/Navmesh-Explorer]. Allows to load navigation mesh data from text file and draw path between two points. Two files ```level_triangles.txt``` and ```level_polygons.txt``` are examples of text files, which supported by application. If the navigation mesh is triangulated, then the file should contains only two rows. The first one contains plain array of vertex coordinates (divided by spaces), the second row contains plain array of triange vertex indexes. If the navigation mesh defined by polygonal description, then the file should contains three rows. The first one contains vertex coordinates, the second one - the sequence of polygon corners, and the third one - sizes of polygons.
+This application based on [Navmesh Explorer](https://github.com/Tugcga/Navmesh-Explorer). Allows to load navigation mesh data from text file and draw path between two points. Two files ```level_triangles.txt``` and ```level_polygons.txt``` are examples of text files, which supported by application. If the navigation mesh is triangulated, then the file should contains only two rows. The first one contains plain array of vertex coordinates (divided by spaces), the second row contains plain array of triange vertex indexes. If the navigation mesh defined by polygonal description, then the file should contains three rows. The first one contains vertex coordinates, the second one - the sequence of polygon corners, and the third one - sizes of polygons.
 
 ![Application example](images/app_01.png?raw=true)
 
@@ -70,8 +70,45 @@ Source files and builded WASM-module are in the ```wasm``` folder. The main purp
 * ```function create_bvh(vertices: Float32Array, polygons: Int32Array, sizes: Int32Array): NavmeshBVH``` Create bvh-structure for polygons. Input parameters are the same as for creating ```Navmesh```.
 * ```function create_navmesh_graph(vertex_positions: Float32Array, vertices: Int32Array, edges: Int32Array): NavmeshGraph``` Create the ```NavmeshGraph``` object (actual, a graph). Input parameters are: ```vertex_positions``` - plain array of vertex coordinates, ```vertices``` - integer names of the vertices (in the same order, as it positions), ```edges``` - array with integer names of the ends of graph edges (for the first edge, then for the second and so on).
 
-### Navmesh functions
+### Navmesh methods
 
 * ```search_path(s_x: f32, s_y: f32, s_z: f32, e_x: f32, e_y: f32, e_z: f32): Float32Array``` Find the path between ```(s_X, s_y, s_z)``` and ```(e_x, e_y, e_z)```. If there are no path between input points, then return the empty array.
-* ```sample(x: f32, y: f32, z: f32): Float32Array``` Find the closest point to ```(x, y, z)``` in the navigation mesh polygons. Return the array of length 4. The first three values are coordinates of the point, and the forth value - 0.0 or 1.0. It search the closest position in some limit from initial point (0.5 by default). If there are no closest point, then the forth value in the output array is 0.0, and 1.0 if the answer is correct.
+* ```sample(x: f32, y: f32, z: f32): Float32Array``` Find the closest point to ```(x, y, z)``` in the navigation mesh polygons. Return the array of length 4. The first three values are coordinates of the point, and the forth value - 0.0 or 1.0. It search the closest position in some limit from initial point (0.5 by default). If there are no closest point, then the forth value in the output array is 0.0, and 1.0 if the answer is correct. It's possible to change the delta distance for search process. The function ```get_bvh_delta()``` return current value, the function ```set_bvh_delta(delta: f32)``` set the value. The new value should be set **before** navmesh creation command.
 * ```get_polygon_index(x: f32, y: f32, z: f32): i32``` Return the index of the polygon, closest to the point ```(x, y, z)```. Return -1 if there are no polygons near input point.
+
+### NavmeshBVH methods
+
+* ```sample(x: f32, y: f32, z: f32): i32``` Return the index of the polygon, which is close to the point ```(x, y, z)```.
+
+### TrianglesBVH methods
+
+* ```sample(x: f32, y: f32, z: f32): Float32Array``` Find the closest point to ```(x, y, z)``` in the initial triangles.
+
+### NavmeshGraph methods
+
+* ```search(start_vertex: i32, end_vertex: i32): Int32Array``` Find the shortest path between graph start vertex and graph end vertex. These vertices should be set by their integer names. Return an array with sequence of vertex names, which form the path.
+
+## Performance comparison
+
+In this section we compare performance of three approaches: Python implementation, WASM implementation and Recast Navigation library (which is c++, but we will use Python bindings [PyRecastDetour](https://github.com/Tugcga/PyRecastDetour)). As a test scene we use the following:
+
+![The map](images/map_00.png?raw=true)
+
+Notice, that Python and WASM implementations produce the same paths on the navigation mesh (because they use the same algorithm), but PyRecastDetour produce another path. This is an example:
+
+This is the path from PyRecastDetour
+
+![The path on the map](images/map_01.png?raw=true)
+
+This is the path from out implementation
+
+![The path on the map](images/map_02.png?raw=true)
+
+For benchmark we generate some random pair of points and calculate the path between these points. The results in the table:
+
+Task | Python | WASM | PyRecastDetour
+--- | --- | --- | ---
+Initialization time | 0.28 sec | 0.13 sec | 0.02 sec
+1024 pairs | 5.05 sec | 0.35 sec | 0.08 sec
+4096 pairs |  | 1.29 sec | 0.28 sec
+16 384 pairs | | | 1.24 sec

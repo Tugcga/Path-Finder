@@ -149,10 +149,6 @@ export class INavmeshBVH{
     }
 
     sample(x: f32, y: f32, z: f32): i32{
-        //return empty navmesh node if there are no nodes near the point
-        /*console.log("check in " + (!this.m_children_exists ? this.m_nodes[0].get_index().toString() : "inter") + 
-                    " point " + x.toString() + " " + y.toString() + " " + z.toString() + 
-                    " in " + this.m_aabb.toString() + ": " + this.is_inside_aabb(x, y, z).toString());*/
         if(this.is_inside_aabb(x, y, z)){
             if(this.m_children_exists){  // this node does not contains object, but contains children
                 //get left and right sample

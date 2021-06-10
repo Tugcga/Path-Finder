@@ -91,7 +91,7 @@ class Navmesh:
         # build bvh
         self._bvh: NavmeshBVH = NavmeshBVH(self._nodes)
 
-    def serach_path(self, start: Tuple[float, float, float], finish: Tuple[float, float, float]) -> List[Tuple[float, float, float]]:
+    def search_path(self, start: Tuple[float, float, float], finish: Tuple[float, float, float]) -> List[Tuple[float, float, float]]:
         '''Search the path between start and finish points in the navigation mesh
 
         Input:
