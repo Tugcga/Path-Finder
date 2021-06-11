@@ -213,62 +213,62 @@ export class INavmeshBVH{
 
 export class ITrianglesBVH{
     //coordinates of the triangle
-    triangle_data: StaticArray<f32>;
-    is_object: boolean;  // true, if it contains the triangle
+    m_triangle_data: StaticArray<f32>;
+    m_is_object: boolean;  // true, if it contains the triangle
 
-    aabb: StaticArray<f32>;
-    children: StaticArray<ITrianglesBVH>;
-    children_exists: boolean;
+    m_aabb: StaticArray<f32>;
+    m_children: StaticArray<ITrianglesBVH>;
+    m_children_exists: boolean;
 
-    return_buffer: Float32Array;  // use this array to return values from sample command
+    m_return_buffer: Float32Array;  // use this array to return values from sample command
 
 
     constructor(triangles_vertices: StaticArray<f32>, BVH_AABB_DELTA: f32 = 0.5) {
-        this.return_buffer = new Float32Array(4);
-        this.is_object = false;
-        this.children = new StaticArray<ITrianglesBVH>(2);
-        this.children_exists = false;
-        this.aabb = new StaticArray<f32>(6);
+        this.m_return_buffer = new Float32Array(4);
+        this.m_is_object = false;
+        this.m_children = new StaticArray<ITrianglesBVH>(2);
+        this.m_children_exists = false;
+        this.m_aabb = new StaticArray<f32>(6);
         if(triangles_vertices.length == 9){  // 9 values mean that input are one triangle (with three vertices)
-            this.triangle_data = new StaticArray<f32>(13);
+            this.m_triangle_data = new StaticArray<f32>(13);
         }
         else{
-            this.triangle_data = new StaticArray<f32>(0);
+            this.m_triangle_data = new StaticArray<f32>(0);
         }
 
         if(triangles_vertices.length == 9){  // this is one triangle, then form the object inside the node
             //copy triangle data
             //https://www.gamedev.net/forums/topic/552906-closest-point-on-triangle/
             //store first point
-            this.triangle_data[0] = triangles_vertices[0]; this.triangle_data[1] = triangles_vertices[1]; this.triangle_data[2] = triangles_vertices[2];
+            this.m_triangle_data[0] = triangles_vertices[0]; this.m_triangle_data[1] = triangles_vertices[1]; this.m_triangle_data[2] = triangles_vertices[2];
             //edge e1 = v0->v1
-            this.triangle_data[3] = triangles_vertices[3] - triangles_vertices[0];
-            this.triangle_data[4] = triangles_vertices[4] - triangles_vertices[1];
-            this.triangle_data[5] = triangles_vertices[5] - triangles_vertices[2];
+            this.m_triangle_data[3] = triangles_vertices[3] - triangles_vertices[0];
+            this.m_triangle_data[4] = triangles_vertices[4] - triangles_vertices[1];
+            this.m_triangle_data[5] = triangles_vertices[5] - triangles_vertices[2];
             //edge e2 = v0->v2
-            this.triangle_data[6] = triangles_vertices[6] - triangles_vertices[0];
-            this.triangle_data[7] = triangles_vertices[7] - triangles_vertices[1];
-            this.triangle_data[8] = triangles_vertices[8] - triangles_vertices[2];
+            this.m_triangle_data[6] = triangles_vertices[6] - triangles_vertices[0];
+            this.m_triangle_data[7] = triangles_vertices[7] - triangles_vertices[1];
+            this.m_triangle_data[8] = triangles_vertices[8] - triangles_vertices[2];
             //a = (e1, e1)
-            this.triangle_data[9] = this.triangle_data[3] * this.triangle_data[3] + this.triangle_data[4] * this.triangle_data[4] + this.triangle_data[5] * this.triangle_data[5];
+            this.m_triangle_data[9] = this.m_triangle_data[3] * this.m_triangle_data[3] + this.m_triangle_data[4] * this.m_triangle_data[4] + this.m_triangle_data[5] * this.m_triangle_data[5];
             //b = (e1, e2)
-            this.triangle_data[10] = this.triangle_data[3] * this.triangle_data[6] + this.triangle_data[4] * this.triangle_data[7] + this.triangle_data[5] * this.triangle_data[8];
+            this.m_triangle_data[10] = this.m_triangle_data[3] * this.m_triangle_data[6] + this.m_triangle_data[4] * this.m_triangle_data[7] + this.m_triangle_data[5] * this.m_triangle_data[8];
             //c = (e2, e2)
-            this.triangle_data[11] = this.triangle_data[6] * this.triangle_data[6] + this.triangle_data[7] * this.triangle_data[7] + this.triangle_data[8] * this.triangle_data[8];
+            this.m_triangle_data[11] = this.m_triangle_data[6] * this.m_triangle_data[6] + this.m_triangle_data[7] * this.m_triangle_data[7] + this.m_triangle_data[8] * this.m_triangle_data[8];
             //determinant [[a b], [b c]]
-            this.triangle_data[12] = this.triangle_data[9] * this.triangle_data[11] - this.triangle_data[10] * this.triangle_data[10];
+            this.m_triangle_data[12] = this.m_triangle_data[9] * this.m_triangle_data[11] - this.m_triangle_data[10] * this.m_triangle_data[10];
 
-            this.is_object = true;
+            this.m_is_object = true;
 
             //calculate aabb of the triangle
-            this.aabb[0] = this.min(triangles_vertices[0], triangles_vertices[3], triangles_vertices[6]);
-            this.aabb[1] = this.min(triangles_vertices[1], triangles_vertices[4], triangles_vertices[7]);
-            this.aabb[2] = this.min(triangles_vertices[2], triangles_vertices[5], triangles_vertices[8]);
-            this.aabb[3] = this.max(triangles_vertices[0], triangles_vertices[3], triangles_vertices[6]);
-            this.aabb[4] = this.max(triangles_vertices[1], triangles_vertices[4], triangles_vertices[7]);
-            this.aabb[5] = this.max(triangles_vertices[2], triangles_vertices[5], triangles_vertices[8]);
+            this.m_aabb[0] = this._min3(triangles_vertices[0], triangles_vertices[3], triangles_vertices[6]);
+            this.m_aabb[1] = this._min3(triangles_vertices[1], triangles_vertices[4], triangles_vertices[7]);
+            this.m_aabb[2] = this._min3(triangles_vertices[2], triangles_vertices[5], triangles_vertices[8]);
+            this.m_aabb[3] = this._min3(triangles_vertices[0], triangles_vertices[3], triangles_vertices[6]);
+            this.m_aabb[4] = this._min3(triangles_vertices[1], triangles_vertices[4], triangles_vertices[7]);
+            this.m_aabb[5] = this._min3(triangles_vertices[2], triangles_vertices[5], triangles_vertices[8]);
 
-            this.extend_aabb_by_delta(BVH_AABB_DELTA);
+            this._extend_aabb_by_delta(BVH_AABB_DELTA);
         }
         else{
             var median_x: f32 = 0.0;
@@ -281,13 +281,13 @@ export class ITrianglesBVH{
             let max_z: f32 = -Infinity;
             var objects_count: i32 = triangles_vertices.length / 9;
             for(var i: i32 = 0; i < objects_count; i++){
-                min_x = this.min4(min_x, triangles_vertices[9*i], triangles_vertices[9*i + 3], triangles_vertices[9*i + 6]);
-                min_y = this.min4(min_y, triangles_vertices[9*i + 1], triangles_vertices[9*i + 4], triangles_vertices[9*i + 7]);
-                min_z = this.min4(min_z, triangles_vertices[9*i + 2], triangles_vertices[9*i + 5], triangles_vertices[9*i + 8]);
+                min_x = this._min4(min_x, triangles_vertices[9*i], triangles_vertices[9*i + 3], triangles_vertices[9*i + 6]);
+                min_y = this._min4(min_y, triangles_vertices[9*i + 1], triangles_vertices[9*i + 4], triangles_vertices[9*i + 7]);
+                min_z = this._min4(min_z, triangles_vertices[9*i + 2], triangles_vertices[9*i + 5], triangles_vertices[9*i + 8]);
 
-                max_x = this.max4(max_x, triangles_vertices[9*i], triangles_vertices[9*i + 3], triangles_vertices[9*i + 6]);
-                max_y = this.max4(max_y, triangles_vertices[9*i + 1], triangles_vertices[9*i + 4], triangles_vertices[9*i + 7]);
-                max_z = this.max4(max_z, triangles_vertices[9*i + 2], triangles_vertices[9*i + 5], triangles_vertices[9*i + 8]);
+                max_x = this._max4(max_x, triangles_vertices[9*i], triangles_vertices[9*i + 3], triangles_vertices[9*i + 6]);
+                max_y = this._max4(max_y, triangles_vertices[9*i + 1], triangles_vertices[9*i + 4], triangles_vertices[9*i + 7]);
+                max_z = this._max4(max_z, triangles_vertices[9*i + 2], triangles_vertices[9*i + 5], triangles_vertices[9*i + 8]);
 
                 median_x += triangles_vertices[9*i];
                 median_x += triangles_vertices[9*i + 3];
@@ -298,15 +298,15 @@ export class ITrianglesBVH{
                 median_z += triangles_vertices[9*i + 8];
             }
 
-            this.aabb[0] = min_x; this.aabb[1] = min_y; this.aabb[2] = min_z;
-            this.aabb[3] = max_x; this.aabb[4] = max_y; this.aabb[5] = max_z;
+            this.m_aabb[0] = min_x; this.m_aabb[1] = min_y; this.m_aabb[2] = min_z;
+            this.m_aabb[3] = max_x; this.m_aabb[4] = max_y; this.m_aabb[5] = max_z;
 
-            this.extend_aabb_by_delta(BVH_AABB_DELTA);
+            this._extend_aabb_by_delta(BVH_AABB_DELTA);
 
             median_x /= <f32>(objects_count * 3);
             median_z /= <f32>(objects_count * 3);
 
-            var axis: i8 = this.get_aabb_x_size() > this.get_aabb_z_size() ? 0 : 2;  // 0 - axis parallel to z, 2 - parallel to x
+            var axis: i8 = this._get_aabb_x_size() > this._get_aabb_z_size() ? 0 : 2;  // 0 - axis parallel to z, 2 - parallel to x
             //next we shold enumerate all objects and devide it into two parts - left and right
             //create two full buffers
             var left_objects: StaticArray<f32> = new StaticArray<f32>(9 * objects_count);
@@ -360,64 +360,64 @@ export class ITrianglesBVH{
                 right_array[j] = right_objects[j];
             }
 
-            this.children[0] = new ITrianglesBVH(left_array, BVH_AABB_DELTA);
-            this.children[1] = new ITrianglesBVH(right_array, BVH_AABB_DELTA);
-            this.children_exists = true;
+            this.m_children[0] = new ITrianglesBVH(left_array, BVH_AABB_DELTA);
+            this.m_children[1] = new ITrianglesBVH(right_array, BVH_AABB_DELTA);
+            this.m_children_exists = true;
         }
     }
 
-    min(a: f32, b: f32, c: f32): f32{
+    _min3(a: f32, b: f32, c: f32): f32{
         let t: f32 = <f32>Math.min(a, b);
         return <f32>Math.min(t, c);
     }
 
-    max(a: f32, b: f32, c: f32): f32{
+    _max3(a: f32, b: f32, c: f32): f32{
         let t: f32 = <f32>Math.max(a, b);
         return <f32>Math.max(t, c);
     }
 
-    min4(a: f32, b: f32, c: f32, d: f32): f32{
+    _min4(a: f32, b: f32, c: f32, d: f32): f32{
         let u: f32 = <f32>Math.min(a, b);
         let v: f32 = <f32>Math.min(c, d);
         return <f32>Math.min(u, v);
     }
 
-    max4(a: f32, b: f32, c: f32, d: f32): f32{
+    _max4(a: f32, b: f32, c: f32, d: f32): f32{
         let u: f32 = <f32>Math.max(a, b);
         let v: f32 = <f32>Math.max(c, d);
         return <f32>Math.max(u, v);
     }
 
-    get_aabb_x_size(): f32{
-        return this.aabb[3] - this.aabb[0];
+    _get_aabb_x_size(): f32{
+        return this.m_aabb[3] - this.m_aabb[0];
     }
 
-    get_aabb_y_size(): f32{
-     return this.aabb[4] - this.aabb[1];
+    _get_aabb_y_size(): f32{
+     return this.m_aabb[4] - this.m_aabb[1];
     }
 
-    get_aabb_z_size(): f32{
-     return this.aabb[5] - this.aabb[1];
+    _get_aabb_z_size(): f32{
+     return this.m_aabb[5] - this.m_aabb[1];
     }
 
-    extend_aabb_by_delta(delta: f32): void{
-        this.aabb[0] -= delta;
-        this.aabb[1] -= delta;
-        this.aabb[2] -= delta;
-        this.aabb[3] += delta;
-        this.aabb[4] += delta;
-        this.aabb[5] += delta;
+    _extend_aabb_by_delta(delta: f32): void{
+        this.m_aabb[0] -= delta;
+        this.m_aabb[1] -= delta;
+        this.m_aabb[2] -= delta;
+        this.m_aabb[3] += delta;
+        this.m_aabb[4] += delta;
+        this.m_aabb[5] += delta;
     }
 
-    get_aabb(): StaticArray<f32>{
-        return this.aabb;
+    _get_aabb(): StaticArray<f32>{
+        return this.m_aabb;
     }
 
-    is_inside_aabb(x: f32, y: f32, z: f32): boolean {
-        return x > this.aabb[0] && x < this.aabb[3] && y > this.aabb[1] && y < this.aabb[4] && z > this.aabb[2] && z < this.aabb[5];
+    _is_inside_aabb(x: f32, y: f32, z: f32): boolean {
+        return x > this.m_aabb[0] && x < this.m_aabb[3] && y > this.m_aabb[1] && y < this.m_aabb[4] && z > this.m_aabb[2] && z < this.m_aabb[5];
     }
 
-    clamp(a: f32, v_min: f32, v_max: f32): f32{
+    _clamp(a: f32, v_min: f32, v_max: f32): f32{
         if(a < v_min){
             return v_min;
         }
@@ -431,96 +431,96 @@ export class ITrianglesBVH{
 
     sample(x: f32, y: f32, z: f32): Float32Array{
         //return the 4-th [x, y, z, w], where w = 1.0 - correct answer, 0.0 - empty answer
-        if(this.is_inside_aabb(x, y, z)){  // point inside aabb, so, check the node
-            if(this.is_object){  // this node contains object, so, return actual closest position in the triangle
+        if(this._is_inside_aabb(x, y, z)){  // point inside aabb, so, check the node
+            if(this.m_is_object){  // this node contains object, so, return actual closest position in the triangle
                 //here we should find actual closest point
-                let v0_x: f32 = this.triangle_data[0] - x;
-                let v0_y: f32 = this.triangle_data[1] - y;
-                let v0_z: f32 = this.triangle_data[2] - z;
+                let v0_x: f32 = this.m_triangle_data[0] - x;
+                let v0_y: f32 = this.m_triangle_data[1] - y;
+                let v0_z: f32 = this.m_triangle_data[2] - z;
 
                 //d = (e1, v0)
-                let d: f32 = this.triangle_data[3] * v0_x + this.triangle_data[4] * v0_y + this.triangle_data[5] * v0_z;
+                let d: f32 = this.m_triangle_data[3] * v0_x + this.m_triangle_data[4] * v0_y + this.m_triangle_data[5] * v0_z;
                 //e = (e2, v0)
-                let e: f32 = this.triangle_data[6] * v0_x + this.triangle_data[7] * v0_y + this.triangle_data[8] * v0_z;
+                let e: f32 = this.m_triangle_data[6] * v0_x + this.m_triangle_data[7] * v0_y + this.m_triangle_data[8] * v0_z;
 
                 //s = b*e - c*d
                 //t = b*d - a*e
-                let s: f32 = this.triangle_data[10]*e - this.triangle_data[11]*d;
-                let t: f32 = this.triangle_data[10]*d - this.triangle_data[9]*e;
+                let s: f32 = this.m_triangle_data[10]*e - this.m_triangle_data[11]*d;
+                let t: f32 = this.m_triangle_data[10]*d - this.m_triangle_data[9]*e;
                 //det = this.triangle_data[12]
                 //a = this.triangle_data[9]
                 //b = this.triangle_data[10]
                 //c = this.triangle_data[11]
-                if(s + t < this.triangle_data[12]){
+                if(s + t < this.m_triangle_data[12]){
                     if(s < 0.0){
                         if(t < 0.0){
                             if(d < 0.0){
-                                s = this.clamp(-d/this.triangle_data[9], 0.0, 1.0);
+                                s = this._clamp(-d/this.m_triangle_data[9], 0.0, 1.0);
                                 t = 0.0;
                             }
                             else{
                                 s = 0.0;
-                                t = this.clamp(-e/this.triangle_data[11], 0.0, 1.0);
+                                t = this._clamp(-e/this.m_triangle_data[11], 0.0, 1.0);
                             }
                         }
                         else{
                             s = 0.0;
-                            t = this.clamp(-e/this.triangle_data[11], 0.0, 1.0);
+                            t = this._clamp(-e/this.m_triangle_data[11], 0.0, 1.0);
                         }
                     }
                     else if(t < 0.0){
-                        s = this.clamp(-d/this.triangle_data[9], 0.0, 1.0);
+                        s = this._clamp(-d/this.m_triangle_data[9], 0.0, 1.0);
                         t = 0.0;
                     }
                     else{
-                        let invDet: f32 = 1.0 / this.triangle_data[12];
+                        let invDet: f32 = 1.0 / this.m_triangle_data[12];
                         s *= invDet;
                         t *= invDet;
                     }
                 }
                 else{
                     if(s < 0.0){
-                        let tmp0: f32 = this.triangle_data[10] + d;
-                        let tmp1: f32 = this.triangle_data[11] + e;
+                        let tmp0: f32 = this.m_triangle_data[10] + d;
+                        let tmp1: f32 = this.m_triangle_data[11] + e;
                         if(tmp1 > tmp0){
                             let numer: f32 = tmp1 - tmp0;
-                            let denom: f32 = this.triangle_data[9]-2*this.triangle_data[10]+this.triangle_data[11];
-                            s = this.clamp(numer/denom, 0.0, 1.0);
+                            let denom: f32 = this.m_triangle_data[9]-2*this.m_triangle_data[10]+this.m_triangle_data[11];
+                            s = this._clamp(numer/denom, 0.0, 1.0);
                             t = 1-s;
                         }
                         else{
-                            t = this.clamp(-e/this.triangle_data[11], 0.0, 1.0);
+                            t = this._clamp(-e/this.m_triangle_data[11], 0.0, 1.0);
                             s = 0.0;
                         }
                     }
                     else if(t < 0.0){
-                        if(this.triangle_data[9] + d > this.triangle_data[10] + e){
-                            let numer: f32 = this.triangle_data[11] + e - this.triangle_data[10] - d;
-                            let denom: f32 = this.triangle_data[9] - 2*this.triangle_data[10] + this.triangle_data[11];
-                            s = this.clamp(numer/denom, 0.0, 1.0);
+                        if(this.m_triangle_data[9] + d > this.m_triangle_data[10] + e){
+                            let numer: f32 = this.m_triangle_data[11] + e - this.m_triangle_data[10] - d;
+                            let denom: f32 = this.m_triangle_data[9] - 2*this.m_triangle_data[10] + this.m_triangle_data[11];
+                            s = this._clamp(numer/denom, 0.0, 1.0);
                             t = 1-s;
                         }
                         else{
-                            s = this.clamp(-e/this.triangle_data[11], 0.0, 1.0);
+                            s = this._clamp(-e/this.m_triangle_data[11], 0.0, 1.0);
                             t = 0.0;
                         }
                     }
                     else{
-                        let numer: f32 = this.triangle_data[11] + e - this.triangle_data[10] - d;
-                        let denom: f32 = this.triangle_data[9] - 2*this.triangle_data[10] + this.triangle_data[11];
-                        s = this.clamp(numer/denom, 0.0, 1.0);
+                        let numer: f32 = this.m_triangle_data[11] + e - this.m_triangle_data[10] - d;
+                        let denom: f32 = this.m_triangle_data[9] - 2*this.m_triangle_data[10] + this.m_triangle_data[11];
+                        s = this._clamp(numer/denom, 0.0, 1.0);
                         t = 1.0 - s;
                     }
                 }
-                this.return_buffer[0] = this.triangle_data[0] + s * this.triangle_data[3] + t * this.triangle_data[6];
-                this.return_buffer[1] = this.triangle_data[1] + s * this.triangle_data[4] + t * this.triangle_data[7];
-                this.return_buffer[2] = this.triangle_data[2] + s * this.triangle_data[5] + t * this.triangle_data[8];
-                this.return_buffer[3] = 1.0;
-                return this.return_buffer;
+                this.m_return_buffer[0] = this.m_triangle_data[0] + s * this.m_triangle_data[3] + t * this.m_triangle_data[6];
+                this.m_return_buffer[1] = this.m_triangle_data[1] + s * this.m_triangle_data[4] + t * this.m_triangle_data[7];
+                this.m_return_buffer[2] = this.m_triangle_data[2] + s * this.m_triangle_data[5] + t * this.m_triangle_data[8];
+                this.m_return_buffer[3] = 1.0;
+                return this.m_return_buffer;
             }
             else{  // node contains children, chek it
-                let left_sample: Float32Array = this.children[0].sample(x, y, z);
-                let right_sample: Float32Array = this.children[1].sample(x, y, z);
+                let left_sample: Float32Array = this.m_children[0].sample(x, y, z);
+                let right_sample: Float32Array = this.m_children[1].sample(x, y, z);
                 if(left_sample[3] < 0.5){
                     return right_sample;
                 }
@@ -543,12 +543,12 @@ export class ITrianglesBVH{
             }
         }
         else{  // point outside the aabb, so, skip next traversing, return false answer
-            this.return_buffer[3] = 0.0;
-            return this.return_buffer;
+            this.m_return_buffer[3] = 0.0;
+            return this.m_return_buffer;
         }
     }
 
     to_string(): string{
-        return "[(" + this.get_aabb().toString() + "): " + (this.is_object ? "tiangle<>" : "left-" + this.children[0].to_string() + " right-" + this.children[1].to_string()) + "]";
+        return "[(" + this._get_aabb().toString() + "): " + (this.m_is_object ? "tiangle<>" : "left-" + this.m_children[0].to_string() + " right-" + this.m_children[1].to_string()) + "]";
     }
 }

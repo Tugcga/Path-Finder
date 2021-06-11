@@ -12,6 +12,8 @@ This library does not contains methods for generating (or bakin) navigation mesh
 * [PyRecastDetour](https://github.com/Tugcga/PyRecastDetour) This is Python bindings for some functions in Recast Navigation. Allows to output generated navigation mesh triangulation and it polygonal description
 * Blender, Unity and so on
 
+If you would like to understand the algorithm, look to the Python code. It's more structured and contains more comments.
+
 ## Python version
 
 It placed on the ```python``` folder of the repo. This folder contains:
@@ -93,6 +95,8 @@ Source files and builded WASM-module are in the ```wasm``` folder. The main purp
 In this section we compare performance of three approaches: Python implementation, WASM implementation and Recast Navigation library (which is c++, but we will use Python bindings [PyRecastDetour](https://github.com/Tugcga/PyRecastDetour)). As a test scene we use the following:
 
 ![The map](images/map_00.png?raw=true)
+
+This navigation mesh contains 2 294 polygons.
 
 Notice, that Python and WASM implementations produce the same paths on the navigation mesh (because they use the same algorithm), but PyRecastDetour produce another path. This is an example:
 
