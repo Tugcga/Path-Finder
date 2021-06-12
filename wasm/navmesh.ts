@@ -27,7 +27,7 @@ export class NavmeshBVH extends INavmeshBVH {
 }
 
 export class TrianglesBVH extends ITrianglesBVH {
-    
+
 }
 
 export class NavmeshGraph extends INavmeshGraph {
@@ -259,11 +259,18 @@ export class Navmesh{
         if(start_index == -1 || finish_index == -1){
             return new Float32Array(0);  // points are not in navmesh, return empty path
         }
+        else if(start_index == finish_index){
+            let to_return: Float32Array = new Float32Array(6);
+            to_return[0] = s_x; to_return[1] = s_y; to_return[2] = s_z;
+            to_return[3] = e_x; to_return[4] = e_y; to_return[5] = e_z;
+            return to_return;
+        }
         else{
             let group_index: i32 = this._get_nodes_group_index(start_index, finish_index);
             if(group_index > -1){
                 let graph: NavmeshGraph = this.m_graphs[group_index];
                 let graph_path = graph.search(start_index, finish_index);
+
                 let graph_path_edges_count = graph_path.length - 1;
                 if(graph_path_edges_count < 0){
                     graph_path_edges_count = 0;
@@ -404,9 +411,10 @@ export class Navmesh{
 
                 //convert final path to output format
                 let to_return: Float32Array = new Float32Array(finall_path_length * 3);
-                for(let i: i32 = 0; i < to_return.length; i++){
-                    to_return[i] = this.b_finall_path[i];
+                for(let k: i32 = 0; k < finall_path_length * 3; k++){
+                    to_return[k] = this.b_finall_path[k];
                 }
+
                 return to_return;
             }
             else{//points in different groups

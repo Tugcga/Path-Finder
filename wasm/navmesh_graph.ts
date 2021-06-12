@@ -14,7 +14,7 @@ export class INavmeshGraph{
     i_vertices_parent: StaticArray<i32>;
 
     //open list as a list for tasks in search algorithm
-    i_open_list: StaticArray<i32>;  // reserv the same size as vertices in the graph
+    i_open_list: StaticArray<i32>;  // reserve the same size as vertices in the graph
     i_open_length_length: i32;  // actual size of the task list
 
     //temp values for search process
@@ -26,7 +26,7 @@ export class INavmeshGraph{
         this.m_positions = vertex_positions;
         this.m_vertex_names = vertices;
         this.m_edges = edges;
-
+        
         this.m_vertex_count = vertices.length;
 
         //build index map
@@ -243,5 +243,9 @@ export class INavmeshGraph{
                ", positions: " + this._positions_string() + 
                ", incident: " + this._incident_to_string() +
                ">";
+    }
+
+    toString(): string{
+        return this.to_string();
     }
 }

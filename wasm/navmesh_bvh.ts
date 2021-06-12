@@ -6,14 +6,21 @@ export class INavmeshBVH{
     m_children_exists: boolean;
     m_is_object: boolean;
     m_nodes: StaticArray<NavmeshNode>;  // all nodes, come to the current bvh
+    m_index_to_node: Map<i32, NavmeshNode>;  // map from node index to this node
 
     constructor(nodes: StaticArray<NavmeshNode>, BVH_AABB_DELTA: f32 = 0.5) {
         this.m_aabb = new StaticArray<f32>(6);
         this.m_children = new StaticArray<INavmeshBVH>(2);
         this.m_children_exists = false;
-        //this.m_object = new NavmeshNode(new StaticArray<f32>(0), -1, new StaticArray<i32>(0));
         this.m_is_object = false;
         this.m_nodes = nodes;
+
+        //build map from node index to node
+        this.m_index_to_node = new Map<i32, NavmeshNode>();
+        for(let i: i32 = 0; i < nodes.length; i++){
+            let index: i32 = nodes[i].get_index();
+            this.m_index_to_node.set(index, nodes[i]);
+        }
 
         let x_min: f32 = Infinity;
         let x_max: f32 = -Infinity;
@@ -162,12 +169,14 @@ export class INavmeshBVH{
                         return left_sample;
                     }
                     else{  // both samples are non-empty
-                        let l_c: StaticArray<f32> = this.m_nodes[left_sample].get_center();
-                        let l_n: StaticArray<f32> = this.m_nodes[left_sample].get_normal();
+                        let left_node: NavmeshNode = this.m_index_to_node.get(left_sample);
+                        let l_c: StaticArray<f32> = left_node.get_center();
+                        let l_n: StaticArray<f32> = left_node.get_normal();
                         let l_dist: f32 = <f32>Math.abs((x - l_c[0]) * l_n[0] + (y - l_c[1]) * l_n[1] + (z - l_c[2]) * l_n[2]);
 
-                        let r_c: StaticArray<f32> = this.m_nodes[right_sample].get_center();
-                        let r_n: StaticArray<f32> = this.m_nodes[right_sample].get_normal();
+                        let right_node: NavmeshNode = this.m_index_to_node.get(right_sample);
+                        let r_c: StaticArray<f32> = right_node.get_center();
+                        let r_n: StaticArray<f32> = right_node.get_normal();
                         let r_dist: f32 = <f32>Math.abs((x - r_c[0]) * r_n[0] + (y - r_c[1]) * r_n[1] + (z - r_c[2]) * r_n[2]);
 
                         if(l_dist < r_dist){
@@ -208,6 +217,10 @@ export class INavmeshBVH{
                          ">";
         }
         return to_return;
+    }
+
+    toString(): string{
+        return this.to_string();
     }
 }
 
@@ -550,5 +563,9 @@ export class ITrianglesBVH{
 
     to_string(): string{
         return "[(" + this._get_aabb().toString() + "): " + (this.m_is_object ? "tiangle<>" : "left-" + this.m_children[0].to_string() + " right-" + this.m_children[1].to_string()) + "]";
+    }
+
+    toString(): string{
+        return this.to_string();
     }
 }

@@ -231,4 +231,8 @@ export class NavmeshNode{
                ", portals: " + this._portals_to_string() +
                ">";
     }
+
+    toString(): string{
+        return this.to_string();
+    }
 }

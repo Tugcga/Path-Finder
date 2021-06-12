@@ -7,7 +7,7 @@ This is an implementation of algorithm for path finding in navigation mesh. The 
 
 It's important to understand that the algorithm does not guaranteer the optimality of the generated path. In most cases the path is plausible.
 
-This library does not contains methods for generating (or bakin) navigation meshes. It assumes that navigation mesh is already generated. There are many tools for this:
+This library does not contains methods for generating (or baking) navigation meshes. It assumes that navigation mesh is already generated. There are many tools for this:
 * [Recast Navigation](https://github.com/recastnavigation/recastnavigation) This is the most famous navigation mesh solution. It allows generate mesh and find path in it
 * [PyRecastDetour](https://github.com/Tugcga/PyRecastDetour) This is Python bindings for some functions in Recast Navigation. Allows to output generated navigation mesh triangulation and it polygonal description
 * Blender, Unity and so on
