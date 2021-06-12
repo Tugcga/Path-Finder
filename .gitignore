@@ -9,5 +9,7 @@ wasm/navmesh_test.js
 wasm/grid_graph_test.js
 wasm/bvh_test.js
 *.js
-*.txt
 python/map_benchmark.py
+wasm/build command.txt
+wasm/map_02.txt
+wasm/map_02_reduce.txt
