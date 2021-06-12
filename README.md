@@ -115,4 +115,4 @@ Task | Python | WASM | PyRecastDetour
 Initialization time | 0.28 sec | 0.13 sec | 0.02 sec
 1024 pairs | 5.05 sec | 0.35 sec | 0.08 sec
 4096 pairs |  | 1.29 sec | 0.28 sec
-16 384 pairs | | | 1.24 sec
+16 384 pairs | | 5.61 sec | 1.24 sec

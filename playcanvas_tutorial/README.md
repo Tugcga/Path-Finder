@@ -4,7 +4,7 @@
 
 At first, download [the module binaries](https://github.com/Tugcga/Path-Finder/blob/main/wasm/navmesh.wasm) and add it to the project.
 
-At second, to use WASM modules in the web, you need a special js-program - the loader. Path Finder module written on AssemplyScript, and that's why it will be better to use loader from AssemblyScript developers. So, add ```https://cdn.jsdelivr.net/npm/@assemblyscript/loader/umd/index.js``` to Settings - External Scripts.
+At second, to use WASM modules in the web, you need a special js-program - the loader. Path Finder module written on AssemplyScript, and that's why it will be better to use the loader from AssemblyScript developers. To use it, add ```https://cdn.jsdelivr.net/npm/@assemblyscript/loader/umd/index.js``` to **Settings - External Scripts**.
 
 ![Add the module](images/add_module.png?raw=true)
 
@@ -18,9 +18,9 @@ Assume, we already generate the navigation mesh for this level. There are many e
 
 Ok, add this text file to the project. 
 
-Create entity in the scene and call it ```navmesh``` (for example). Create a script ```navmesh_controller.js``` and add it to the entity. Now we a ready to coding.
+Create entity in the scene and call it, for example, ```navmesh```. Create a script ```navmesh_controller.js``` and add it to the entity. Now we a ready to coding.
 
-We need two attribute: link to the text file with navigation mesh geometry data and link to the WASM module.
+We need two attributes: link to the text file with navigation mesh geometry data and link to the WASM module.
 
 ```
 var NavmeshController = pc.createScript('navmeshController');
@@ -35,24 +35,24 @@ this.is_init = false;
 var request = new XMLHttpRequest();
 request.open('GET', this.data.getFileUrl(), true);
 request.onload = function (msg) {
-	let lines = this.response.split("\n");
-	let vertices_data_array = lines[0].split(" ");
-	let vertices = [];
-	for(let i = 0; i < vertices_data_array.length; i++){
-		vertices.push(parseFloat(vertices_data_array[i]));
-	}
+    let lines = this.response.split("\n");
+    let vertices_data_array = lines[0].split(" ");
+    let vertices = [];
+    for(let i = 0; i < vertices_data_array.length; i++){
+        vertices.push(parseFloat(vertices_data_array[i]));
+    }
 
-	let polygons = [];
-	let polygons_data_array = lines[1].split(" ");
-	for(let i = 0; i < polygons_data_array.length; i++){
-		polygons.push(parseInt(polygons_data_array[i]));
-	}
+    let polygons = [];
+    let polygons_data_array = lines[1].split(" ");
+    for(let i = 0; i < polygons_data_array.length; i++){
+        polygons.push(parseInt(polygons_data_array[i]));
+    }
 
-	let sizes = [];
-	let sizes_data_array = lines[2].split(" ");
-	for(let i = 0; i < sizes_data_array.length; i++){
-		sizes.push(parseInt(sizes_data_array[i]));
-	}
+    let sizes = [];
+    let sizes_data_array = lines[2].split(" ");
+    for(let i = 0; i < sizes_data_array.length; i++){
+        sizes.push(parseInt(sizes_data_array[i]));
+    }
 };
 request.send();
 ```
@@ -63,36 +63,35 @@ Here we load the file, parse it and create three arrays: ```vertices, polygons, 
 var wasm_path = this.wasm_module.getFileUrl();
 var navmesh_controller = this;
 loader.instantiate(
-	fetch(wasm_path),
-	{
-		navmesh: {
-		"console.log"(ptr) {console.log(ptr);}
-		}
-	}).then(({exports}) => {
-		navmesh_controller.init_navmesh(exports, vertices, polygons, sizes);
+    fetch(wasm_path),
+    {
+        navmesh: {
+        "console.log"(ptr) {console.log(ptr);}
+        }
+    }).then(({exports}) => {
+        navmesh_controller.init_navmesh(exports, vertices, polygons, sizes);
 });
 ```
 
-Here we load the module and call method ```init_navmesh```. ```exports``` contains all functions inside the module.
+Here we load the module and call the method ```init_navmesh```. ```exports``` contains all functions inside the module.
 
 ```
 NavmeshController.prototype.init_navmesh = function(exports, vertices, polygons, sizes){
     let vertices_pointer = exports.__pin(exports.__newArray(exports.Float32Array_ID, vertices));
-	let polygons_pointer = exports.__pin(exports.__newArray(exports.Int32Array_ID, polygons));
-	let sizes_pointer = exports.__pin(exports.__newArray(exports.Int32Array_ID, sizes));
-	this.navmesh_pointer = exports.__pin(exports.create_navmesh(vertices_pointer, polygons_pointer, sizes_pointer));
-	this.navmesh = exports.Navmesh.wrap(this.navmesh_pointer);
+    let polygons_pointer = exports.__pin(exports.__newArray(exports.Int32Array_ID, polygons));
+    let sizes_pointer = exports.__pin(exports.__newArray(exports.Int32Array_ID, sizes));
+    this.navmesh_pointer = exports.__pin(exports.create_navmesh(vertices_pointer, polygons_pointer, sizes_pointer));
+    this.navmesh = exports.Navmesh.wrap(this.navmesh_pointer);
     this.exports = exports;
-	
-	exports.__unpin(vertices_pointer);
-	exports.__unpin(polygons_pointer);
-	exports.__unpin(sizes_pointer);
     
+    exports.__unpin(vertices_pointer);
+    exports.__unpin(polygons_pointer);
+    exports.__unpin(sizes_pointer);
     this.is_init = true;
 };
 ```
 
-Here we load three arrays into the module's memory and initialize ```this.navmesh``` object. We will be use this object to find paths for all entities in the scene. Then, by using ```exports.__unpin```, we allows the GC to free the memory.
+Here we load three arrays into the module's memory and initialize ```this.navmesh``` object. This object should be used to find paths for all entities in the scene. Then, by using ```exports.__unpin```, we allows the GC to free the memory.
 
 ### Step 3. Find the path
 
@@ -179,15 +178,15 @@ NavmeshController.prototype.get_exports = function(){
 
 NavmeshController.prototype.init_navmesh = function(exports, vertices, polygons, sizes){
     let vertices_pointer = exports.__pin(exports.__newArray(exports.Float32Array_ID, vertices));
-	let polygons_pointer = exports.__pin(exports.__newArray(exports.Int32Array_ID, polygons));
-	let sizes_pointer = exports.__pin(exports.__newArray(exports.Int32Array_ID, sizes));
-	this.navmesh_pointer = exports.__pin(exports.create_navmesh(vertices_pointer, polygons_pointer, sizes_pointer));
-	this.navmesh = exports.Navmesh.wrap(this.navmesh_pointer);
+    let polygons_pointer = exports.__pin(exports.__newArray(exports.Int32Array_ID, polygons));
+    let sizes_pointer = exports.__pin(exports.__newArray(exports.Int32Array_ID, sizes));
+    this.navmesh_pointer = exports.__pin(exports.create_navmesh(vertices_pointer, polygons_pointer, sizes_pointer));
+    this.navmesh = exports.Navmesh.wrap(this.navmesh_pointer);
     this.exports = exports;
-	
-	exports.__unpin(vertices_pointer);
-	exports.__unpin(polygons_pointer);
-	exports.__unpin(sizes_pointer);
+    
+    exports.__unpin(vertices_pointer);
+    exports.__unpin(polygons_pointer);
+    exports.__unpin(sizes_pointer);
     
     this.is_init = true;
 };
