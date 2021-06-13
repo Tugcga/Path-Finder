@@ -14,7 +14,7 @@ We will be use the following example of the level geometry.
 
 ![Level geometry](images/map_geometry.png?raw=true)
 
-Assume, we already generate the navigation mesh for this level. There are many external tools for this. For simplicity, we store data of the navigation mesh in text file ```level_navmesh.txt```. It contains three lines: coordinates of vertices, polygon vertex indexes and polygon sizes. But you can use any format as you like, because this data in any case will be converted to internal representation inside the module.
+Assume, we already generate the navigation mesh for this level. There are many external tools for this. For simplicity, we store data of the navigation mesh in text file ```level_navmesh.txt```. It contains three lines: coordinates of vertices, polygon vertex indexes and polygon sizes. But you can use any format as you like, because this data in any case will be converted to internal representation inside the module. It's important to note, that the array of polygon vertex indexes should induce clockwise orientation of each polygon. If orientation is counterclockwise then generated paths in the navigation mesh may be incorrect.
 
 Ok, add this text file to the project. 
 
