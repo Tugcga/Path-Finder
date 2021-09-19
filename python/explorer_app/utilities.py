@@ -43,8 +43,19 @@ def read_level_data(file_path):
                 polygons.append(polygon)
             return vertices, polygons
         else:  # may be triangles data
-            vertices_raw = [float(v) for v in lines[0].split(" ")]
-            triangles_raw = [int(v) for v in lines[1].split(" ")]
+            if lines[0][0] == "[":
+                # positions on array [...] without y-coordinate, we should add it equal to 0
+                temp_vertices_raw = eval(lines[0])
+                vertices_raw = []
+                triangles_raw = eval(lines[1])
+                for i in range(len(temp_vertices_raw) // 2):
+                    vertices_raw.append(temp_vertices_raw[2*i])
+                    vertices_raw.append(0.0)
+                    vertices_raw.append(temp_vertices_raw[2*i + 1])
+            else:
+                # data write splitted by spaces
+                vertices_raw = [float(v) for v in lines[0].split(" ")]
+                triangles_raw = [int(v) for v in lines[1].split(" ")]
             verts_count = len(vertices_raw) // 3
             vertices = []
             for i in range(verts_count):

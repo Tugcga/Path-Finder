@@ -90,7 +90,7 @@ class NavmeshExplorerMain(QtWidgets.QWidget):
 
             if self._left_point is not None and self._right_point is not None:
                 # calculate the path
-                path = self._navmesh.serach_path((self._left_point[0], 0.0, self._left_point[1]), (self._right_point[0], 0.0, self._right_point[1]))
+                path = self._navmesh.search_path((self._left_point[0], 0.0, self._left_point[1]), (self._right_point[0], 0.0, self._right_point[1]))
                 self._path = [(v[0], v[2]) for v in path]  # convert to 2d
 
             if is_left or is_right:

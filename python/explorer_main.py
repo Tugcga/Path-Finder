@@ -67,4 +67,4 @@ if __name__ == "__main__":
     main = NavmeshExplorerApp()
     main.resize(800, 600)
     main.show()
-    app.exec_()
+    app.exec()
