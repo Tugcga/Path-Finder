@@ -277,9 +277,9 @@ export class ITrianglesBVH{
             this.m_aabb[0] = this._min3(triangles_vertices[0], triangles_vertices[3], triangles_vertices[6]);
             this.m_aabb[1] = this._min3(triangles_vertices[1], triangles_vertices[4], triangles_vertices[7]);
             this.m_aabb[2] = this._min3(triangles_vertices[2], triangles_vertices[5], triangles_vertices[8]);
-            this.m_aabb[3] = this._min3(triangles_vertices[0], triangles_vertices[3], triangles_vertices[6]);
-            this.m_aabb[4] = this._min3(triangles_vertices[1], triangles_vertices[4], triangles_vertices[7]);
-            this.m_aabb[5] = this._min3(triangles_vertices[2], triangles_vertices[5], triangles_vertices[8]);
+            this.m_aabb[3] = this._max3(triangles_vertices[0], triangles_vertices[3], triangles_vertices[6]);
+            this.m_aabb[4] = this._max3(triangles_vertices[1], triangles_vertices[4], triangles_vertices[7]);
+            this.m_aabb[5] = this._max3(triangles_vertices[2], triangles_vertices[5], triangles_vertices[8]);
 
             this._extend_aabb_by_delta(BVH_AABB_DELTA);
         }
@@ -531,7 +531,7 @@ export class ITrianglesBVH{
                 this.m_return_buffer[3] = 1.0;
                 return this.m_return_buffer;
             }
-            else{  // node contains children, chek it
+            else{  // node contains children, check it
                 let left_sample: Float32Array = this.m_children[0].sample(x, y, z);
                 let right_sample: Float32Array = this.m_children[1].sample(x, y, z);
                 if(left_sample[3] < 0.5){
