@@ -460,6 +460,9 @@ export class ITrianglesBVH{
                 //t = b*d - a*e
                 let s: f32 = this.m_triangle_data[10]*e - this.m_triangle_data[11]*d;
                 let t: f32 = this.m_triangle_data[10]*d - this.m_triangle_data[9]*e;
+
+                let s_origin: f32 = s;
+                let t_origin: f32 = t;
                 //det = this.triangle_data[12]
                 //a = this.triangle_data[9]
                 //b = this.triangle_data[10]
@@ -514,7 +517,7 @@ export class ITrianglesBVH{
                             t = 1-s;
                         }
                         else{
-                            s = this._clamp(-e/this.m_triangle_data[11], 0.0, 1.0);
+                            s = this._clamp(-d/this.m_triangle_data[9], 0.0, 1.0);
                             t = 0.0;
                         }
                     }
