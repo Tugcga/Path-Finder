@@ -461,8 +461,6 @@ export class ITrianglesBVH{
                 let s: f32 = this.m_triangle_data[10]*e - this.m_triangle_data[11]*d;
                 let t: f32 = this.m_triangle_data[10]*d - this.m_triangle_data[9]*e;
 
-                let s_origin: f32 = s;
-                let t_origin: f32 = t;
                 //det = this.triangle_data[12]
                 //a = this.triangle_data[9]
                 //b = this.triangle_data[10]
