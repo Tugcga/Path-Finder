@@ -1,3 +1,11 @@
+@inline
+function distance(a_x: f32, a_y: f32, a_z: f32, b_x: f32, b_y: f32, b_z: f32): f32 {
+    let dx = a_x - b_x;
+    let dy = a_y - b_y;
+    let dz = a_z - b_z;
+    return Mathf.sqrt(dx * dx + dy * dy + dz * dz);
+}
+
 export class INavmeshGraph {
     m_positions: StaticArray<f32>;  // store by triples [x1, y1, z1, x2, y2, z2, ...]
     m_vertex_names: StaticArray<i32>;  // in the same order as positions
@@ -96,18 +104,9 @@ export class INavmeshGraph {
     }
 
     @inline
-    _get_distance(a_x: f32, a_y: f32, a_z: f32, b_x: f32, b_y: f32, b_z: f32): f32 {
-        return Mathf.sqrt(
-            (a_x - b_x) * (a_x - b_x) +
-            (a_y - b_y) * (a_y - b_y) +
-            (a_z - b_z) * (a_z - b_z)
-        );
-    }
-
-    @inline
     _get_distance_for_indexes(i: i32, j: i32): f32 {
         let positions = this.m_positions;
-        return this._get_distance(
+        return distance(
             unchecked(positions[3 * i + 0]),
             unchecked(positions[3 * i + 1]),
             unchecked(positions[3 * i + 2]),
@@ -173,7 +172,7 @@ export class INavmeshGraph {
                 key.toString() + ": " +
                 this.m_incident_map.get(key).toString()
             );
-            if (i < len - 1){
+            if (i < len - 1) {
                 to_return += ", ";
             }
         }

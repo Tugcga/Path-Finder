@@ -233,7 +233,7 @@ export class NavmeshNode {
             this.m_group = group_index;
             let neighbor = this.m_neighbor;
             group_array.push(this.m_index);  // <-- recreate array here
-            for (let i = 0, len = this.m_neighbor_count; i < len; i++){
+            for (let i = 0, len = this.m_neighbor_count; i < len; i++) {
                 unchecked(all_nodes[neighbor[i]]).set_group(group_index, group_array, all_nodes);
             }
         }
