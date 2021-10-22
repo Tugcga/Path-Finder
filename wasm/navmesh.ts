@@ -322,8 +322,9 @@ export class Navmesh{
             unchecked(this.b_raw_path[5] = s_z);
 
             for (let p_i = 0; p_i < graph_path_edges_count; p_i++) {
-                let portal = unchecked(this.m_nodes[graph_path[p_i + 0]])
-                    .get_portal(unchecked(graph_path[p_i + 1]));
+                let v0 = unchecked(graph_path[p_i + 0]);
+                let v1 = unchecked(graph_path[p_i + 1]);
+                let portal = unchecked(this.m_nodes[v0]).get_portal(v1);
                 //add values to the raw_path
                 unchecked(this.b_raw_path[(p_i + 1) * 6 + 0] = portal[0]);
                 unchecked(this.b_raw_path[(p_i + 1) * 6 + 1] = portal[1]);
