@@ -1,6 +1,6 @@
-import {NavmeshNode} from "./navmesh_node";
-import {INavmeshBVH, ITrianglesBVH} from "./navmesh_bvh";
-import {INavmeshGraph} from "./navmesh_graph";
+import { NavmeshNode } from "./navmesh_node";
+import { INavmeshBVH, ITrianglesBVH } from "./navmesh_bvh";
+import { INavmeshGraph } from "./navmesh_graph";
 
 // namespace console {
 //     declare function log(str: string): void;
@@ -40,7 +40,7 @@ export class NavmeshGraph extends INavmeshGraph {
 
 }
 
-export class Navmesh{
+export class Navmesh {
     m_vertices: StaticArray<f32>;
     m_polygons: StaticArray<i32>;
     m_sizes: StaticArray<i32>;

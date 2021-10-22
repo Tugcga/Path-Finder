@@ -116,9 +116,9 @@ export class INavmeshBVH {
             let median = (split_axis == 0 ? x_median : z_median) / <f32>nodesLen;
 
             //reserve arrays for all nodes
-            let left = new StaticArray<NavmeshNode>(nodesLen);
+            let left  = new StaticArray<NavmeshNode>(nodesLen);
             let right = new StaticArray<NavmeshNode>(nodesLen);
-            let left_count = 0;
+            let left_count  = 0;
             let right_count = 0;
 
             for (let i = 0; i < nodesLen; i++) {

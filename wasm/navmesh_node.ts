@@ -1,4 +1,4 @@
-var STATIC_ARRAY_BUFFER_STEP: i32 = 8;  // when increase the data values count in static array and overflow it length, then we recreate new bigger array
+let STATIC_ARRAY_BUFFER_STEP = 8;  // when increase the data values count in static array and overflow it length, then we recreate new bigger array
 
 export class NavmeshNode {
     m_vertices: StaticArray<f32>;
@@ -40,7 +40,7 @@ export class NavmeshNode {
         this.m_vertex_normals = new StaticArray<f32>(3 * indexes_len);
         this.m_portals = new Map<i32, StaticArray<f32>>();
         // init zero values. Unnecessary in AS
-        // for (let i = 0; i < 3; i++){
+        // for (let i = 0; i < 3; i++) {
         //     this.m_center[i] = 0.0;
         //     this.m_normal[i] = 0.0;
         // }
