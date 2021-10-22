@@ -2,15 +2,18 @@ import { NavmeshNode } from "./navmesh_node";
 
 export class INavmeshBVH {
     m_aabb: StaticArray<f32>;
-    m_children: StaticArray<INavmeshBVH>;
+
+    m_left_child!: INavmeshBVH;
+    m_right_child!: INavmeshBVH;
+
     m_children_exists: bool;
     m_is_object: bool;
+
     m_nodes: StaticArray<NavmeshNode>;  // all nodes, come to the current bvh
     m_index_to_node: Map<i32, NavmeshNode>;  // map from node index to this node
 
     constructor(nodes: StaticArray<NavmeshNode>, BVH_AABB_DELTA: f32 = 0.5) {
         this.m_aabb = new StaticArray<f32>(6);
-        this.m_children = new StaticArray<INavmeshBVH>(2);
         this.m_children_exists = false;
         this.m_is_object = false;
         this.m_nodes = nodes;
@@ -125,13 +128,13 @@ export class INavmeshBVH {
                 unchecked(right_nodes[i] = right[i]);
             }
 
-            unchecked(this.m_children[0] = new INavmeshBVH(left_nodes, BVH_AABB_DELTA));
-            unchecked(this.m_children[1] = new INavmeshBVH(right_nodes, BVH_AABB_DELTA));
+            this.m_left_child  = new INavmeshBVH(left_nodes, BVH_AABB_DELTA);
+            this.m_right_child = new INavmeshBVH(right_nodes, BVH_AABB_DELTA);
             this.m_children_exists = true;
 
             //finally, set aabb
-            let left_aabb  = this.m_children[0].get_aabb();
-            let right_aabb = this.m_children[1].get_aabb();
+            let left_aabb  = this.m_left_child.get_aabb();
+            let right_aabb = this.m_right_child.get_aabb();
 
             unchecked(this.m_aabb[0] = Mathf.min(left_aabb[0], right_aabb[0]));
             unchecked(this.m_aabb[1] = Mathf.min(left_aabb[1], right_aabb[1]));
@@ -159,8 +162,8 @@ export class INavmeshBVH {
         if (this.is_inside_aabb(x, y, z)) {
             if (this.m_children_exists) {  // this node does not contains object, but contains children
                 //get left and right sample
-                let left_sample  = this.m_children[0].sample(x, y, z);
-                let right_sample = this.m_children[1].sample(x, y, z);
+                let left_sample  = this.m_left_child.sample(x, y, z);
+                let right_sample = this.m_right_child.sample(x, y, z);
                 if (left_sample == -1) {
                     return right_sample;
                 } else {
@@ -208,8 +211,8 @@ export class INavmeshBVH {
                          ">";
         }
         else{
-            to_return += " left: " + this.m_children[0].to_string() +
-                         ", right: " + this.m_children[1].to_string() +
+            to_return += " left: " + this.m_left_child.to_string() +
+                         ", right: " + this.m_right_child.to_string() +
                          ", aabb: " + this.m_aabb.toString() +
                          ">";
         }
@@ -227,7 +230,9 @@ export class ITrianglesBVH {
     m_is_object: bool;  // true, if it contains the triangle
 
     m_aabb: StaticArray<f32>;
-    m_children: StaticArray<ITrianglesBVH>;
+
+    m_left_child!: ITrianglesBVH;
+    m_right_child!: ITrianglesBVH;
     m_children_exists: bool;
 
     m_return_buffer: Float32Array;  // use this array to return values from sample command
@@ -236,7 +241,6 @@ export class ITrianglesBVH {
     constructor(triangles_vertices: StaticArray<f32>, BVH_AABB_DELTA: f32 = 0.5) {
         this.m_return_buffer = new Float32Array(4);
         this.m_is_object = false;
-        this.m_children = new StaticArray<ITrianglesBVH>(2);
         this.m_children_exists = false;
         this.m_aabb = new StaticArray<f32>(6);
 
@@ -495,8 +499,8 @@ export class ITrianglesBVH {
                 unchecked(right_array[j] = right_objects[j]);
             }
 
-            this.m_children[0] = new ITrianglesBVH(left_array, BVH_AABB_DELTA);
-            this.m_children[1] = new ITrianglesBVH(right_array, BVH_AABB_DELTA);
+            this.m_left_child = new ITrianglesBVH(left_array, BVH_AABB_DELTA);
+            this.m_right_child = new ITrianglesBVH(right_array, BVH_AABB_DELTA);
             this.m_children_exists = true;
         }
     }
@@ -686,8 +690,8 @@ export class ITrianglesBVH {
                 return return_buffer;
             } else {  // node contains children, check it
 
-                let left_sample  = this.m_children[0].sample(x, y, z);
-                let right_sample = this.m_children[1].sample(x, y, z);
+                let left_sample  = this.m_left_child.sample(x, y, z);
+                let right_sample = this.m_right_child.sample(x, y, z);
 
                 if (left_sample[3] < 0.5) {
                     return right_sample;
@@ -720,8 +724,8 @@ export class ITrianglesBVH {
         return "[(" +
             this._get_aabb().toString() + "): " +
             (this.m_is_object ? "tiangle<>" : "left-"  +
-            this.m_children[0].to_string() + " right-" +
-            this.m_children[1].to_string()) +
+            this.m_left_child.to_string() + " right-" +
+            this.m_right_child.to_string()) +
         "]";
     }
 
