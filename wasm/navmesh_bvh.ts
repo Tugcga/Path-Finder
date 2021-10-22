@@ -1,7 +1,28 @@
 import { NavmeshNode } from "./navmesh_node";
 
+class AABB {
+    x_min: f32;
+    y_min: f32;
+    z_min: f32;
+
+    x_max: f32;
+    y_max: f32;
+    z_max: f32;
+
+    toString(): string {
+        return (
+            this.x_min.toString() + "," +
+            this.y_min.toString() + "," +
+            this.z_min.toString() + "," +
+            this.x_max.toString() + "," +
+            this.y_max.toString() + "," +
+            this.z_max.toString()
+        );
+    }
+}
+
 export class INavmeshBVH {
-    m_aabb: StaticArray<f32>;
+    m_aabb: AABB = new AABB();
 
     m_left_child!: INavmeshBVH;
     m_right_child!: INavmeshBVH;
@@ -13,7 +34,6 @@ export class INavmeshBVH {
     m_index_to_node: Map<i32, NavmeshNode>;  // map from node index to this node
 
     constructor(nodes: StaticArray<NavmeshNode>, BVH_AABB_DELTA: f32 = 0.5) {
-        this.m_aabb = new StaticArray<f32>(6);
         this.m_children_exists = false;
         this.m_is_object = false;
         this.m_nodes = nodes;
@@ -50,12 +70,14 @@ export class INavmeshBVH {
                 if (unchecked(vertices[3 * i + 2]) > z_max) { z_max = unchecked(vertices[3 * i + 2]); }
             }
             //set aabb
-            unchecked(this.m_aabb[0] = x_min - BVH_AABB_DELTA);
-            unchecked(this.m_aabb[1] = y_min - BVH_AABB_DELTA);
-            unchecked(this.m_aabb[2] = z_min - BVH_AABB_DELTA);
-            unchecked(this.m_aabb[3] = x_max + BVH_AABB_DELTA);
-            unchecked(this.m_aabb[4] = y_max + BVH_AABB_DELTA);
-            unchecked(this.m_aabb[5] = z_max + BVH_AABB_DELTA);
+            let aabb = this.m_aabb;
+            aabb.x_min = x_min - BVH_AABB_DELTA;
+            aabb.y_min = y_min - BVH_AABB_DELTA;
+            aabb.z_min = z_min - BVH_AABB_DELTA;
+
+            aabb.x_max = x_max + BVH_AABB_DELTA;
+            aabb.y_max = y_max + BVH_AABB_DELTA;
+            aabb.z_max = z_max + BVH_AABB_DELTA;
         } else {  // there are many objects, create left and right children
 
             let x_median: f32 = 0.0;
@@ -136,26 +158,27 @@ export class INavmeshBVH {
             let left_aabb  = this.m_left_child.get_aabb();
             let right_aabb = this.m_right_child.get_aabb();
 
-            unchecked(this.m_aabb[0] = Mathf.min(left_aabb[0], right_aabb[0]));
-            unchecked(this.m_aabb[1] = Mathf.min(left_aabb[1], right_aabb[1]));
-            unchecked(this.m_aabb[2] = Mathf.min(left_aabb[2], right_aabb[2]));
-            unchecked(this.m_aabb[3] = Mathf.max(left_aabb[3], right_aabb[3]));
-            unchecked(this.m_aabb[4] = Mathf.max(left_aabb[4], right_aabb[4]));
-            unchecked(this.m_aabb[5] = Mathf.max(left_aabb[5], right_aabb[5]));
+            let aabb = this.m_aabb;
+            aabb.x_min = Mathf.min(left_aabb.x_min, right_aabb.x_min);
+            aabb.y_min = Mathf.min(left_aabb.y_min, right_aabb.y_min);
+            aabb.z_min = Mathf.min(left_aabb.z_min, right_aabb.z_min);
+            aabb.x_max = Mathf.max(left_aabb.x_max, right_aabb.x_max);
+            aabb.y_max = Mathf.max(left_aabb.y_max, right_aabb.y_max);
+            aabb.z_max = Mathf.max(left_aabb.z_max, right_aabb.z_max);
         }
     }
 
     @inline
-    get_aabb(): StaticArray<f32> {
+    get_aabb(): AABB {
         return this.m_aabb;
     }
 
     @inline
     is_inside_aabb(x: f32, y: f32, z: f32): bool {
         let aabb = this.m_aabb;
-        return aabb[0] < x && aabb[3] > x &&
-               aabb[1] < y && aabb[4] > y &&
-               aabb[2] < z && aabb[5] > z;
+        return aabb.x_min < x && aabb.x_max > x &&
+               aabb.y_min < y && aabb.y_max > y &&
+               aabb.z_min < z && aabb.z_max > z;
     }
 
     sample(x: f32, y: f32, z: f32): i32 {
@@ -209,8 +232,7 @@ export class INavmeshBVH {
             to_return += " object " + this.m_nodes[0].get_index().toString() +
                          ", aabb: " + this.m_aabb.toString() +
                          ">";
-        }
-        else{
+        } else {
             to_return += " left: " + this.m_left_child.to_string() +
                          ", right: " + this.m_right_child.to_string() +
                          ", aabb: " + this.m_aabb.toString() +
@@ -229,7 +251,7 @@ export class ITrianglesBVH {
     m_triangle_data: StaticArray<f32>;
     m_is_object: bool;  // true, if it contains the triangle
 
-    m_aabb: StaticArray<f32>;
+    m_aabb: AABB = new AABB();
 
     m_left_child!: ITrianglesBVH;
     m_right_child!: ITrianglesBVH;
@@ -242,7 +264,6 @@ export class ITrianglesBVH {
         this.m_return_buffer = new Float32Array(4);
         this.m_is_object = false;
         this.m_children_exists = false;
-        this.m_aabb = new StaticArray<f32>(6);
 
         if (triangles_vertices.length == 9) {  // 9 values mean that input are one triangle (with three vertices)
             this.m_triangle_data = new StaticArray<f32>(13);
@@ -295,32 +316,33 @@ export class ITrianglesBVH {
             this.m_is_object = true;
 
             //calculate aabb of the triangle
-            this.m_aabb[0] = this._min3(
+            let aabb = this.m_aabb;
+            aabb.x_min = this._min3(
                 unchecked(triangles_vertices[0]),
                 unchecked(triangles_vertices[3]),
                 unchecked(triangles_vertices[6])
             );
-            this.m_aabb[1] = this._min3(
+            aabb.y_min = this._min3(
                 unchecked(triangles_vertices[1]),
                 unchecked(triangles_vertices[4]),
                 unchecked(triangles_vertices[7])
             );
-            this.m_aabb[2] = this._min3(
+            aabb.z_min = this._min3(
                 unchecked(triangles_vertices[2]),
                 unchecked(triangles_vertices[5]),
                 unchecked(triangles_vertices[8])
             );
-            this.m_aabb[3] = this._max3(
+            aabb.x_max = this._max3(
                 unchecked(triangles_vertices[0]),
                 unchecked(triangles_vertices[3]),
                 unchecked(triangles_vertices[6])
             );
-            this.m_aabb[4] = this._max3(
+            aabb.y_max = this._max3(
                 unchecked(triangles_vertices[1]),
                 unchecked(triangles_vertices[4]),
                 unchecked(triangles_vertices[7])
             );
-            this.m_aabb[5] = this._max3(
+            aabb.z_max = this._max3(
                 unchecked(triangles_vertices[2]),
                 unchecked(triangles_vertices[5]),
                 unchecked(triangles_vertices[8])
@@ -336,6 +358,7 @@ export class ITrianglesBVH {
             let max_x: f32 = -Infinity;
             let max_y: f32 = -Infinity;
             let max_z: f32 = -Infinity;
+
             var objects_count = triangles_vertices.length / 9;
 
             for (let i = 0; i < objects_count; i++) {
@@ -386,12 +409,13 @@ export class ITrianglesBVH {
                 median_z += unchecked(triangles_vertices[9 * i + 8]);
             }
 
-            this.m_aabb[0] = min_x;
-            this.m_aabb[1] = min_y;
-            this.m_aabb[2] = min_z;
-            this.m_aabb[3] = max_x;
-            this.m_aabb[4] = max_y;
-            this.m_aabb[5] = max_z;
+            let aabb = this.m_aabb;
+            aabb.x_min = min_x;
+            aabb.y_min = min_y;
+            aabb.z_min = min_z;
+            aabb.x_max = max_x;
+            aabb.y_max = max_y;
+            aabb.z_max = max_z;
 
             this._extend_aabb_by_delta(BVH_AABB_DELTA);
 
@@ -533,41 +557,46 @@ export class ITrianglesBVH {
 
     @inline
     _get_aabb_x_size(): f32 {
-        return this.m_aabb[3] - this.m_aabb[0];
+        let aabb = this.m_aabb;
+        return aabb.x_max - aabb.x_min;
     }
 
     @inline
     _get_aabb_y_size(): f32 {
-        return this.m_aabb[4] - this.m_aabb[1];
+        let aabb = this.m_aabb;
+        return aabb.y_max - aabb.y_min;
     }
 
     @inline
     _get_aabb_z_size(): f32 {
-        return this.m_aabb[5] - this.m_aabb[1];
+        let aabb = this.m_aabb;
+        return aabb.z_max - aabb.z_min;
     }
 
     @inline
     _extend_aabb_by_delta(delta: f32): void {
-        this.m_aabb[0] -= delta;
-        this.m_aabb[1] -= delta;
-        this.m_aabb[2] -= delta;
+        let aabb = this.m_aabb;
+        aabb.x_min -= delta;
+        aabb.y_min -= delta;
+        aabb.z_min -= delta;
 
-        this.m_aabb[3] += delta;
-        this.m_aabb[4] += delta;
-        this.m_aabb[5] += delta;
+        aabb.x_max += delta;
+        aabb.y_max += delta;
+        aabb.z_max += delta;
     }
 
     @inline
-    _get_aabb(): StaticArray<f32> {
+    _get_aabb(): AABB {
         return this.m_aabb;
     }
 
     @inline
     _is_inside_aabb(x: f32, y: f32, z: f32): bool {
+        let aabb = this.m_aabb;
         return (
-            x > this.m_aabb[0] && x < this.m_aabb[3] &&
-            y > this.m_aabb[1] && y < this.m_aabb[4] &&
-            z > this.m_aabb[2] && z < this.m_aabb[5]
+            x > aabb.x_min && x < aabb.x_max &&
+            y > aabb.y_min && y < aabb.y_max &&
+            z > aabb.z_min && z < aabb.z_max
         );
     }
 
