@@ -21,6 +21,22 @@ class AABB {
     }
 }
 
+@inline
+function clamp(x: f32, min: f32 = 0.0, max: f32 = 1.0): f32 {
+    if (x < min) {
+        return min;
+    } else if (x > max) {
+        return max
+    } else {
+        return x;
+    }
+}
+
+@inline
+function squared_len(x: f32, y: f32, z: f32): f32 {
+    return x * x + y * y + z * z;
+}
+
 export class INavmeshBVH {
     m_aabb: AABB = new AABB();
 
@@ -132,16 +148,14 @@ export class INavmeshBVH {
                 unchecked(left[left_count] = right[right_count - 1]);
                 ++left_count;
                 --right_count;
-            } else {
-                if (right.length == 0) {
-                    unchecked(right[right_count] = left[left_count - 1]);
-                    ++right_count;
-                    --left_count;
-                }
+            } else if (right_count == 0) {
+                unchecked(right[right_count] = left[left_count - 1]);
+                ++right_count;
+                --left_count;
             }
 
             //next create static arrays and pass it to children nodes
-            let left_nodes = new StaticArray<NavmeshNode>(left_count);
+            let left_nodes  = new StaticArray<NavmeshNode>(left_count);
             let right_nodes = new StaticArray<NavmeshNode>(right_count);
             for (let i = 0; i < left_count; i++) {
                 unchecked(left_nodes[i] = left[i]);
@@ -290,7 +304,7 @@ export class ITrianglesBVH {
             unchecked(triangle_data[7] = triangles_vertices[7] - triangles_vertices[1]);
             unchecked(triangle_data[8] = triangles_vertices[8] - triangles_vertices[2]);
             //a = (e1, e1)
-            unchecked(triangle_data[9] = this._squaredLen(
+            unchecked(triangle_data[9] = squared_len(
                 unchecked(triangle_data[3]),
                 unchecked(triangle_data[4]),
                 unchecked(triangle_data[5])
@@ -302,7 +316,7 @@ export class ITrianglesBVH {
                 unchecked(triangle_data[5] * triangle_data[8])
             ));
             //c = (e2, e2)
-            unchecked(triangle_data[11] = this._squaredLen(
+            unchecked(triangle_data[11] = squared_len(
                 unchecked(triangle_data[6]),
                 unchecked(triangle_data[7]),
                 unchecked(triangle_data[8])
@@ -515,15 +529,15 @@ export class ITrianglesBVH {
             var left_array  = new StaticArray<f32>(left_count * 9);
             var right_array = new StaticArray<f32>(right_count * 9);
 
-            for (let j = 0; j < left_count * 9; j++) {
+            for (let j = 0, len = left_count * 9; j < len; j++) {
                 unchecked(left_array[j] = left_objects[j]);
             }
 
-            for (let j = 0; j < right_count * 9; j++) {
+            for (let j = 0, len = right_count * 9; j < len; j++) {
                 unchecked(right_array[j] = right_objects[j]);
             }
 
-            this.m_left_child = new ITrianglesBVH(left_array, BVH_AABB_DELTA);
+            this.m_left_child  = new ITrianglesBVH(left_array, BVH_AABB_DELTA);
             this.m_right_child = new ITrianglesBVH(right_array, BVH_AABB_DELTA);
             this.m_children_exists = true;
         }
@@ -600,22 +614,6 @@ export class ITrianglesBVH {
         );
     }
 
-    @inline
-    _clamp(a: f32, v_min: f32 = 0.0, v_max: f32 = 1.0): f32 {
-        if (a < v_min) {
-            return v_min;
-        } else if (a > v_max) {
-            return v_max
-        } else {
-            return a;
-        }
-    }
-
-    @inline
-    _squaredLen(x: f32, y: f32, z: f32): f32 {
-        return x * x + y * y + z * z;
-    }
-
     sample(x: f32, y: f32, z: f32): Float32Array {
         let triangle_data = this.m_triangle_data;
         //return the 4-th [x, y, z, w], where w = 1.0 - correct answer, 0.0 - empty answer
@@ -658,18 +656,18 @@ export class ITrianglesBVH {
                     if (s < 0) {
                         if (t < 0) {
                             if (d < 0) {
-                                s = this._clamp(-d / unchecked(triangle_data[9]));
+                                s = clamp(-d / unchecked(triangle_data[9]));
                                 t = 0;
                             } else {
                                 s = 0;
-                                t = this._clamp(-e / unchecked(triangle_data[11]));
+                                t = clamp(-e / unchecked(triangle_data[11]));
                             }
                         } else {
                             s = 0;
-                            t = this._clamp(-e / unchecked(triangle_data[11]));
+                            t = clamp(-e / unchecked(triangle_data[11]));
                         }
                     } else if (t < 0) {
-                        s = this._clamp(-d / unchecked(triangle_data[9]));
+                        s = clamp(-d / unchecked(triangle_data[9]));
                         t = 0.0;
                     } else {
                         let invDet: f32 = 1.0 / unchecked(triangle_data[12]);
@@ -683,29 +681,26 @@ export class ITrianglesBVH {
                         if (tmp1 > tmp0) {
                             let numer = tmp1 - tmp0;
                             let denom = unchecked(triangle_data[9] - 2 * triangle_data[10] + triangle_data[11]);
-                            s = this._clamp(numer / denom);
+                            s = clamp(numer / denom);
                             t = 1.0 - s;
                         } else {
-                            t = this._clamp(-e / unchecked(triangle_data[11]));
+                            t = clamp(-e / unchecked(triangle_data[11]));
                             s = 0;
                         }
-                    }
-                    else if(t < 0.0){
-                        if(this.m_triangle_data[9] + d > this.m_triangle_data[10] + e) {
+                    } else if (t < 0) {
+                        if (unchecked(this.m_triangle_data[9]) + d > unchecked(this.m_triangle_data[10]) + e) {
                             let numer = unchecked(triangle_data[11] + e - triangle_data[10] - d);
                             let denom = unchecked(triangle_data[9]  - 2 * triangle_data[10] + triangle_data[11]);
-                            s = this._clamp(numer / denom);
+                            s = clamp(numer / denom);
                             t = 1.0 -  s;
-                        }
-                        else{
-                            s = this._clamp(-d / unchecked(triangle_data[9]));
+                        } else {
+                            s = clamp(-d / unchecked(triangle_data[9]));
                             t = 0;
                         }
-                    }
-                    else{
+                    } else {
                         let numer = unchecked(triangle_data[11] + e - triangle_data[10] - d);
                         let denom = unchecked(triangle_data[9]  - 2 * triangle_data[10] + triangle_data[11]);
-                        s = this._clamp(numer / denom);
+                        s = clamp(numer / denom);
                         t = 1.0 - s;
                     }
                 }
@@ -722,19 +717,19 @@ export class ITrianglesBVH {
                 let left_sample  = this.m_left_child.sample(x, y, z);
                 let right_sample = this.m_right_child.sample(x, y, z);
 
-                if (left_sample[3] < 0.5) {
+                if (unchecked(left_sample[3]) < 0.5) {
                     return right_sample;
                 } else {
-                    if (right_sample[3] < 0.5) {
+                    if (unchecked(right_sample[3]) < 0.5) {
                         return left_sample;
                     } else {
                         //both left and right sample is correct, so, return the closest to the initial point
-                        let d_l = this._squaredLen(
+                        let d_l = squared_len(
                             x - unchecked(left_sample[0]),
                             y - unchecked(left_sample[1]),
                             z - unchecked(left_sample[2])
                         );
-                        let d_r = this._squaredLen(
+                        let d_r = squared_len(
                             x - unchecked(right_sample[0]),
                             y - unchecked(right_sample[1]),
                             z - unchecked(right_sample[2])
@@ -744,18 +739,17 @@ export class ITrianglesBVH {
                 }
             }
         } else {  // point outside the aabb, so, skip next traversing, return false answer
-            this.m_return_buffer[3] = 0.0;
+            unchecked(this.m_return_buffer[3] = 0.0);
             return this.m_return_buffer;
         }
     }
 
     to_string(): string {
-        return "[(" +
-            this._get_aabb().toString() + "): " +
-            (this.m_is_object ? "tiangle<>" : "left-"  +
+        return "[(" + this._get_aabb().toString() + "): " + (
+            this.m_is_object ? "tiangle<>" : "left-"  +
             this.m_left_child.to_string() + " right-" +
-            this.m_right_child.to_string()) +
-        "]";
+            this.m_right_child.to_string()
+        ) + "]";
     }
 
     toString(): string {

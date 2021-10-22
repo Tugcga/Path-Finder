@@ -2,9 +2,9 @@ import {NavmeshNode} from "./navmesh_node";
 import {INavmeshBVH, ITrianglesBVH} from "./navmesh_bvh";
 import {INavmeshGraph} from "./navmesh_graph";
 
-namespace console {
-    declare function log(str: string): void;
-}
+// namespace console {
+//     declare function log(str: string): void;
+// }
 
 export const Float32Array_ID = idof<Float32Array>();
 export const Int32Array_ID = idof<Int32Array>();
