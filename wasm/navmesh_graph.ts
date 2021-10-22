@@ -125,7 +125,7 @@ export class INavmeshGraph {
                 unchecked(edges[2 * i + 0]).toString() + ", " +
                 unchecked(edges[2 * i + 1]).toString() +
             "]";
-            if (i < edge_count - 1) {
+            if (i < len - 1) {
                 to_return += ", ";
             }
         }

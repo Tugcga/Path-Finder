@@ -3,8 +3,8 @@ import { NavmeshNode } from "./navmesh_node";
 export class INavmeshBVH {
     m_aabb: StaticArray<f32>;
     m_children: StaticArray<INavmeshBVH>;
-    m_children_exists: boolean;
-    m_is_object: boolean;
+    m_children_exists: bool;
+    m_is_object: bool;
     m_nodes: StaticArray<NavmeshNode>;  // all nodes, come to the current bvh
     m_index_to_node: Map<i32, NavmeshNode>;  // map from node index to this node
 
@@ -484,8 +484,8 @@ export class ITrianglesBVH {
 
             //finally, create two child nodes
             //create typed arrays and fill it
-            var left_array  = new StaticArray(left_count * 9);
-            var right_array = new StaticArray(right_count * 9);
+            var left_array  = new StaticArray<f32>(left_count * 9);
+            var right_array = new StaticArray<f32>(right_count * 9);
 
             for (let j = 0; j < left_count * 9; j++) {
                 unchecked(left_array[j] = left_objects[j]);

@@ -189,10 +189,10 @@ export class Navmesh{
             let group = unchecked(this.m_groups[i]);
             let graph_edges = new Array<i32>();
 
-            for (let j = 0; j < group.length; j++) {
+            for (let j = 0, jlen = group.length; j < jlen; j++) {
                 let node_index = unchecked(group[j]);
                 let node_neighbors = unchecked(this.m_nodes[node_index]).get_neighbord();
-                for (let k = 0; k < node_neighbors.length; k++) {
+                for (let k = 0, klen = node_neighbors.length; k < klen; k++) {
                     let other_node = unchecked(node_neighbors[k]);
                     if (is_edge_new(graph_edges, node_index, other_node)) {
                         if (node_index < other_node) {
@@ -207,7 +207,7 @@ export class Navmesh{
             }
 
             //make graph edges static array
-            let graph_edges_len = graph_edges_s.length;
+            let graph_edges_len = graph_edges.length;
             let graph_edges_s = new StaticArray<i32>(graph_edges_len);
             for (let j = 0; j < graph_edges_len; j++) {
                 unchecked(graph_edges_s[j] = graph_edges[j]);
