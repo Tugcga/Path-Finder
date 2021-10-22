@@ -128,9 +128,10 @@ export class Navmesh{
                     }
                 }
                 if (intersection.length == 2) {  // in all cases the intersection is 2
-                    if (intersection[0] != node_index) {
+                    let int0 = intersection[0];
+                    if (int0 != node_index) {
                         node.add_neighbor(
-                            unchecked(intersection[0]),
+                            unchecked(int0),
                             unchecked(this.m_vertices[3 * u + 0]),
                             unchecked(this.m_vertices[3 * u + 1]),
                             unchecked(this.m_vertices[3 * u + 2]),
@@ -149,8 +150,7 @@ export class Navmesh{
                             unchecked(this.m_vertices[3 * v + 2])
                         );
                     }
-                }
-                else{
+                } else {
                     //in fact this is impossible
                 }
             }
@@ -253,7 +253,7 @@ export class Navmesh{
         let tr_index = 0;
         let triangles = new StaticArray<f32>(triangles_count * 9);  // because each triangle has 3 vertices (with 3 coordinates)
         for (let i = 0, len = sizes.length; i < len; i++) {
-            let size = sizes[i];
+            let size = unchecked(sizes[i]);
             for (let j = 2; j < size; j++) {
                 //add point 0, j - 1 and j
                 let i1 = unchecked(polygons[shift]);
@@ -396,9 +396,11 @@ export class Navmesh{
                         unchecked(this.b_portal_apex[0]  = this.b_portal_left[0]);
                         unchecked(this.b_portal_apex[1]  = this.b_portal_left[1]);
                         unchecked(this.b_portal_apex[2]  = this.b_portal_left[2]);
+
                         unchecked(this.b_portal_left[0]  = this.b_portal_apex[0]);
                         unchecked(this.b_portal_left[1]  = this.b_portal_apex[1]);
                         unchecked(this.b_portal_left[2]  = this.b_portal_apex[2]);
+
                         unchecked(this.b_portal_right[0] = this.b_portal_apex[0]);
                         unchecked(this.b_portal_right[1] = this.b_portal_apex[1]);
                         unchecked(this.b_portal_right[2] = this.b_portal_apex[2]);
@@ -429,9 +431,11 @@ export class Navmesh{
                             unchecked(this.b_portal_apex[0]  = this.b_portal_right[0]);
                             unchecked(this.b_portal_apex[1]  = this.b_portal_right[1]);
                             unchecked(this.b_portal_apex[2]  = this.b_portal_right[2]);
+
                             unchecked(this.b_portal_left[0]  = this.b_portal_apex[0]);
                             unchecked(this.b_portal_left[1]  = this.b_portal_apex[1]);
                             unchecked(this.b_portal_left[2]  = this.b_portal_apex[2]);
+
                             unchecked(this.b_portal_right[0] = this.b_portal_apex[0]);
                             unchecked(this.b_portal_right[1] = this.b_portal_apex[1]);
                             unchecked(this.b_portal_right[2] = this.b_portal_apex[2]);
@@ -483,8 +487,9 @@ export class Navmesh{
     }
 
     _get_nodes_group_index(index_01: i32, index_02: i32): i32 {
+        let groups = this.m_groups;
         for (let i = 0, len = this.m_groups_count; i < len; i++) {
-            let group = unchecked(this.m_groups[i]);
+            let group = unchecked(groups[i]);
             if (group.includes(index_01) && group.includes(index_02)){
                 return i;
             }

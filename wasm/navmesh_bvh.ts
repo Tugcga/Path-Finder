@@ -81,7 +81,7 @@ export class INavmeshBVH {
             let right_count = 0;
 
             for (let i = 0; i < nodesLen; i++) {
-                let node = nodes[i];
+                let node = unchecked(nodes[i]);
                 let c = node.get_center();
                 if (split_axis == 0) {
                     if (unchecked(c[0]) < median) {
