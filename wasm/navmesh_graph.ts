@@ -59,7 +59,7 @@ export class INavmeshGraph {
             temp_map.get(v2).push(v1);
         }
 
-        //copy to memory map wih static array values
+        //copy to memory the map wih static array values
         this.m_incident_map = new Map<i32, StaticArray<i32>>();
         let temp_keys = temp_map.keys();
 
@@ -82,11 +82,7 @@ export class INavmeshGraph {
         this.i_vertices_parent = new StaticArray<i32>(vertex_count);
         //set default values
         for (let i = 0; i < vertex_count; i++) {
-            // this unnecessary. Already init by constructor
-            // this.i_vertices_g[i] = 0.0;
-            // this.i_vertices_h[i] = 0.0;
-            // this.i_vertices_f[i] = 0.0;
-            // this.i_vertices_close[i] = false;
+            //default constructor for f32 arrays init it by 0.0, for bool array by false
             unchecked(this.i_vertices_parent[i] = -1);
         }
         this.i_open_list = new StaticArray<i32>(vertex_count);
@@ -180,11 +176,9 @@ export class INavmeshGraph {
     }
 
     search(start_vertex: i32, end_vertex: i32): Int32Array {
-        //check are these verticeas exists
-        if (
-            this.m_index_map.has(start_vertex) &&
-            this.m_index_map.has(end_vertex)
-        ) {
+        //check are these vertices exists
+        if (this.m_index_map.has(start_vertex) &&
+            this.m_index_map.has(end_vertex)) {
             let start = this.m_index_map.get(start_vertex);
             let end = this.m_index_map.get(end_vertex);
             this._pre_start(end);

@@ -39,11 +39,6 @@ export class NavmeshNode {
         this.m_normal = new StaticArray<f32>(3);
         this.m_vertex_normals = new StaticArray<f32>(3 * indexes_len);
         this.m_portals = new Map<i32, StaticArray<f32>>();
-        // init zero values. Unnecessary in AS
-        // for (let i = 0; i < 3; i++) {
-        //     this.m_center[i] = 0.0;
-        //     this.m_normal[i] = 0.0;
-        // }
 
         let cx = unchecked(this.m_center[0]);
         let cy = unchecked(this.m_center[1]);
@@ -98,10 +93,10 @@ export class NavmeshNode {
             let nx = unchecked(this.m_normal[0]);
             let ny = unchecked(this.m_normal[1]);
             let nz = unchecked(this.m_normal[2]);
-            let invLen: f32 = 1.0 / Mathf.sqrt(nx * nx + ny * ny + nz * nz);
-            unchecked(this.m_normal[0] = nx * invLen);
-            unchecked(this.m_normal[1] = ny * invLen);
-            unchecked(this.m_normal[2] = nz * invLen);
+            let inv_len: f32 = 1.0 / Mathf.sqrt(nx * nx + ny * ny + nz * nz);
+            unchecked(this.m_normal[0] = nx * inv_len);
+            unchecked(this.m_normal[1] = ny * inv_len);
+            unchecked(this.m_normal[2] = nz * inv_len);
         }
 
         let vertex_normals = this.m_vertex_normals;

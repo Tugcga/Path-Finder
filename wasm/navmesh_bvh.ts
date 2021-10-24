@@ -69,12 +69,10 @@ export class INavmeshBVH {
         let z_min: f32 = Infinity;
         let z_max: f32 = -Infinity;
 
-        if (nodes.length == 1) {  // only one object, so, but it to the current bvh node
-            //this.m_object = nodes[0];  // reassign object link
+        if (nodes.length == 1) {  // only one object
             this.m_is_object = true;
 
             //get aabb
-            //let vertices: StaticArray<f32> = this.m_object.get_vertex_coordinates();
             let vertices = unchecked(this.m_nodes[0]).get_vertex_coordinates();
             let verts_count = vertices.length / 3;
             for (let i = 0; i < verts_count; i++) {
@@ -98,9 +96,9 @@ export class INavmeshBVH {
 
             let x_median: f32 = 0.0;
             let z_median: f32 = 0.0;
-            let nodesLen = nodes.length;
+            let nodes_len = nodes.length;
 
-            for (let i = 0; i < nodesLen; i++) {
+            for (let i = 0; i < nodes_len; i++) {
                 let node = unchecked(nodes[i]);
                 let c = node.get_center();
                 let c0 = unchecked(c[0]);
@@ -113,15 +111,15 @@ export class INavmeshBVH {
                 if (c2 > z_max) { z_max = c2; }
             }
             let split_axis = x_max - x_min < z_max - z_min ? 2 : 0;
-            let median = (split_axis == 0 ? x_median : z_median) / <f32>nodesLen;
+            let median = (split_axis == 0 ? x_median : z_median) / <f32>nodes_len;
 
             //reserve arrays for all nodes
-            let left  = new StaticArray<NavmeshNode>(nodesLen);
-            let right = new StaticArray<NavmeshNode>(nodesLen);
+            let left  = new StaticArray<NavmeshNode>(nodes_len);
+            let right = new StaticArray<NavmeshNode>(nodes_len);
             let left_count  = 0;
             let right_count = 0;
 
-            for (let i = 0; i < nodesLen; i++) {
+            for (let i = 0; i < nodes_len; i++) {
                 let node = unchecked(nodes[i]);
                 let c = node.get_center();
                 if (split_axis == 0) {
@@ -242,7 +240,6 @@ export class INavmeshBVH {
     to_string(): string {
         let to_return = "<bvh";
         if (this.m_is_object) {
-            //to_return += " object " + this.m_object.get_index().toString() +
             to_return += " object " + this.m_nodes[0].get_index().toString() +
                          ", aabb: " + this.m_aabb.toString() +
                          ">";

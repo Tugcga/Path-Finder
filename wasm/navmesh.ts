@@ -173,11 +173,11 @@ export class Navmesh {
         let m_groups = new StaticArray<StaticArray<i32>>(this.m_groups_count);
         this.m_groups = m_groups;
 
-        for (let i = 0; i < this.m_groups_count; i++) {
+        for (let i = 0, len = this.m_groups_count; i < len; i++) {
             let t_group = unchecked(t_groups[i]);
             let m_group = new StaticArray<i32>(t_group.length);
             unchecked(m_groups[i] = m_group);
-            for (let j = 0; j < m_group.length; j++) {
+            for (let j = 0, jlen = m_group.length; j < jlen; j++) {
                 unchecked(m_group[j] = t_group[j]);
             }
         }
@@ -185,7 +185,7 @@ export class Navmesh {
         //define one graph for each group
         this.m_graphs = new StaticArray<NavmeshGraph>(this.m_groups_count);
 
-        for (let i = 0; i < this.m_groups_count; i++) {
+        for (let i = 0, len = this.m_groups_count; i < len; i++) {
             let group = unchecked(this.m_groups[i]);
             let graph_edges = new Array<i32>();
 
