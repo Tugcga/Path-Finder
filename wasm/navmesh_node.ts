@@ -169,6 +169,7 @@ export class NavmeshNode {
                 }
                 //rewrite neigboor link
                 this.m_neighbor = new_neighbor;
+                neighbor = new_neighbor;
             }
 
             this.m_neighbor_count++;
