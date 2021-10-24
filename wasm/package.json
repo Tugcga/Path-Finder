@@ -1,0 +1,10 @@
+{
+  "scripts": {
+    "build": "npm run build:release",
+    "build:release": "npx asc ./navmesh.ts --target release",
+    "build:debug": "npx asc ./navmesh.ts --target debug"
+  },
+  "dependencies": {
+    "assemblyscript": "^0.19.17"
+  }
+}
