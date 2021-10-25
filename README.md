@@ -116,3 +116,8 @@ Initialization time | 0.28 sec | 0.05 sec | 0.02 sec
 1024 pairs | 5.05 sec | 0.15 sec | 0.08 sec
 4096 pairs |  | 0.48 sec | 0.28 sec
 16 384 pairs | | 2.01 sec | 1.24 sec
+38 416 pairs | | 4.62 sec | 2.69 sec
+65 536 pairs | | 7.79 sec | 4.59 sec
+147 456 pairs | | 17.52 sec | 10.20 sec
+
+So, WASM version is nearly x1.7 times slowly with respect to c++ solution.
