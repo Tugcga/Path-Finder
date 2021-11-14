@@ -2,12 +2,14 @@ import { NavmeshNode } from "./navmesh_node";
 import { INavmeshBVH, ITrianglesBVH } from "./navmesh_bvh";
 import { INavmeshGraph } from "./navmesh_graph";
 
-// namespace console {
-//     declare function log(str: string): void;
-// }
+//namespace console {
+     //declare function log(str: string): void;
+//}
 
 export const Float32Array_ID = idof<Float32Array>();
 export const Int32Array_ID = idof<Int32Array>();
+export const StaticInt32Array_ID = idof<StaticArray<i32>>();
+export const StaticFloat32Array_ID = idof<StaticArray<f32>>();
 
 export var NAVMESH_INITIAL_BUFFER_SIZE = 128;
 export var BVH_AABB_DELTA: f32 = 0.5;
@@ -157,6 +159,8 @@ export class Navmesh {
         }
 
         //define groups
+        let groups_queue = new Array<i32>(this.m_nodes.length);
+        let groups_queue_length: i32 = 0;
         let t_groups = new Array<Array<i32>>();
         for (let i = 0, len = this.m_nodes.length; i < len; i++) {
             let node = unchecked(this.m_nodes[i]);
@@ -164,7 +168,35 @@ export class Navmesh {
             if (g == -1) {
                 let new_group = new Array<i32>();
                 let new_index = t_groups.length;
-                node.set_group(new_index, new_group, this.m_nodes);
+                //instead of recursive process, reassign groups for nodes by using task queue
+                //node.set_group(new_index, new_group, this.m_nodes);
+                let is_finish: bool = false;
+                unchecked(groups_queue[0] = node.m_index);
+                groups_queue_length++;
+                while(!is_finish){
+                    if(groups_queue_length == 0){
+                        is_finish = true;
+                    }
+                    else{
+                        //get the last values in the queue
+                        let ni = unchecked(groups_queue[groups_queue_length - 1]);
+                        groups_queue_length -= 1;
+                        //set the group for this node
+                        let ni_node = unchecked(this.m_nodes[ni]);
+                        let ni_node_neigh = ni_node.m_neighbor;
+                        ni_node.m_group = new_index;
+                        new_group.push(ni);
+                        //then iterate throw children
+                        for(let k = 0, klen = ni_node.m_neighbor_count; k < klen; k++){
+                            let knode = unchecked(this.m_nodes[ni_node_neigh[k]]);
+                            let gk = knode.get_group();
+                            if(gk == -1){
+                                unchecked(groups_queue[groups_queue_length] = knode.m_index);
+                                groups_queue_length++;
+                            }
+                        }
+                    }
+                }
                 t_groups.push(new_group);
             }
         }
