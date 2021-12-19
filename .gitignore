@@ -16,3 +16,7 @@ wasm/map_02.txt
 wasm/map_02_reduce.txt
 *.json
 wasm/tests_files
+pyproject.toml
+setup.cfg
+dist
+python/pynavmesh.egg-info

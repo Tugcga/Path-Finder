@@ -24,6 +24,12 @@ It placed on the ```python``` folder of the repo. This folder contains:
 
 ### How to use
 
+To install:
+
+```
+pip install pynavmesh
+```
+
 To create navigation mesh object:
 
 ```
