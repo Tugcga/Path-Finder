@@ -11,6 +11,8 @@ wasm/bvh_test.js
 *.js
 python/map_benchmark.py
 python/navmeshdata.txt
+python/map_01.txt
+python/map_01_points.txt
 wasm/build command.txt
 wasm/map_02.txt
 wasm/map_02_reduce.txt
@@ -20,3 +22,5 @@ pyproject.toml
 setup.cfg
 dist
 python/pynavmesh.egg-info
+LICENSE
+PY_README.md
