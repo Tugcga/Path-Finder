@@ -1,6 +1,7 @@
 .mypy_cache
 __pycache__
 python/__pycache__
+README.txt
 test_types.py
 wasm/node_modules
 wasm/run.js
