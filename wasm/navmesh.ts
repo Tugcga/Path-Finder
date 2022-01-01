@@ -64,6 +64,7 @@ export class Navmesh {
     b_right: StaticArray<f32>;
     b_raw_path: StaticArray<f32>;
     b_finall_path: StaticArray<f32>;
+    b_last_path_point: StaticArray<f32>;
 
     constructor(vertices: StaticArray<f32>, polygons: StaticArray<i32>, sizes: StaticArray<i32>) {
         this.m_vertices = vertices;
@@ -80,6 +81,7 @@ export class Navmesh {
 
         this.b_raw_path = new StaticArray<f32>(NAVMESH_INITIAL_BUFFER_SIZE);
         this.b_finall_path = new StaticArray<f32>(NAVMESH_INITIAL_BUFFER_SIZE);
+        this.b_last_path_point = new StaticArray<f32>(3);
 
         //generate nodes
         this.m_nodes = new StaticArray<NavmeshNode>(this.m_nodes_count);
@@ -396,6 +398,11 @@ export class Navmesh {
             unchecked(this.b_finall_path[1] = this.b_portal_apex[1]);
             unchecked(this.b_finall_path[2] = this.b_portal_apex[2]);
 
+            // memorize last path point
+            this.b_last_path_point[0] = this.b_finall_path[0];
+            this.b_last_path_point[1] = this.b_finall_path[1];
+            this.b_last_path_point[2] = this.b_finall_path[2];
+
             let finall_path_length = 1;
             let i = 1;
 
@@ -420,10 +427,13 @@ export class Navmesh {
                         unchecked(this.b_portal_right[2] = this.b_right[2]);
                         right_index = i;
                     } else {
-                        unchecked(this.b_finall_path[3 * finall_path_length + 0] = this.b_portal_left[0]);
-                        unchecked(this.b_finall_path[3 * finall_path_length + 1] = this.b_portal_left[1]);
-                        unchecked(this.b_finall_path[3 * finall_path_length + 2] = this.b_portal_left[2]);
-                        finall_path_length++;
+                        if(!this._v_equal(this.b_portal_left, this.b_last_path_point)){
+                            unchecked(this.b_finall_path[3 * finall_path_length + 0] = this.b_portal_left[0]);
+                            unchecked(this.b_finall_path[3 * finall_path_length + 1] = this.b_portal_left[1]);
+                            unchecked(this.b_finall_path[3 * finall_path_length + 2] = this.b_portal_left[2]);
+                            unchecked(this.b_last_path_point[0] = this.b_portal_left[0]); unchecked(this.b_last_path_point[1] = this.b_portal_left[1]); unchecked(this.b_last_path_point[2] = this.b_portal_left[2]);
+                            finall_path_length++;
+                        }
 
                         unchecked(this.b_portal_apex[0]  = this.b_portal_left[0]);
                         unchecked(this.b_portal_apex[1]  = this.b_portal_left[1]);
@@ -458,6 +468,7 @@ export class Navmesh {
                             unchecked(this.b_finall_path[3 * finall_path_length + 0] = this.b_portal_right[0]);
                             unchecked(this.b_finall_path[3 * finall_path_length + 1] = this.b_portal_right[1]);
                             unchecked(this.b_finall_path[3 * finall_path_length + 2] = this.b_portal_right[2]);
+                            unchecked(this.b_last_path_point[0] = this.b_portal_right[0]); unchecked(this.b_last_path_point[1] = this.b_portal_right[1]); unchecked(this.b_last_path_point[2] = this.b_portal_right[2]);
                             finall_path_length++;
 
                             unchecked(this.b_portal_apex[0]  = this.b_portal_right[0]);
@@ -494,6 +505,7 @@ export class Navmesh {
                 unchecked(this.b_finall_path[3 * finall_path_length + 0] = this.b_right[0]);
                 unchecked(this.b_finall_path[3 * finall_path_length + 1] = this.b_right[1]);
                 unchecked(this.b_finall_path[3 * finall_path_length + 2] = this.b_right[2]);
+                unchecked(this.b_last_path_point[0] = this.b_right[0]); unchecked(this.b_last_path_point[1] = this.b_right[1]); unchecked(this.b_last_path_point[2] = this.b_right[2]);
                 finall_path_length++;
             }
 
