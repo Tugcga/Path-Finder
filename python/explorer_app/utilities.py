@@ -1,3 +1,7 @@
+from typing import Tuple
+import math
+
+
 class PointTransformer():
     def __init__(self, min_corner, max_corner, shift, aspect, width, height):
         self._min_corner = min_corner  # this is tuple
@@ -17,6 +21,22 @@ class PointTransformer():
     def transform_inverse(self, point):
         return ((point[0] - self._shift[0]) * (self._max_corner[0] - self._min_corner[0]) / self._x_coeff + self._min_corner[0],
                 (point[1] - self._shift[1]) * (self._max_corner[1] - self._min_corner[1]) / self._y_coeff + self._min_corner[1])
+
+
+def get_vector_length_squared(vector_2d: Tuple[float, float]):
+    return vector_2d[0]**2 + vector_2d[1]**2
+
+
+def get_vector_length(vector_2d: Tuple[float, float]):
+    return math.sqrt(get_vector_length_squared(vector_2d))
+
+
+def get_unit_vector(vector_2d: Tuple[float, float]):
+    l: float = get_vector_length(vector_2d)
+    if l < 0.00001:
+        return (0.0, 0.0)
+    else:
+        return (vector_2d[0] / l, vector_2d[1] / l)
 
 
 def read_level_data(file_path):

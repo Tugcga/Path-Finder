@@ -39,8 +39,9 @@ class SelectColorsWidget(QtWidgets.QWidget):
                         "back_light_lines": (161, 158, 156, 255),
                         "poly_border": (0, 125, 0, 64),
                         "poly_int": (102, 198, 102, 120),
-                        "path": (247, 220, 112, 255)}
-        self._sizes = {"point_size": 3, "path_size": 3, "dark_grid_size": 80, "light_grid_size": 20}
+                        "path": (247, 220, 112, 255),
+                        "agents": (65, 65, 128, 125)}
+        self._sizes = {"point_size": 3, "path_size": 2, "dark_grid_size": 80, "light_grid_size": 20}
 
         self._layout.addRow(QtWidgets.QLabel("Background"), ColorWidget(self._colors["background"], self.m_update_background))
         self._layout.addRow(QtWidgets.QLabel("Background Dark Grid"), ColorWidget(self._colors["back_dark_lines"], self.m_update_back_dark_lines))
@@ -48,6 +49,7 @@ class SelectColorsWidget(QtWidgets.QWidget):
         self._layout.addRow(QtWidgets.QLabel("Polygon Borders"), ColorWidget(self._colors["poly_border"], self.m_update_poly_border))
         self._layout.addRow(QtWidgets.QLabel("Polygon Interior"), ColorWidget(self._colors["poly_int"], self.m_update_poly_int))
         self._layout.addRow(QtWidgets.QLabel("Points and Path"), ColorWidget(self._colors["path"], self.m_update_path))
+        self._layout.addRow(QtWidgets.QLabel("Agents"), ColorWidget(self._colors["agents"], self.m_update_agents))
 
         self.update_colors()
 
@@ -58,6 +60,7 @@ class SelectColorsWidget(QtWidgets.QWidget):
                           poly_border=self._colors["poly_border"],
                           poly_int=self._colors["poly_int"],
                           path=self._colors["path"],
+                          agents=self._colors["agents"],
                           point_size=self._sizes["point_size"],
                           path_size=self._sizes["path_size"],
                           dark_grid_size=self._sizes["dark_grid_size"],
@@ -85,4 +88,8 @@ class SelectColorsWidget(QtWidgets.QWidget):
 
     def m_update_path(self, color):
         self._colors["path"] = color
+        self.update_colors()
+
+    def m_update_agents(self, color):
+        self._colors["agents"] = color
         self.update_colors()

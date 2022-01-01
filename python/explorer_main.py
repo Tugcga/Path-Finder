@@ -1,6 +1,6 @@
 from PySide6 import QtWidgets, QtGui
-from explorer_app.select_colors_widget import SelectColorsWidget
-from explorer_app.navmesh_explorer_main_widget import NavmeshExplorerMain
+from explorer_app.select_colors_widget import SelectColorsWidget  # type: ignore
+from explorer_app.navmesh_explorer_main_widget import NavmeshExplorerMain  # type: ignore
 
 
 class NavmeshExplorerApp(QtWidgets.QMainWindow):
@@ -60,6 +60,9 @@ class NavmeshExplorerApp(QtWidgets.QMainWindow):
             pos = self._colors_doc.pos()
             self._colors_doc.show()
             self._colors_doc.move(pos)
+
+    def closeEvent(self, event):
+        self._main.terminate_threads()
 
 
 if __name__ == "__main__":
