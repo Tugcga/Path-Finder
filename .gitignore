@@ -14,6 +14,9 @@ python/map_benchmark.py
 python/navmeshdata.txt
 python/map_01.txt
 python/map_01_points.txt
+python/pynavmesh.egg-info
+python/level_two_zones.txt
+python/rvo_example.py
 wasm/build command.txt
 wasm/map_02.txt
 wasm/map_02_reduce.txt
@@ -22,6 +25,5 @@ wasm/tests_files
 pyproject.toml
 setup.cfg
 dist
-python/pynavmesh.egg-info
 LICENSE
 PY_README.md

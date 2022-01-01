@@ -1,26 +1,12 @@
 from typing import List, Tuple, Optional
-from navmesh.navmesh_graph import NavmeshGraph
-from navmesh.navmesh_node import NavmeshNode
-from navmesh.navmesh_bvh import NavmeshBVH
+import math
+from pathfinder.navmesh.navmesh_graph import NavmeshGraph
+from pathfinder.navmesh.navmesh_node import NavmeshNode
+from pathfinder.navmesh.navmesh_bvh import NavmeshBVH
 
 
 class Navmesh:
-    '''Main class for pathfinding process
-    '''
     def __init__(self, vertices: List[Tuple[float, float, float]], polygons: List[List[int]]):
-        '''Init pathfinder object by setting vertices and polygons of the navmesh
-
-        Input:
-            vertices - array of the form [(x1, y1, z1), (x2, y2, z1), ...]
-            polygons - array of the form [p1, p2, ...], where each pi is array [i1, i2, ..., in], ij - indexes of vertices
-                       the sequence [i1, i2, ..., in] should be in clockwise direction from the main point of view
-                       this is importatnt for search path algorithm
-                       if polygon orientation will be conter-clockwise, then the path will be incorrect
-
-        Example of the simple square grid with two 4-sided polygons
-            vertices = [(1.0, 0.0, 1.0), (-1.0, 0.0, 1.0), (-1.0, 0.0, -1.0), (1.0, 0.0, -1.0), (0.0, 0.0, 1.0), (0.0, 0.0, -1.0)]
-            polygons = [[0, 3, 5, 4], [4, 5, 2, 1]]
-        '''
         self._vertices: List[Tuple[float, float, float]] = vertices
         self._polygons: List[List[int]] = polygons
         self._graphs: List[NavmeshGraph] = []  # graph, where vertices are centers of polygons, edges are pairs of two incident (by edge only!) polygons
@@ -36,7 +22,7 @@ class Navmesh:
             # create the node
             self._nodes.append(NavmeshNode(vertices, p_index, polygons[p_index]))
 
-        # next we can use vertex_map for define neneighbors of each polygon
+        # next we can use vertex_map for define neighbors of each polygon
         for node in self._nodes:
             node_vertices: List[int] = node.get_vertex_indexes()
             # for each vertex of the node (polygon) we should get indexes of incident polygons and take intersections of each sequential pair
@@ -62,7 +48,7 @@ class Navmesh:
         for node in self._nodes:
             g: int = node.get_group()
             if g  == -1:
-                # if we get hte first polygon with undefined group
+                # if we get the first polygon with undefined group
                 new_group: List[int] = []  # start new group array
                 new_index: int = len(self._groups)  # generate the next group index
                 node.set_group(new_index, new_group, self._nodes)  # start recursive provess
@@ -91,18 +77,29 @@ class Navmesh:
         # build bvh
         self._bvh: NavmeshBVH = NavmeshBVH(self._nodes)
 
-    def search_path(self, start: Tuple[float, float, float], finish: Tuple[float, float, float]) -> List[Tuple[float, float, float]]:
-        '''Search the path between start and finish points in the navigation mesh
-
-        Input:
-            start - 3-tuple (x, y, z) of the start point
-            finish - 3-tuple (x, y, z) of the finish point
-
-        Return:
-            array in the form [(x1, y1, z1), (x2, y2, z2), ...] with coordinates of points, which form the output path
-            start and finish points include as the first and the last entries in the array
-            if there is no path between input points, then return empty array []
+    def get_groups_count(self) -> int:
+        '''Return the number of polygon groups (connected components) in the navigation mesh
         '''
+        return len(self._groups)
+
+    def get_group_polygons(self, group_index: int) -> List[List[int]]:
+        '''return polygons for the given group in the form [[i11, i12, ..., i1n], [i21, i22, ...], ...]
+        '''
+        if group_index < len(self._groups):
+            group: List[int] = self._groups[group_index]
+            polygons: List[List[int]] = []
+            for p_index in group:
+                polygons.append(self._nodes[p_index].get_polygon())
+            return polygons
+        else:
+            return []
+
+    def sample_polygon(self, position: Tuple[float, float, float]) -> Optional[NavmeshNode]:
+        '''return node, close to the given point, or None, if it outside of the navmesh
+        '''
+        return self._bvh.sample(position)
+
+    def search_path(self, start: Tuple[float, float, float], finish: Tuple[float, float, float]) -> List[Tuple[float, float, float]]:
         # find nodes indexes for start and end point
         start_node: Optional[NavmeshNode] = self._bvh.sample(start)
         finish_node: Optional[NavmeshNode] = self._bvh.sample(finish)
@@ -147,7 +144,8 @@ class Navmesh:
                             portal_right = right
                             right_index = i
                         else:
-                            finall_path.append(portal_left)
+                            if not self._v_equal(portal_left, finall_path[-1]):
+                                finall_path.append(portal_left)
                             # make current left the new apex
                             portal_apex = portal_left
                             apex_index = left_index
@@ -224,3 +222,27 @@ class Navmesh:
             if a in array_b:
                 to_return.append(a)
         return to_return
+
+if __name__ == "__main__":
+    radius = 0.4
+    # chain = [(3.2000002861, 3.2000002861), (3.2000002861, -3.09999990463), (-3.09999990463, -3.09999990463), (-3.09999990463, 3.2000002861)]
+    chain = [(1.40000009537, -1.59999990463), (1.7000002861, 1.40000009537), (-1.29999995232, 1.7000002861), (-1.59999990463, -1.29999995232)]
+
+    shifted_chain = []
+    for i in range(len(chain)):
+        pre_point = chain[i - 1 if i - 1 >= 0 else -1]
+        point = chain[i]
+        post_point = chain[i + 1 if i + 1 < len(chain) else 0]
+        a1 = (point[0] - pre_point[0], point[1] - pre_point[1])
+        a2 = (point[0] - post_point[0], point[1] - post_point[1])
+        l1 = math.sqrt(a1[0]**2 + a1[1]**2)
+        l2 = math.sqrt(a2[0]**2 + a2[1]**2)
+        a1 = (a1[0] / l1, a1[1] / l1)
+        a2 = (a2[0] / l2, a2[1] / l2)
+        n1 = (-a1[1], a1[0])
+        n2 = (a2[1], -a2[0])
+        # calculate new position as intersection point between two lines (original edges, shifted along normals)
+        t = (a2[0]*(post_point[1] + n2[1]*radius - pre_point[1] - n1[1]*radius) + a2[1]*(pre_point[0] + n1[0]*radius - post_point[0] - n2[0]*radius)) / (a1[1] * a2[0] - a1[0] * a2[1])
+        new_point = (pre_point[0] + n1[0]*radius + a1[0] * t, pre_point[1] + n1[1]*radius + a1[1] * t)
+        shifted_chain.append(new_point)
+    print(shifted_chain)

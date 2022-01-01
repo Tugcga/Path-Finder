@@ -38,6 +38,9 @@ class NavmeshNode:
         else:
             print("[Something wrong] Try to add neighbor node " + str(node_index) + " to the " + str(self._index) + ", but this node already exists")
 
+    def get_polygon(self) -> List[int]:
+        return self._polygon
+
     def get_portal(self, node_index: int) -> Tuple[Tuple[float, float, float], Tuple[float, float, float]]:
         '''return pair of 3-tuples with coordinates of the edge, which separate current node from node with index node_index
         '''
