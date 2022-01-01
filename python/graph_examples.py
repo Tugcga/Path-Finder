@@ -1,4 +1,4 @@
-from navmesh.navmesh_graph import NavmeshGraph
+from pathfinder.navmesh.navmesh_graph import NavmeshGraph
 
 
 def simple_example():

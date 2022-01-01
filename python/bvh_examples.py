@@ -1,5 +1,5 @@
-from navmesh.navmesh_bvh import NavmeshBVH
-from navmesh.navmesh_node import NavmeshNode
+from pathfinder.navmesh.navmesh_bvh import NavmeshBVH
+from pathfinder.navmesh.navmesh_node import NavmeshNode
 import random
 import time
 

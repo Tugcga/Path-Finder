@@ -1,8 +1,8 @@
-from navmesh import Navmesh
+from pathfinder import PathFinder
 from typing import List, Tuple
 
 
-def generate_grid(n: int, m: int, grid_size: float = 1.0, ignore_cell=-1) -> Navmesh:
+def generate_grid(n: int, m: int, grid_size: float = 1.0, ignore_cell=-1) -> PathFinder:
     '''generate navmesh for the grid n x m
 
     optional, may delete one grid cell
@@ -18,10 +18,10 @@ def generate_grid(n: int, m: int, grid_size: float = 1.0, ignore_cell=-1) -> Nav
             if polygon_index != ignore_cell:
                 polygons.append([m * i + j, m * i + j + 1, m * (i + 1) + j + 1, m * (i + 1) + j])
             polygon_index += 1
-    navmesh: Navmesh = Navmesh(vertices, polygons)
+    navmesh: PathFinder = PathFinder(vertices, polygons)
     return navmesh
 
-def generate_from_file(file_path: str) -> Navmesh:
+def generate_from_file(file_path: str) -> PathFinder:
     '''open text file from the file_path and generate navmesh by using vertices and polygons from this file
 
     the sintaxis of the file is the following: it containt two strings, the first string contains vertex coordinates, devided by " " (space)
@@ -38,7 +38,7 @@ def generate_from_file(file_path: str) -> Navmesh:
         polygon_indexes = [eval(v) for v in parts[1].split(" ")]
         # split by 3 triangles
         polygons = [polygon_indexes[3*i:3*(i+1)] for i in range(len(polygon_indexes) // 3)]
-        navmesh = Navmesh(vertices, polygons)
+        navmesh = PathFinder(vertices, polygons)
     return navmesh
 
 
@@ -46,17 +46,17 @@ def example_grid():
     navmesh = generate_grid(3, 3, ignore_cell=1)
     start = (0.0, 0.0, 0.5)
     finish = (1.5, 0.0, 2.0)
-    path = navmesh.serach_path(start, finish)
+    path = navmesh.search_path(start, finish)
     print(path)
 
 
 def example_from_file():
-    navmesh = generate_from_file("level.txt")
-    start = (1.0, 0.0, -2.0)
-    finish = (1.0, 0.0, 2.0)
-    path = navmesh.serach_path(start, finish)
+    navmesh = generate_from_file("level_triangles.txt")
+    start = (-2.0, 0.0, -2.0)
+    finish = (2.0, 0.0, 2.0)
+    path = navmesh.search_path(start, finish)
     print(path)
 
 
 if __name__ == "__main__":
-    example_grid()
+    example_from_file()

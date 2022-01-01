@@ -27,3 +27,4 @@ setup.cfg
 dist
 LICENSE
 PY_README.md
+pynavmesh.egg-info
