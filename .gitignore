@@ -16,7 +16,6 @@ python/map_01.txt
 python/map_01_points.txt
 python/pynavmesh.egg-info
 python/level_two_zones.txt
-python/rvo_example.py
 wasm/build command.txt
 wasm/map_02.txt
 wasm/map_02_reduce.txt

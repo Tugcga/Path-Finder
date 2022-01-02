@@ -13,6 +13,7 @@ class NavmeshGraph:
             vertices - array of integer names of the vertices
             edges - array of 2-tuple [(a, b), ...], where a and b are names of vertices, incident to the same edge
         '''
+        self._is_empty = len(vertex_positions) == 0
         self._positions: List[Tuple[float, float, float]] = vertex_positions
         self._vertex_names: List[int] = vertices  # names are not from 0 to n-1
         self._vertex_count: int = len(self._vertex_names)
@@ -71,6 +72,8 @@ class NavmeshGraph:
             array of vertex names, which form the shortest path between start end end vertices
             if there are no path between input vertices, then return empty array []
         '''
+        if self._is_empty:
+            return []
         # clear data structures
         start: int = self._index_map[start_vertex]
         end: int = self._index_map[end_vertex]

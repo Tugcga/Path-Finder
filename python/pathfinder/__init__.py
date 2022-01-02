@@ -348,7 +348,7 @@ class PathFinder(object):
     def get_all_agents_positions(self) -> List[Tuple[float, float]]:
         '''return positions, ordered by groups (not by ids)
 
-        the otuptu array contains positions of agents in the first group, then in the second and so on
+        the output array contains positions of agents in the first group, then in the second and so on
         '''
         # all paths and activities returned ordered by indexes, so, we should return positions also ordered by indexes
         to_return: List[Tuple[float, float]] = []
