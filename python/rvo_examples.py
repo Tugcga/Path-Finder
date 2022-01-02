@@ -56,11 +56,8 @@ def example_pathfinder():
     # add agent to the pathfinder at (2.0, 2.0) position, 0.5 radius and 2.0 speed
     pf.add_agent((2.0, 0.0, 2.0), 0.5, 2.0)  # y-position will be ignored in simulation, but will be used in intermediate path findings
 
-    # find the path from current position to the target (-2.0, -2.0)
-    path = pf.search_path((2.0, 0.0, 2.0), (-2.0, 0.0, -2.0))
-    # in this case this path is streight line
-    # set path to the agent
-    pf.set_agent_path(0, path)  # 0 is an agent id
+    # set destination point
+    pf.set_agent_destination(0, (-2.0, 0.0, -2.0))
 
     # call update several times
     steps_count: int = 5
@@ -71,4 +68,4 @@ def example_pathfinder():
     print(pf.get_agent_position(0))
 
 if __name__ == "__main__":
-    example_simple_rvo()
+    example_pathfinder()
