@@ -122,9 +122,7 @@ class NavmeshExplorerMain(QtWidgets.QWidget):
             if self._left_point is not None and self._right_point is not None:
                 # next we should calculate path for each agent and set it
                 for a_id in self._path_finder.get_agents_id():
-                    p = self._path_finder.get_agent_position(a_id)
-                    a_path = self._path_finder.search_path((p[0], 0.0, p[1]), (self._right_point[0], 0.0, self._right_point[1]))
-                    self._path_finder.set_agent_path(a_id, a_path)  # set raw 3-float tuples path
+                    self._path_finder.set_agent_destination(a_id, (self._right_point[0], 0.0, self._right_point[1]))
 
             if is_left or is_right:
                 self.repaint()

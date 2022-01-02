@@ -24,7 +24,7 @@ def example_simple_rvo():
 
     # start simulation
     start_time: float = time.time()
-    simulation_steps: int = 100
+    simulation_steps: int = 1
     for step in range(simulation_steps):
         # compute prefered velocity (to the target) for each agent
         for a in range(agents_count):
@@ -45,7 +45,7 @@ def example_simple_rvo():
     finish_time: float = time.time()
     print("total time for simulation", agents_count, "agents and", simulation_steps, "steps:", finish_time - start_time, "seconds")
     # for python version: 100 agents and 1000 steps: 10.4 seconds
-    # for binary version: 100 agents and 1000 steps: 0.32 seconds, 1000 / 1000: 3.01 seconds
+    # for binary version: 100 agents and 1000 steps: 0.32 seconds, 1000 / 1000: 3.01 seconds, 100 000 / 1: 0.51 sec
 
 def example_pathfinder():
     # create navmesh as simple square
@@ -71,4 +71,4 @@ def example_pathfinder():
     print(pf.get_agent_position(0))
 
 if __name__ == "__main__":
-    example_pathfinder()
+    example_simple_rvo()

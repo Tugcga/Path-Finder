@@ -168,6 +168,7 @@ class PathFinder(object):
         self._agents_speed: List[float] = []
         self._agents_activity: List[bool] = []  # set True for agent if it should move to target
         self._agents_targets: List[List[Tuple[float, float]]] = []  # for each agent we set array of 2d-positions
+        self._agents_path: List[List[Tuple[float, float, float]]] = []  # store here apth for each agent
         self._agents_target_index: List[int] = []  # store here index to the actual target for each agent
         self._agents_target_direction: List[Tuple[float, float]] = []  # store here directions to the targets, calculated when we change it
         self._agents_height: List[List[float]] = []  # store here y-height of the path points
@@ -206,6 +207,7 @@ class PathFinder(object):
             self._agents_speed.append(speed)
             self._agents_activity.append(False)
             self._agents_targets.append([])
+            self._agents_path.append([])  # add for the given agent empty path
             self._agents_target_index.append(0)
             self._agents_target_direction.append((0.0, 0.0))
             self._agents_height.append([])
@@ -230,10 +232,18 @@ class PathFinder(object):
         else:
             return (v[0] / l, v[1] / l)
 
-    def set_agent_path(self, agent_id: int, path: List[Tuple[float, float, float]]):
+    def set_agent_destination(self, agent_id, position: Tuple[float, float, float]):
+        '''Calculate the path from current agent position to the destination position
+        '''
+        p = self.get_agent_position(agent_id)
+        a_path = self.search_path((p[0], 0.0, p[1]), position)
+        self._set_agent_path(agent_id, a_path)  # set raw 3-float tuples path
+
+    def _set_agent_path(self, agent_id: int, path: List[Tuple[float, float, float]]):
         agent_index = self._get_agent_inner_index(agent_id)
         if agent_index  > -1:
             if len(path) > 1:
+                self._agents_path[agent_index] = path
                 self._agents_targets[agent_index] = [(v[0], v[2]) for v in path]
                 self._agents_target_index[agent_index] = 1  # we start with the second value, because the first value is start point
                 # get current agent position
@@ -291,6 +301,7 @@ class PathFinder(object):
                 self._agents_target_direction.pop(agent_inner_index)
                 self._agents_target_index.pop(agent_inner_index)
                 self._agents_targets.pop(agent_inner_index)
+                self._agents_path.pop(agent_inner_index)
                 self._agents_activity.pop(agent_inner_index)
                 self._agents_speed.pop(agent_inner_index)
                 self._agents_group_id[self._agents_group[agent_inner_index]].pop(agent_in_group_index)
@@ -331,7 +342,7 @@ class PathFinder(object):
                         target_position = self._agents_targets[agent_inner_index][-1]
                         # set the height of the start point the height of the start of the current segment
                         a_path = self.search_path((current_position[0], self._agents_height[agent_inner_index][self._agents_target_index[agent_inner_index]], current_position[1]), (target_position[0], self._agents_height[agent_inner_index][-1], target_position[1]))
-                        self.set_agent_path(agent_id, a_path)  # set raw 3-float tuples path
+                        self._set_agent_path(agent_id, a_path)  # set raw 3-float tuples path
                     to_vector = (target[0] - current_position[0], target[1] - current_position[1])
                     a_velocity = get_unit_vector(to_vector)
                     # set prefered velocity
@@ -358,6 +369,10 @@ class PathFinder(object):
             agent_in_group_index = self._get_agent_group_index(agent_id, self._agents_group_id[group_index])
             to_return.append(rvo.get_agent_position(sim, agent_in_group_index))
         return to_return
+
+    def get_agent_path(self, agent_id: int) -> List[Tuple[float, float, float]]:
+        agent_index = self._get_agent_inner_index(agent_id)
+        return self._agents_path[agent_index]
 
     def get_all_agents_paths(self) -> List[List[Tuple[float, float]]]:
         return self._agents_targets

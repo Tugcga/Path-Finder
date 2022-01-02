@@ -122,10 +122,10 @@ pathfinder.delete_agent(agent_id: int)
 Remove agent from the simulation. Actual remove process start before ```update()``` method call.
 
 ```
-pathfinder.set_agent_path(agent_id: int, path: List[Tuple[float, float, float]])
+pathfinder.set_agent_destination(agent_id, position: Tuple[float, float, float])
 ```
 
-Define path for the agent. In most cases this path obtained from ```search_path``` method of the pathfinder object.
+Set the target position for the agent. The pathfinder object find the shortest path from the current agent position to the destination point and start move the agent along this path.
 
 ```
 pathfinder.get_all_agents_positions()
@@ -174,6 +174,13 @@ pathfinder.get_agent_position(agent_id: int)
 ```
 
 Return position of an agent with a given id.
+
+
+```
+pathfinder.get_agent_path(agent_id: int)
+```
+
+Return move path for the given agent.
 
 ```
 pathfinder.update_time()
