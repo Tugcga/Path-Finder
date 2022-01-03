@@ -310,43 +310,61 @@ class PathFinder(object):
             self._agents_to_delete = []
 
         for agent_inner_index, agent_id in enumerate(self._agents_id):
+            should_deactivate: bool = False
             group_index = self._agents_group[agent_inner_index]
             sim = self._simulators[group_index]
             agent_index = self._get_agent_group_index(agent_id, self._agents_group_id[group_index])  # index of the agent in the simulator
             if self._agents_activity[agent_inner_index]:
                 current_position = rvo.get_agent_position(sim, agent_index)
                 # calculate velocity vector
-                target = self._agents_targets[agent_inner_index][self._agents_target_index[agent_inner_index]]  # get path for the agent and select proper position in the path
-                local_dir = self._to_direction(current_position, target)
-                start_dir = self._agents_target_direction[agent_inner_index]
-                d = local_dir[0] * start_dir[0] + local_dir[1] * start_dir[1]
-                if d < 0.0:
-                    # the agent go over the target
-                    agent_target_index = self._agents_target_index[agent_inner_index]
-                    agent_targets_count = len(self._agents_targets[agent_inner_index])
-                    if agent_target_index  < agent_targets_count - 1:
-                        # there are other targets in the path
-                        # try to switch to the enxt target point
-                        next_target: Tuple[float, float] = self._agents_targets[agent_inner_index][agent_target_index + 1]
-                        is_next_visible: bool = rvo.query_visibility(sim, current_position, next_target)
-                        if is_next_visible:
-                            # the next target point is visible, switch to it
-                            self._agents_target_index[agent_inner_index] += 1
-                            target = self._agents_targets[agent_inner_index][agent_target_index + 1]
-                    else:
-                        # this was the last target, stop to move
-                        self._agents_activity[agent_inner_index] = False
-                if self._agents_activity[agent_inner_index]:
-                    # try to update the path
-                    if update_path and len(self._agents_targets[agent_inner_index]) > 0:
-                        target_position = self._agents_targets[agent_inner_index][-1]
-                        # set the height of the start point the height of the start of the current segment
-                        a_path = self.search_path((current_position[0], self._agents_height[agent_inner_index][self._agents_target_index[agent_inner_index]], current_position[1]), (target_position[0], self._agents_height[agent_inner_index][-1], target_position[1]))
-                        self._set_agent_path(agent_id, a_path)  # set raw 3-float tuples path
-                    to_vector = (target[0] - current_position[0], target[1] - current_position[1])
+                agent_target_index = self._agents_target_index[agent_inner_index]
+                agent_targets_count = len(self._agents_targets[agent_inner_index])
+                target = self._agents_targets[agent_inner_index][agent_target_index]  # get path for the agent and select proper position in the path
+                to_vector = (target[0] - current_position[0], target[1] - current_position[1])
+                distance_to_target = math.sqrt(to_vector[0]**2 + to_vector[1]**2)
+                a_speed = self._agents_speed[agent_inner_index]
+                # check is target is a finish point and agent close to it
+                if agent_target_index == agent_targets_count - 1 and distance_to_target < delta_time * a_speed:
+                    # set last velocity for the agent and deactivate it
                     a_velocity = get_unit_vector(to_vector)
-                    # set prefered velocity
-                    rvo.set_agent_pref_velocity(sim, agent_index, (a_velocity[0] * self._agents_speed[agent_inner_index], a_velocity[1] * self._agents_speed[agent_inner_index]))
+                    last_speed = distance_to_target / delta_time
+                    rvo.set_agent_pref_velocity(sim, agent_index, (a_velocity[0] * last_speed, a_velocity[1] * last_speed))
+                    should_deactivate = True
+                else:
+                    local_dir = self._to_direction(current_position, target)
+                    start_dir = self._agents_target_direction[agent_inner_index]
+                    d = local_dir[0] * start_dir[0] + local_dir[1] * start_dir[1]
+                    if d < 0.0:
+                        # the agent go over the target
+                        if agent_target_index  < agent_targets_count - 1:
+                            # there are other targets in the path
+                            # try to switch to the enxt target point
+                            next_target: Tuple[float, float] = self._agents_targets[agent_inner_index][agent_target_index + 1]
+                            is_next_visible: bool = rvo.query_visibility(sim, current_position, next_target)
+                            if is_next_visible:
+                                # the next target point is visible, switch to it
+                                self._agents_target_index[agent_inner_index] += 1
+                                target = self._agents_targets[agent_inner_index][agent_target_index + 1]
+                if self._agents_activity[agent_inner_index]:
+                    if should_deactivate:
+                        # stop calculating velocity for the agent
+                        # in all other updates it will be set to zero
+                        # we can comment this line, and then agents will never stops and will try to got to destination every time
+                        # even if other agents block the path
+                        self._agents_activity[agent_inner_index] = False
+                        # also clear the path
+                        self._agents_path[agent_inner_index] = []
+                    else:
+                        # try to update the path
+                        if update_path and len(self._agents_targets[agent_inner_index]) > 0:
+                            target_position = self._agents_targets[agent_inner_index][-1]
+                            # set the height of the start point the height of the start of the current segment
+                            a_path = self.search_path((current_position[0], self._agents_height[agent_inner_index][self._agents_target_index[agent_inner_index]], current_position[1]), (target_position[0], self._agents_height[agent_inner_index][-1], target_position[1]))
+                            self._set_agent_path(agent_id, a_path)  # set raw 3-float tuples path
+                        to_vector = (target[0] - current_position[0], target[1] - current_position[1])
+                        a_velocity = get_unit_vector(to_vector)
+                        # set prefered velocity
+                        rvo.set_agent_pref_velocity(sim, agent_index, (a_velocity[0] * a_speed, a_velocity[1] * a_speed))
                 else:
                     rvo.set_agent_pref_velocity(sim, agent_index, (0.0, 0.0))
             else:
@@ -374,8 +392,8 @@ class PathFinder(object):
         agent_index = self._get_agent_inner_index(agent_id)
         return self._agents_path[agent_index]
 
-    def get_all_agents_paths(self) -> List[List[Tuple[float, float]]]:
-        return self._agents_targets
+    def get_all_agents_paths(self) -> List[List[Tuple[float, float, float]]]:
+        return self._agents_path
 
     def get_all_agents_activities(self) -> List[bool]:
         return self._agents_activity

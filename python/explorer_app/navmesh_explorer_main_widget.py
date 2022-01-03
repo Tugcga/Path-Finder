@@ -136,11 +136,10 @@ class NavmeshExplorerMain(QtWidgets.QWidget):
 
     def update_agents(self, positions, paths, activity):
         '''positions is array of 2-tuples
-        paths is array of arrays of 2-tuples
         '''
         self._agent_positions = positions
-        self._agent_paths = paths
-        self._agent_activity = activity
+        self._agent_paths = [[(p[0], p[2]) for p in path] for path in paths]
+        self._agent_activities = activity
         self.update()
 
     def draw_grid(self, painter, canvas_width, canvas_height, grid_size):
@@ -204,7 +203,7 @@ class NavmeshExplorerMain(QtWidgets.QWidget):
             painter.setPen(QtGui.QPen(self._path_color, self._path_size, QtGui.Qt.SolidLine, QtGui.Qt.RoundCap, QtGui.Qt.RoundJoin))
             for a in range(len(self._agent_paths)):
                 path = self._agent_paths[a]
-                if self._agent_activity[a] and len(path) > 1:
+                if self._agent_activities[a] and len(path) > 1:
                     canvas_path = []
                     for p in path:
                         c_p = self._tfm.transform(p)
