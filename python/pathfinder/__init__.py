@@ -33,6 +33,7 @@ class PathFinder(object):
                  max_speed: float = 10.0,
                  agent_radius: float = 0.2,
                  update_path_find: float = 1.0,
+                 continuous_moving: bool = False,
                  move_agents: bool = True):
         '''Init pathfinder object by setting vertices and polygons of the navmesh
         If vertices or polygons are not defined, then navigation mesh is not created. In this case you can only simulate RVO on infinite plane without obstacles
@@ -45,6 +46,7 @@ class PathFinder(object):
                        if polygon orientation will be conter-clockwise, then the path will be incorrect
             agent_radius - default radius of an agent. We use this value for constructing rvo obstacles. Real agents can be created with other radius value
             update_path_find - how often refind shortest path in navmesh for active agents (mesured in seconds)
+            continuous_moving - if True then agents always move to destination point
             move_agents - if True then move agents in RVO algorithm, if False then only calulate velocities
 
         Example of the simple square grid with two 4-sided polygons
@@ -113,6 +115,7 @@ class PathFinder(object):
         self._max_speed: float = max_speed
         self._agent_radius: float = agent_radius
         self._update_path_find: float = update_path_find
+        self._continuous_moving: bool = continuous_moving
         self._move_agents = move_agents
         self._last_path_find_update = time.time()
         # create separate simulator for each group
@@ -242,7 +245,9 @@ class PathFinder(object):
     def _set_agent_path(self, agent_id: int, path: List[Tuple[float, float, float]]):
         agent_index = self._get_agent_inner_index(agent_id)
         if agent_index  > -1:
-            if len(path) > 1:
+            if len(path) > 0:
+                if len(path) == 1:
+                    path.append(path[0])
                 self._agents_path[agent_index] = path
                 self._agents_targets[agent_index] = [(v[0], v[2]) for v in path]
                 self._agents_target_index[agent_index] = 1  # we start with the second value, because the first value is start point
@@ -346,11 +351,9 @@ class PathFinder(object):
                                 self._agents_target_index[agent_inner_index] += 1
                                 target = self._agents_targets[agent_inner_index][agent_target_index + 1]
                 if self._agents_activity[agent_inner_index]:
-                    if should_deactivate:
+                    if not self._continuous_moving and should_deactivate:
                         # stop calculating velocity for the agent
                         # in all other updates it will be set to zero
-                        # we can comment this line, and then agents will never stops and will try to got to destination every time
-                        # even if other agents block the path
                         self._agents_activity[agent_inner_index] = False
                         # also clear the path
                         self._agents_path[agent_inner_index] = []
@@ -361,10 +364,11 @@ class PathFinder(object):
                             # set the height of the start point the height of the start of the current segment
                             a_path = self.search_path((current_position[0], self._agents_height[agent_inner_index][self._agents_target_index[agent_inner_index]], current_position[1]), (target_position[0], self._agents_height[agent_inner_index][-1], target_position[1]))
                             self._set_agent_path(agent_id, a_path)  # set raw 3-float tuples path
-                        to_vector = (target[0] - current_position[0], target[1] - current_position[1])
-                        a_velocity = get_unit_vector(to_vector)
-                        # set prefered velocity
-                        rvo.set_agent_pref_velocity(sim, agent_index, (a_velocity[0] * a_speed, a_velocity[1] * a_speed))
+                        if not should_deactivate:
+                            to_vector = (target[0] - current_position[0], target[1] - current_position[1])
+                            a_velocity = get_unit_vector(to_vector)
+                            # set prefered velocity
+                            rvo.set_agent_pref_velocity(sim, agent_index, (a_velocity[0] * a_speed, a_velocity[1] * a_speed))
                 else:
                     rvo.set_agent_pref_velocity(sim, agent_index, (0.0, 0.0))
             else:

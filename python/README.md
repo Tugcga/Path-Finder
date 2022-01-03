@@ -38,6 +38,7 @@ For using agents collision avoidance it needs more detail setup. When creating `
 * ```max_speed``` - maximum agent speed
 * ```agent_radius``` - the default agent radius. This value used for building collisions (in the navigation mesh boundary) for agents
 * ```update_path_find``` - how often (the interval in seconds) the system recalculate path for agents
+* ```continuous_moving``` - should agents move after they achieve the target point or not
 * ```move_agents``` - if ```True``` then the system move agent by internal algorithm, in other case it only calculate velocities
 
 How the agents collision avoidance works:
@@ -59,13 +60,11 @@ To delete the agent from simulation
 pathfinder.delete_agent(agent_id)
 ```
 
-To set the agent path
+To set the agent destination point
 
 ```
-pathfinder.set_agent_path(agent_id, path)
+pathfinder.set_agent_destination(agent_id, position)
 ```
-
-where ```path``` is an array of 3-tuples. The first value of the path array is current position, so the agent will start to move to the second value in this array.
 
 
 ### Examples
@@ -104,10 +103,11 @@ pathfinder = PathFinder(vertices: Optional[List[Tuple[float, float, float]]] = N
 						max_speed: float = 10.0,
 						agent_radius: float = 0.2,
 						update_path_find: float = 1.0,
+						continuous_moving: bool = False,
 						move_agents: bool = True)
 ```
 
-Create a new pathfinder object. ```vertices``` and ```polygons``` used for navigation mesh and obstacles in RVO. Other parameters used for RVO. If ```move_agents``` is ```False``` then each ```update()``` method call does not change agents positions, but only recalculate an optimal velocities.
+Create a new pathfinder object. ```vertices``` and ```polygons``` used for navigation mesh and obstacles in RVO. Other parameters used for RVO. If ```continuous_moving``` is ```True``` then all agents always try to go to the destination points. Even the are already achieve it. If ```move_agents``` is ```False``` then each ```update()``` method call does not change agents positions, but only recalculate an optimal velocities.
 
 ```
 pathfinder.add_agent(position: Tuple[float, float, float], radius: float, speed: float)
@@ -131,7 +131,7 @@ Set the target position for the agent. The pathfinder object find the shortest p
 pathfinder.get_all_agents_positions()
 ```
 
-Return an array with positions of all agents in the simulation.
+Return an array with positions of all agents in the simulation. Positions are 2d and contains only X and Z coordinates.
 
 ```
 pathfinder.get_all_agents_paths()
@@ -143,7 +143,7 @@ Return an array with paths of all agents in the simulation.
 pathfinder.get_all_agents_activities()
 ```
 
-Return an array with ```True/False``` values for all agents in the simulation. ```False``` value means that corresponding agent doe not move, because it comes to the final target of the path, or path is not defined.
+Return an array with ```True/False``` values for all agents in the simulation. ```False``` value means that corresponding agent does not move, because it comes to the final target of the path, or path is not defined.
 
 ```
 pathfinder.get_agents_id()

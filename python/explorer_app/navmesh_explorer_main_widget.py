@@ -32,7 +32,7 @@ class NavmeshExplorerMain(QtWidgets.QWidget):
 
         self._navmesh_vertices, self._navmesh_polygons = read_level_data(file_path)
         # init navmesh by this data
-        self._path_finder = PathFinder(self._navmesh_vertices, self._navmesh_polygons, time_horizon=0.5, time_horizon_obst=0.1, move_agents=True)
+        self._path_finder = PathFinder(self._navmesh_vertices, self._navmesh_polygons, time_horizon=0.5, time_horizon_obst=0.1, continuous_moving=False, move_agents=True)
         if len(self._navmesh_polygons) > 0:
             # find center of the points and it bounding box
             self._navmesh_x_min = float("inf")

@@ -187,7 +187,7 @@ class Navmesh:
             # start or finish node is None, so, no path
             return []
 
-    def _v_equal(self, a: Tuple[float, float, float], b: Tuple[float, float, float], epsilon: float = 0.01) -> bool:
+    def _v_equal(self, a: Tuple[float, float, float], b: Tuple[float, float, float], epsilon: float = 0.0001) -> bool:
         '''a, b are points
 
         return True, if distance from a to b less, then epsilon
