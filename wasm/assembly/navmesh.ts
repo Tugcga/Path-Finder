@@ -1,70 +1,38 @@
 import { NavmeshNode } from "./navmesh_node";
-import { INavmeshBVH, ITrianglesBVH } from "./navmesh_bvh";
-import { INavmeshGraph } from "./navmesh_graph";
-
-//namespace console {
-     //declare function log(str: string): void;
-//}
-
-export const Float32Array_ID = idof<Float32Array>();
-export const Int32Array_ID = idof<Int32Array>();
-export const StaticInt32Array_ID = idof<StaticArray<i32>>();
-export const StaticFloat32Array_ID = idof<StaticArray<f32>>();
+import { NavmeshBVH, TrianglesBVH } from "./navmesh_bvh";
+import { Graph } from "./navmesh_graph";
+import { is_edge_new, squared_len, log_message } from "./utilities";
+import { List } from "./list";
 
 export var NAVMESH_INITIAL_BUFFER_SIZE = 128;
 export var BVH_AABB_DELTA: f32 = 0.5;
 
-@inline
-function squared_len(x: f32, y: f32, z: f32): f32 {
-    return x * x + y * y + z * z;
-}
-
-function is_edge_new(edges: Array<i32>, a: i32, b: i32): bool {
-    for (let i = 0, len = edges.length / 2; i < len; i++) {
-        let e0 = unchecked(edges[2 * i + 0]);
-        let e1 = unchecked(edges[2 * i + 1]);
-        if ((e0 == a && e1 == b) || (e0 == b && e1 == a)) {
-            return false;
-        }
-    }
-    return true;
-}
-
-export class NavmeshBVH extends INavmeshBVH {
-
-}
-
-export class TrianglesBVH extends ITrianglesBVH {
-
-}
-
-export class NavmeshGraph extends INavmeshGraph {
-
-}
-
 export class Navmesh {
-    m_vertices: StaticArray<f32>;
-    m_polygons: StaticArray<i32>;
-    m_sizes: StaticArray<i32>;
-    m_nodes_count: i32;
+    private m_vertices: StaticArray<f32>;
+    private m_polygons: StaticArray<i32>;
+    private m_sizes: StaticArray<i32>;
+    private m_nodes_count: i32;
 
-    m_nodes: StaticArray<NavmeshNode>;
-    m_groups: StaticArray<StaticArray<i32>>;
-    m_groups_count: i32;
-    m_graphs: StaticArray<NavmeshGraph>;
+    private m_nodes: StaticArray<NavmeshNode>;
+    private m_groups: StaticArray<StaticArray<i32>>;
+    private m_groups_count: i32;
+    private m_graphs: StaticArray<Graph>;
 
-    m_nodes_bvh: NavmeshBVH;
-    m_triangles_bvh: TrianglesBVH;
+    private m_nodes_bvh: NavmeshBVH;
+    private m_triangles_bvh: TrianglesBVH;
+
+    private m_is_planar: bool;  // if true, then our navmesh is planar
+    private m_planar_y: f32;  // this parameter contains y-value of the navmesh plane
 
     //buffers for path simplify process
-    b_portal_apex: StaticArray<f32>;
-    b_portal_left: StaticArray<f32>;
-    b_portal_right: StaticArray<f32>;
-    b_left: StaticArray<f32>;
-    b_right: StaticArray<f32>;
-    b_raw_path: StaticArray<f32>;
-    b_finall_path: StaticArray<f32>;
-    b_last_path_point: StaticArray<f32>;
+    private b_portal_apex: StaticArray<f32>;
+    private b_portal_left: StaticArray<f32>;
+    private b_portal_right: StaticArray<f32>;
+    private b_left: StaticArray<f32>;
+    private b_right: StaticArray<f32>;
+    private b_raw_path: StaticArray<f32>;
+    private b_finall_path: StaticArray<f32>;
+    private b_last_path_point: StaticArray<f32>;
 
     constructor(vertices: StaticArray<f32>, polygons: StaticArray<i32>, sizes: StaticArray<i32>) {
         this.m_vertices = vertices;
@@ -86,10 +54,23 @@ export class Navmesh {
         //generate nodes
         this.m_nodes = new StaticArray<NavmeshNode>(this.m_nodes_count);
         let vertex_map = new Map<i32, Array<i32>>();  // key - vertex index, value - array of polygon indexes with this corner
+        let y_max = <f32>Number.MIN_VALUE;  // find the minimal and maximal value of the y-coordinate in tha navmesh vertices
+        let y_min = <f32>Number.MAX_VALUE;
         //init vertex map by empty arrays
         for (let i = 0, len = vertices.length / 3; i < len; i++) {
             vertex_map.set(i, []);
+            const y = unchecked(vertices[3*i + 1]);
+            if(y < y_min){ y_min = y; }
+            if(y > y_max){ y_max= y; }
         }
+        if(Mathf.abs(y_max - y_min) < 0.0001){
+            this.m_is_planar = true;
+            this.m_planar_y = y_min;
+        }
+        else{
+            this.m_is_planar = false;
+        }
+
         let shift = 0;
         let triangles_count = 0;
         let nodes_count = this.m_nodes_count;
@@ -171,7 +152,6 @@ export class Navmesh {
                 let new_group = new Array<i32>();
                 let new_index = t_groups.length;
                 //instead of recursive process, reassign groups for nodes by using task queue
-                //node.set_group(new_index, new_group, this.m_nodes);
                 let is_finish: bool = false;
                 unchecked(groups_queue[0] = node.m_index);
                 groups_queue_length++;
@@ -186,8 +166,10 @@ export class Navmesh {
                         //set the group for this node
                         let ni_node = unchecked(this.m_nodes[ni]);
                         let ni_node_neigh = ni_node.m_neighbor;
-                        ni_node.m_group = new_index;
-                        new_group.push(ni);
+                        if(ni_node.m_group == -1){
+                            ni_node.m_group = new_index;
+                            new_group.push(ni);
+                        }
                         //then iterate throw children
                         for(let k = 0, klen = ni_node.m_neighbor_count; k < klen; k++){
                             let knode = unchecked(this.m_nodes[ni_node_neigh[k]]);
@@ -217,7 +199,7 @@ export class Navmesh {
         }
 
         //define one graph for each group
-        this.m_graphs = new StaticArray<NavmeshGraph>(this.m_groups_count);
+        this.m_graphs = new StaticArray<Graph>(this.m_groups_count);
 
         for (let i = 0, len = this.m_groups_count; i < len; i++) {
             let group = unchecked(this.m_groups[i]);
@@ -276,7 +258,7 @@ export class Navmesh {
             }
 
             //create the graph
-            unchecked(this.m_graphs[i] = new NavmeshGraph(graph_verts_positions, graph_verts_s, graph_edges_s));
+            unchecked(this.m_graphs[i] = new Graph(graph_verts_positions, graph_verts_s, graph_edges_s));
         }
 
         //and finally, buld bvh and triangles bvh
@@ -312,6 +294,47 @@ export class Navmesh {
         }
 
         this.m_triangles_bvh = new TrianglesBVH(triangles, BVH_AABB_DELTA);
+    }
+
+    @inline
+    get_is_planar(): bool{
+        return this.m_is_planar;
+    }
+
+    @inline
+    get_planar_y(): f32{
+        return this.m_planar_y;
+    }
+
+    @inline
+    get_groups_count(): i32{
+        return this.m_groups_count;
+    }
+
+    @inline
+    get_group_polygons(group_index: i32): StaticArray<StaticArray<i32>>{
+        if(group_index < this.m_groups_count){
+            let group = this.m_groups[group_index];
+            let to_return = new StaticArray<StaticArray<i32>>(group.length);
+            for(let i = 0, len = group.length; i < len; i++){
+                to_return[i] = this.m_nodes[group[i]].get_polygon();
+            }
+            return to_return;
+        }
+        else{
+            return new StaticArray<StaticArray<i32>>(0);
+        }
+    }
+
+    @inline
+    sample_polygon(position_x: f32, position_y: f32, position_z: f32): NavmeshNode | null{
+        const node_index = this.m_nodes_bvh.sample(position_x, position_y, position_z);
+        if(node_index >= 0){
+            return this.m_nodes[node_index];
+        }
+        else{
+            return null;
+        }
     }
 
     search_path(s_x: f32, s_y: f32, s_z: f32, e_x: f32, e_y: f32, e_z: f32): Float32Array {
@@ -526,11 +549,11 @@ export class Navmesh {
     }
 
     @inline
-    get_polygon_index(x: f32, y: f32, z: f32): i32{
+    private get_polygon_index(x: f32, y: f32, z: f32): i32{
         return this.m_nodes_bvh.sample(x, y, z);
     }
 
-    _get_nodes_group_index(index_01: i32, index_02: i32): i32 {
+    private _get_nodes_group_index(index_01: i32, index_02: i32): i32 {
         let groups = this.m_groups;
         for (let i = 0, len = this.m_groups_count; i < len; i++) {
             let group = unchecked(groups[i]);
@@ -542,7 +565,7 @@ export class Navmesh {
     }
 
     @inline
-    _v_equal(a: StaticArray<f32>, b: StaticArray<f32>, epsilon: f32 = 0.01): bool {
+    private _v_equal(a: StaticArray<f32>, b: StaticArray<f32>, epsilon: f32 = 0.0001): bool {
         return squared_len(
             unchecked(a[0] - b[0]),
             unchecked(a[1] - b[1]),
@@ -551,87 +574,12 @@ export class Navmesh {
     }
 
     @inline
-    _triangle_area_2(a: StaticArray<f32>, b: StaticArray<f32>, c: StaticArray<f32>): f32 {
+    private _triangle_area_2(a: StaticArray<f32>, b: StaticArray<f32>, c: StaticArray<f32>): f32 {
         return (
             unchecked(c[0] - a[0]) * unchecked(b[2] - a[2]) -
             unchecked(b[0] - a[0]) * unchecked(c[2] - a[2])
         );
     }
-}
-
-export function create_navmesh(vertices: Float32Array, polygons: Int32Array, sizes: Int32Array): Navmesh {
-    let st_vertices = new StaticArray<f32>(vertices.length);
-    let st_polygons = new StaticArray<i32>(polygons.length);
-    let st_sizes = new StaticArray<i32>(sizes.length);
-
-    for (let i = 0, len = vertices.length; i < len; i++) {
-        unchecked(st_vertices[i] = vertices[i]);
-    }
-
-    for (let i = 0, len = polygons.length; i < len; i++) {
-        unchecked(st_polygons[i] = polygons[i]);
-    }
-
-    for (let i = 0, len = sizes.length; i < len; i++) {
-        unchecked(st_sizes[i] = sizes[i]);
-    }
-
-    return new Navmesh(st_vertices, st_polygons, st_sizes);
-}
-
-export function create_triangle_bvh(vertices: Float32Array): TrianglesBVH {
-    //convert Float32Array to Static array
-    let len = vertices.length;
-    let verts = new StaticArray<f32>(len);
-    for (let i = 0; i < len; i++) {
-        unchecked(verts[i] = vertices[i]);
-    }
-
-    return new TrianglesBVH(verts, BVH_AABB_DELTA);
-}
-
-export function create_bvh(vertices: Float32Array, polygons: Int32Array, sizes: Int32Array): NavmeshBVH {
-    //convert vertices to StaticArray
-    let verts = new StaticArray<f32>(vertices.length);
-    for (let i = 0, len = vertices.length; i < len; i++) {
-        unchecked(verts[i] = vertices[i]);
-    }
-    //we should convert raw arrays to the list of nodes
-    let shift = 0;
-    let nodes = new StaticArray<NavmeshNode>(sizes.length);
-    for (let i = 0, len = sizes.length; i < len; i++) {
-        //form array of node vertices
-        let polygon = new StaticArray<i32>(unchecked(sizes[i]));
-        for (let j = 0; j < polygon.length; j++) {
-            unchecked(polygon[j] = polygons[shift]);
-            shift++;
-        }
-        //create node
-        unchecked(nodes[i] = new NavmeshNode(verts, i, polygon));
-    }
-
-    return new NavmeshBVH(nodes, BVH_AABB_DELTA);
-}
-
-export function create_navmesh_graph(vertex_positions: Float32Array, vertices: Int32Array, edges: Int32Array): NavmeshGraph {
-    //save positions
-    let m_positions = new StaticArray<f32>(vertex_positions.length);
-    for (let i = 0, len = vertex_positions.length; i < len; i++) {
-        unchecked(m_positions[i] = vertex_positions[i]);
-    }
-
-    //save names
-    let m_vertex_names = new StaticArray<i32>(vertices.length);
-    for (let i = 0, len = vertices.length; i < len; i++) {
-        unchecked(m_vertex_names[i] = vertices[i]);
-    }
-
-    //save edges
-    let m_edges = new StaticArray<i32>(edges.length);
-    for (let i = 0, len = edges.length; i < len; i++) {
-        unchecked(m_edges[i] = edges[i]);
-    }
-    return new NavmeshGraph(m_positions, m_vertex_names, m_edges);
 }
 
 export function set_bvh_delta(delta: f32): void {
@@ -642,10 +590,10 @@ export function get_bvh_delta(): f32 {
     return BVH_AABB_DELTA;
 }
 
-export function set_navmesh_initial_buffer_size(value: i32): void {
+/*export function set_navmesh_initial_buffer_size(value: i32): void {
     NAVMESH_INITIAL_BUFFER_SIZE = value;
 }
 
 export function get_navmesh_initial_buffer_size(): i32 {
     return NAVMESH_INITIAL_BUFFER_SIZE;
-}
+}*/

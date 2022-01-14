@@ -1,3 +1,5 @@
+import { log_message } from "./utilities";
+
 let STATIC_ARRAY_BUFFER_STEP = 8;  // when increase the data values count in static array and overflow it length, then we recreate new bigger array
 
 export class NavmeshNode {
@@ -173,6 +175,16 @@ export class NavmeshNode {
     }
 
     @inline
+    get_polygon(): StaticArray<i32>{
+        return this.m_polygon;
+    }
+
+    @inline
+    get_normal_y(): f32{
+        return this.m_normal[1];
+    }
+
+    @inline
     get_portal(node_index: i32): StaticArray<f32> {
         let portals = this.m_portals;
         if (portals.has(node_index)) {
@@ -266,7 +278,8 @@ export class NavmeshNode {
                 v_y * unchecked(normals[3 * i + 1]) +
                 v_z * unchecked(normals[3 * i + 2])
             );
-            if (d < 0) {
+
+            if (d < -0.00001) {
                 return false;
             }
         }

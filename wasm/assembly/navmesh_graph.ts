@@ -1,34 +1,28 @@
-@inline
-function distance(a_x: f32, a_y: f32, a_z: f32, b_x: f32, b_y: f32, b_z: f32): f32 {
-    let dx = a_x - b_x;
-    let dy = a_y - b_y;
-    let dz = a_z - b_z;
-    return Mathf.sqrt(dx * dx + dy * dy + dz * dz);
-}
+import { distance } from "./utilities";
 
-export class INavmeshGraph {
-    m_positions: StaticArray<f32>;  // store by triples [x1, y1, z1, x2, y2, z2, ...]
-    m_vertex_names: StaticArray<i32>;  // in the same order as positions
-    m_vertex_count: i32;
-    m_edges: StaticArray<i32>;  // store by pairs [s1, e1, s2, e2, ...]
-    m_index_map: Map<i32, i32>;
-    m_incident_map: Map<i32, StaticArray<i32>>; // key - vertex, value - incident vertices (not names, but indices from 0 to n-1)
+export class Graph {
+    private m_positions: StaticArray<f32>;  // store by triples [x1, y1, z1, x2, y2, z2, ...]
+    private m_vertex_names: StaticArray<i32>;  // in the same order as positions
+    private m_vertex_count: i32;
+    private m_edges: StaticArray<i32>;  // store by pairs [s1, e1, s2, e2, ...]
+    private m_index_map: Map<i32, i32>;
+    private m_incident_map: Map<i32, StaticArray<i32>>; // key - vertex, value - incident vertices (not names, but indices from 0 to n-1)
 
     //inner arrays for search algorithm
-    i_vertices_g: StaticArray<f32>;
-    i_vertices_h: StaticArray<f32>;
-    i_vertices_f: StaticArray<f32>;
-    i_vertices_close: StaticArray<bool>;
-    i_vertices_parent: StaticArray<i32>;
+    private i_vertices_g: StaticArray<f32>;
+    private i_vertices_h: StaticArray<f32>;
+    private i_vertices_f: StaticArray<f32>;
+    private i_vertices_close: StaticArray<bool>;
+    private i_vertices_parent: StaticArray<i32>;
 
     //open list as a list for tasks in search algorithm
-    i_open_list: StaticArray<i32>;  // reserve the same size as vertices in the graph
-    i_open_length_length: i32;  // actual size of the task list
+    private i_open_list: StaticArray<i32>;  // reserve the same size as vertices in the graph
+    private i_open_length_length: i32;  // actual size of the task list
 
     //temp values for search process
-    t_min_f: f32;
-    t_min_vertex: i32;
-    t_min_vertex_index: i32;
+    private t_min_f: f32;
+    private t_min_vertex: i32;
+    private t_min_vertex_index: i32;
 
     constructor(vertex_positions: StaticArray<f32>, vertices: StaticArray<i32>, edges: StaticArray<i32>) {
         this.m_positions = vertex_positions;
@@ -89,7 +83,7 @@ export class INavmeshGraph {
         this.i_open_length_length = 0;
     }
 
-    _pre_start(target: i32): void {
+    private _pre_start(target: i32): void {
         for (let i = 0, len = this.m_vertex_count; i < len; i++) {
             unchecked(this.i_vertices_g[i] = 0.0);
             unchecked(this.i_vertices_h[i] = this._get_distance_for_indexes(i, target));
@@ -100,7 +94,7 @@ export class INavmeshGraph {
     }
 
     @inline
-    _get_distance_for_indexes(i: i32, j: i32): f32 {
+    private _get_distance_for_indexes(i: i32, j: i32): f32 {
         let positions = this.m_positions;
         return distance(
             unchecked(positions[3 * i + 0]),
@@ -112,7 +106,7 @@ export class INavmeshGraph {
         );
     }
 
-    _edges_string(): string {
+    private _edges_string(): string {
         let to_return = "";
         let edges = this.m_edges;
         for (let i = 0, len = edges.length / 2; i < len; i++) {
@@ -127,7 +121,7 @@ export class INavmeshGraph {
         return to_return;
     }
 
-    _index_map_string(): string {
+    private _index_map_string(): string {
         let to_return = "{";
         let keys = this.m_index_map.keys();
         let values = this.m_index_map.values();
@@ -143,7 +137,7 @@ export class INavmeshGraph {
         return to_return + "}";
     }
 
-    _positions_string(): string {
+    private _positions_string(): string {
         let to_return = "";
         let positions = this.m_positions;
         for (let i = 0, len = this.m_vertex_count; i < len; i++) {
@@ -159,7 +153,7 @@ export class INavmeshGraph {
         return to_return;
     }
 
-    _incident_to_string(): string {
+    private _incident_to_string(): string {
         let to_return = "{";
         let keys = this.m_incident_map.keys();
         for (let i = 0, len = keys.length; i < len; i++) {

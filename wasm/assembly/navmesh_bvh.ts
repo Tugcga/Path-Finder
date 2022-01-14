@@ -1,4 +1,5 @@
 import { NavmeshNode } from "./navmesh_node";
+import { clamp, squared_len, log_message } from "./utilities";
 
 class AABB {
     x_min: f32;
@@ -21,27 +22,11 @@ class AABB {
     }
 }
 
-@inline
-function clamp(x: f32, min: f32 = 0.0, max: f32 = 1.0): f32 {
-    if (x < min) {
-        return min;
-    } else if (x > max) {
-        return max
-    } else {
-        return x;
-    }
-}
-
-@inline
-function squared_len(x: f32, y: f32, z: f32): f32 {
-    return x * x + y * y + z * z;
-}
-
-export class INavmeshBVH {
+export class NavmeshBVH {
     m_aabb: AABB = new AABB();
 
-    m_left_child!: INavmeshBVH;
-    m_right_child!: INavmeshBVH;
+    m_left_child!: NavmeshBVH;
+    m_right_child!: NavmeshBVH;
 
     m_children_exists: bool;
     m_is_object: bool;
@@ -162,8 +147,8 @@ export class INavmeshBVH {
                 unchecked(right_nodes[i] = right[i]);
             }
 
-            this.m_left_child  = new INavmeshBVH(left_nodes, BVH_AABB_DELTA);
-            this.m_right_child = new INavmeshBVH(right_nodes, BVH_AABB_DELTA);
+            this.m_left_child  = new NavmeshBVH(left_nodes, BVH_AABB_DELTA);
+            this.m_right_child = new NavmeshBVH(right_nodes, BVH_AABB_DELTA);
             this.m_children_exists = true;
 
             //finally, set aabb
@@ -257,15 +242,15 @@ export class INavmeshBVH {
     }
 }
 
-export class ITrianglesBVH {
+export class TrianglesBVH {
     //coordinates of the triangle
     m_triangle_data: StaticArray<f32>;
     m_is_object: bool;  // true, if it contains the triangle
 
     m_aabb: AABB = new AABB();
 
-    m_left_child!: ITrianglesBVH;
-    m_right_child!: ITrianglesBVH;
+    m_left_child!: TrianglesBVH;
+    m_right_child!: TrianglesBVH;
     m_children_exists: bool;
 
     m_return_buffer: Float32Array;  // use this array to return values from sample command
@@ -534,8 +519,8 @@ export class ITrianglesBVH {
                 unchecked(right_array[j] = right_objects[j]);
             }
 
-            this.m_left_child  = new ITrianglesBVH(left_array, BVH_AABB_DELTA);
-            this.m_right_child = new ITrianglesBVH(right_array, BVH_AABB_DELTA);
+            this.m_left_child  = new TrianglesBVH(left_array, BVH_AABB_DELTA);
+            this.m_right_child = new TrianglesBVH(right_array, BVH_AABB_DELTA);
             this.m_children_exists = true;
         }
     }
