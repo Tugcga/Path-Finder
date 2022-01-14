@@ -33,6 +33,7 @@ class NavmeshExplorerMain(QtWidgets.QWidget):
         self._navmesh_vertices, self._navmesh_polygons = read_level_data(file_path)
         # init navmesh by this data
         self._path_finder = PathFinder(self._navmesh_vertices, self._navmesh_polygons, time_horizon=0.5, time_horizon_obst=0.1, continuous_moving=False, move_agents=True)
+        self._path_finder_obstacles = self._path_finder.get_obstacles_points()
         if len(self._navmesh_polygons) > 0:
             # find center of the points and it bounding box
             self._navmesh_x_min = float("inf")
@@ -85,13 +86,14 @@ class NavmeshExplorerMain(QtWidgets.QWidget):
             self._simulate_thread.terminate()
             self._simulate_thread.wait()
 
-    def set_colors(self, background, back_dark_lines, back_light_lines, poly_border, poly_int, path, agents, point_size, path_size, dark_grid_size, light_grid_size):
+    def set_colors(self, background, back_dark_lines, back_light_lines, poly_border, poly_int, obst, path, agents, point_size, path_size, dark_grid_size, light_grid_size):
         # all colors are 4-tuples
         self._background = QtGui.QColor(*background)
         self._back_dark_lines = QtGui.QColor(*back_dark_lines)
         self._back_light_lines = QtGui.QColor(*back_light_lines)
         self._poly_border = QtGui.QColor(*poly_border)
         self._poly_int = QtGui.QColor(*poly_int)
+        self._obst_color = QtGui.QColor(*obst)
         self._path_color = QtGui.QColor(*path)
         self._agents_color = QtGui.QColor(*agents)
         agents_center = [v for v in agents]
@@ -199,6 +201,15 @@ class NavmeshExplorerMain(QtWidgets.QWidget):
                 polyline_points.append(polyline_points[0])
                 polyline = QtGui.QPolygonF(polyline_points)
                 painter.drawPolygon(polyline)
+            # next draw obstacle lines
+            painter.setPen(self._obst_color)
+            for obst in self._path_finder_obstacles:
+                line_points = []
+                for v in obst:
+                    v_p = self._tfm.transform(v)
+                    line_points.append(QtCore.QPointF(v_p[0], v_p[1]))
+                line_points.append(line_points[0])
+                painter.drawPolyline(QtGui.QPolygonF(line_points))
             # draw each agents path
             painter.setPen(QtGui.QPen(self._path_color, self._path_size, QtGui.Qt.SolidLine, QtGui.Qt.RoundCap, QtGui.Qt.RoundJoin))
             for a in range(len(self._agent_paths)):
