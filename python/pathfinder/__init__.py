@@ -116,8 +116,8 @@ class PathFinder(object):
         self._agent_radius: float = agent_radius
         self._update_path_find: float = update_path_find
         self._continuous_moving: bool = continuous_moving
-        self._move_agents = move_agents
-        self._last_path_find_update = time.time()
+        self._move_agents: bool = move_agents
+        self._last_path_find_update: float = time.time()
         # create separate simulator for each group
         self._simulators = []
         self._groups_count = self._navmesh.get_groups_count() if self._navmesh is not None else 1
@@ -132,7 +132,8 @@ class PathFinder(object):
 
         # calculate boundary for rvo
         # we should shift all edges of the navmesh boundary into agent radius value
-        shift_value: float = 0.75 * agent_radius
+        shift_value: float = 1.0 * agent_radius
+        self._obstacles: List[List[Tuple[float, float]]] = []
         if vertices is not None:
             for group_index in range(len(self._navmesh_boundary)):
                 boundary: List[List[Tuple[int, int]]] = self._navmesh_boundary[group_index]
@@ -156,7 +157,7 @@ class PathFinder(object):
                         n1 = (-a1[1], a1[0])
                         n2 = (a2[1], -a2[0])
                         # calculate new position as intersection point between two lines (original edges, shifted along normals)
-                        if a1[1] * a2[0] - a1[0] * a2[1] < 0.0001:
+                        if abs(a1[1] * a2[0] - a1[0] * a2[1]) < 0.0001:
                             # edges are parallel, simply shift along n1
                             new_point = (point[0] + n1[0]*shift_value, point[1] + n1[1]*shift_value)
                         else:
@@ -165,6 +166,7 @@ class PathFinder(object):
                         shifted_chain.append(new_point)
                     # set obstacle
                     rvo.add_obstacle(self._simulators[group_index], shifted_chain)
+                    self._obstacles.append(shifted_chain)
                 rvo.process_obstacles(self._simulators[group_index])
 
         self._agent_id = 0  # use this value for adding the new agent
@@ -178,7 +180,7 @@ class PathFinder(object):
         self._agents_group: List[int] = []  # store here group of an each agent, position of the value in the array is agent index in total list of ids
         self._agents_group_id: List[List[int]] = []  # for each group store ids of agents in the current simulator
         for g in range(self._groups_count):
-            self._agents_group_id.append([])  # init py emty arrays
+            self._agents_group_id.append([])  # init by emty arrays
         self._agents_id: List[int] = []  # plain list of ids of all agents, index of the id allows to find agent data in other arrays
         self._agents_to_delete: List[int] = []  # store here agent ids we need to delete before update step
         self._last_update_time = time.time()
@@ -225,6 +227,9 @@ class PathFinder(object):
     def delete_agent(self, agent_id: int):
         self._agents_to_delete.append(agent_id)
 
+    def get_obstacles_points(self) -> List[List[Tuple[float, float]]]:
+        return self._obstacles
+
     def _to_direction(self, from_point: Tuple[float, float], to_point: Tuple[float, float]) -> Tuple[float, float]:
         '''create direction unit vector from one point to the other in 2d
         '''
@@ -252,7 +257,6 @@ class PathFinder(object):
                 self._agents_targets[agent_index] = [(v[0], v[2]) for v in path]
                 self._agents_target_index[agent_index] = 1  # we start with the second value, because the first value is start point
                 # get current agent position
-                # position = rvo.get_agent_position(self._simulators[self._agents_group[agent_index]], agent_index)
                 position = self.get_agent_position(agent_id, agent_index)
                 target = self._agents_targets[agent_index][1]
                 # set direction
@@ -379,11 +383,8 @@ class PathFinder(object):
         self._last_update_time = t
 
     def get_all_agents_positions(self) -> List[Tuple[float, float]]:
-        '''return positions, ordered by groups (not by ids)
-
-        the output array contains positions of agents in the first group, then in the second and so on
+        '''return positions, ordered by ids
         '''
-        # all paths and activities returned ordered by indexes, so, we should return positions also ordered by indexes
         to_return: List[Tuple[float, float]] = []
         for agent_index, agent_id in enumerate(self._agents_id):
             group_index = self._agents_group[agent_index]

@@ -13,7 +13,7 @@ class Navmesh:
         self._nodes: List[NavmeshNode] = []
         self._groups: List[List[int]] = []  # each group is an array of node indexes with the same group index
 
-        vertex_map: List[List[int]] = [[] for v in range(len(vertices))]
+        vertex_map: List[List[int]] = [[] for v in range(len(vertices))]  # index - vertex index, value - array of incident polygons
         for p_index in range(len(polygons)):
             # iterate throw polygons
             for p_v_index in polygons[p_index]:
@@ -222,27 +222,3 @@ class Navmesh:
             if a in array_b:
                 to_return.append(a)
         return to_return
-
-if __name__ == "__main__":
-    radius = 0.4
-    # chain = [(3.2000002861, 3.2000002861), (3.2000002861, -3.09999990463), (-3.09999990463, -3.09999990463), (-3.09999990463, 3.2000002861)]
-    chain = [(1.40000009537, -1.59999990463), (1.7000002861, 1.40000009537), (-1.29999995232, 1.7000002861), (-1.59999990463, -1.29999995232)]
-
-    shifted_chain = []
-    for i in range(len(chain)):
-        pre_point = chain[i - 1 if i - 1 >= 0 else -1]
-        point = chain[i]
-        post_point = chain[i + 1 if i + 1 < len(chain) else 0]
-        a1 = (point[0] - pre_point[0], point[1] - pre_point[1])
-        a2 = (point[0] - post_point[0], point[1] - post_point[1])
-        l1 = math.sqrt(a1[0]**2 + a1[1]**2)
-        l2 = math.sqrt(a2[0]**2 + a2[1]**2)
-        a1 = (a1[0] / l1, a1[1] / l1)
-        a2 = (a2[0] / l2, a2[1] / l2)
-        n1 = (-a1[1], a1[0])
-        n2 = (a2[1], -a2[0])
-        # calculate new position as intersection point between two lines (original edges, shifted along normals)
-        t = (a2[0]*(post_point[1] + n2[1]*radius - pre_point[1] - n1[1]*radius) + a2[1]*(pre_point[0] + n1[0]*radius - post_point[0] - n2[0]*radius)) / (a1[1] * a2[0] - a1[0] * a2[1])
-        new_point = (pre_point[0] + n1[0]*radius + a1[0] * t, pre_point[1] + n1[1]*radius + a1[1] * t)
-        shifted_chain.append(new_point)
-    print(shifted_chain)

@@ -170,7 +170,7 @@ class Agent:
                  max_speed: Optional[float] = None):
         self._sim = simulator
 
-        self._max_neightbors = default_agent._max_neightbors if max_neighbors is None else max_neighbors
+        self._max_neighbors = default_agent._max_neighbors if max_neighbors is None else max_neighbors
         self._max_speed = default_agent._max_speed if max_speed is None else max_speed
         self._neighbor_dist = default_agent._neighbor_dist if neighbor_dist is None else neighbor_dist
         self._time_horizon = default_agent._time_horizon if time_horizon is None else time_horizon
@@ -198,7 +198,7 @@ class Agent:
                        time_horizon: float,
                        time_horizon_obst: float,
                        velocity: Tuple[float, float]):
-        self._max_neightbors = max_neighbors
+        self._max_neighbors = max_neighbors
         self._max_speed = max_speed
         self._neighbor_dist = neighbor_dist
         self._radius = radius
@@ -216,10 +216,10 @@ class Agent:
         return self._id
 
     def get_max_neighbors(self) -> int:
-        return self._max_neightbors
+        return self._max_neighbors
 
     def set_max_neighbors(self, max_neighbors: int):
-        self._max_neightbors = max_neighbors
+        self._max_neighbors = max_neighbors
 
     def get_max_speed(self) -> float:
         return self._max_speed
@@ -275,7 +275,7 @@ class Agent:
         self._sim.compute_agent_obstacles_neighbors(self, range_sq)
 
         self._agent_neighbors = []
-        if self._max_neightbors > 0:
+        if self._max_neighbors > 0:
             range_sq = self._neighbor_dist**2
             self._sim.compute_agent_agents_neighbors(self, range_sq)
 
@@ -569,7 +569,7 @@ class Agent:
             agent_pos = agent.get_position()
             dist_sq = abs_sq((self._position[0] - agent_pos[0], self._position[1] - agent_pos[1]))
             if dist_sq < range_square:
-                if len(self._agent_neighbors) < self._max_neightbors:
+                if len(self._agent_neighbors) < self._max_neighbors:
                     self._agent_neighbors.append((dist_sq, agent))
 
                 i: int = len(self._agent_neighbors) - 1
@@ -578,7 +578,7 @@ class Agent:
                     i -= 1
 
                 self._agent_neighbors[i] = (dist_sq, agent)
-                if len(self._agent_neighbors) == self._max_neightbors:
+                if len(self._agent_neighbors) == self._max_neighbors:
                     range_square = self._agent_neighbors[-1][0]
         return range_square
 

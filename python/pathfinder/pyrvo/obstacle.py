@@ -55,3 +55,6 @@ class Obstacle:
 
     def get_id(self) -> int:
         return self._id
+
+    def __repr__(self) -> str:
+        return "obstacle[" + str(self._id) + "]"

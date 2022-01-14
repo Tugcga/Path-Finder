@@ -7,7 +7,7 @@ if IMPORT_BINARY:
         IMPORT_BINARY = False
 if IMPORT_BINARY is False:
     from pathfinder.pyrvo.rvo_simulator import RVOSimulator
-from typing import Tuple, List
+from typing import Tuple, List, Optional
 
 # -------------------------------------
 # processors
@@ -36,18 +36,25 @@ def add_agent_default(simulator,
 
 def add_agent(simulator,
               position: Tuple[float, float],
-              neighbor_dist: float = 1.5,
-              max_neighbors: int = 5,
-              time_horizon: float = 1.5,
-              time_horizon_obst: float = 2.0,
-              radius: float = 0.4,
-              max_speed: float = 2.0,
+              neighbor_dist: Optional[float] = None,
+              max_neighbors: Optional[int] = None,
+              time_horizon: Optional[float] = None,
+              time_horizon_obst: Optional[float] = None,
+              radius: Optional[float] = None,
+              max_speed: Optional[float] = None,
               velocity: Tuple[float, float] = (0.0, 0.0)):
     '''
     return index of the agent
     '''
     if IMPORT_BINARY:
-        return simulator.addAgent(position, neighbor_dist, max_neighbors, time_horizon, time_horizon_obst, radius, max_speed, velocity)
+        return simulator.addAgent(position, 
+                                  neighbor_dist if neighbor_dist is not None else 1.5, 
+                                  max_neighbors if max_neighbors is not None else 5, 
+                                  time_horizon if time_horizon is not None else 1.5, 
+                                  time_horizon_obst if time_horizon_obst is not None else 2.0, 
+                                  radius if radius is not None else 0.4, 
+                                  max_speed if max_speed is not None else 2.0, 
+                                  velocity)
     else:
         return simulator.add_agent(position, radius, velocity, neighbor_dist, max_neighbors, time_horizon, time_horizon_obst, max_speed)
 

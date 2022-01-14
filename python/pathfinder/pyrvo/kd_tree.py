@@ -43,6 +43,9 @@ class ObstacleTreeNode:
     def get_right(self):
         return self._right
 
+    def to_string(self):
+        return "<" + str(self._obstacle.get_id()) + ">:[" + (self._left.to_string() if self._left is not None else "None") + "-" + (self._right.to_string() if self._right is not None else "None") + "]"
+
 
 class KDTree:
     def __init__(self, simulator):
@@ -54,7 +57,7 @@ class KDTree:
     def build_agent_tree(self, force_update: bool):
         if force_update:
             self._agents = [a for a in self._sim.get_all_agents()]
-            self._agent_tree = [None]*(2*len(self._agents) - 1)
+            self._agent_tree = [None]*(2*len(self._agents) - 1 if len(self._agents) > 0 else 0)
         # start building
         if len(self._agents) > 0:
             self._build_agent_tree_recirsive(0, len(self._agents), 0)
@@ -148,7 +151,6 @@ class KDTree:
 
                             if (max(left_size, right_size), min(left_size, right_size)) >= (max(min_left, min_right), min(min_left, min_right)):
                                 break
-
                     if (max(left_size, right_size), min(left_size, right_size)) < (max(min_left, min_right), min(min_left, min_right)):
                         min_left = left_size
                         min_right = right_size
