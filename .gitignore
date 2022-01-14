@@ -1,5 +1,8 @@
 .mypy_cache
 __pycache__
+_wasm
+_playcanvas_tutorial
+maps
 python/__pycache__
 README.txt
 test_types.py
@@ -16,6 +19,8 @@ python/map_01.txt
 python/map_01_points.txt
 python/pynavmesh.egg-info
 python/level_two_zones.txt
+python/navmesh_test.py
+python/rvo_test.py
 wasm/build command.txt
 wasm/map_02.txt
 wasm/map_02_reduce.txt

@@ -7,7 +7,7 @@ Navigation mesh path finding algorithm use three main concepts:
 * find closest path between centers of polygons by using A* algorithm in dual graph (vertices of this graph are centers of polygons, and two vertices are incident to one edge, iff corresponding polygons have a common edge)
 * combine two previous concepts to find the path between input points
 
-It's important to understand that the algorithm does not guaranteer the optimality of the generated path. In most cases the path is plausible.
+It's important to understand that the path finding algorithm does not guaranteer the optimality of the generated path. In most cases the path is plausible.
 
 This library does not contains methods for generating (or baking) navigation meshes. It assumes that navigation mesh is already generated. There are many tools for this:
 * [Recast Navigation](https://github.com/recastnavigation/recastnavigation) This is the most famous navigation mesh solution. It allows generate mesh and find path in it
@@ -16,6 +16,6 @@ This library does not contains methods for generating (or baking) navigation mes
 
 ## More detailed descriptions
 
-For Python version is [here](python/README.md).
+For Python version: [here](python/).
 
-For AssemblyScript version is [here](wasm/README.md).
+For AssemblyScript version: [here](wasm/).
