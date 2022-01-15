@@ -353,6 +353,8 @@ class PathFinder(object):
                             if is_next_visible:
                                 # the next target point is visible, switch to it
                                 self._agents_target_index[agent_inner_index] += 1
+                                # aslo update direction
+                                self._agents_target_direction[agent_inner_index] = self._to_direction(target, next_target)
                                 target = self._agents_targets[agent_inner_index][agent_target_index + 1]
                 if self._agents_activity[agent_inner_index]:
                     if not self._continuous_moving and should_deactivate:
