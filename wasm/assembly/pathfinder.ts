@@ -464,7 +464,8 @@ export class PathFinder{
                         }
                     }
                     else{
-                        let local_dir = this._to_direction(current_position, new Vector2(target_x, target_y));
+                        let target_point = new Vector2(target_x, target_y);
+                        let local_dir = this._to_direction(current_position, target_point);
                         const start_dir_x = this.m_agents_target_direction[2*agent_inner_index];
                         const start_dir_y = this.m_agents_target_direction[2*agent_inner_index + 1];
                         const d = local_dir.x() * start_dir_x + local_dir.y() * start_dir_y;
@@ -476,6 +477,10 @@ export class PathFinder{
                                 const is_next_visible = sim.query_visibility(current_position.x(), current_position.y(), next_target_x, next_target_y, 0.0);
                                 if(is_next_visible){
                                     this.m_agents_target_index[agent_inner_index] += 1;
+                                    //assign new target direction
+                                    let new_direction = this._to_direction(target_point, new Vector2(next_target_x, next_target_y));
+                                    this.m_agents_target_direction[2*agent_inner_index] = new_direction.x();
+                                    this.m_agents_target_direction[2*agent_inner_index + 1] = new_direction.y();
                                     target_x = next_target_x;
                                     target_y = next_target_y;
                                 }
