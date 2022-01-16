@@ -26,7 +26,7 @@ The module consists of two parts. The first part find the shortest path in 3-dim
 
 * ```create_pathfinder_ext(vertices: Float32Array | null, polygons: Int32Array | null, sizes: Int32Array | null, neighbor_dist: f32, max_neighbors: i32, time_horizon: f32, time_horizon_obst: f32, agent_radius: f32, update_path_find: f32, continuous_moving: bool, move_agents: bool, snap_agents: bool, use_normals: bool): PathFinder```
 
-	More complex version of the previous command. Allows detail setup of the ```RVOSimulator``` subcomponents and parameters of agent movement routine. If navigation mash data is not ```null``` then the boundary edges of the navmesh will be used as obstacles in each ```RVOSimulator``. These simulators will create for each connected component of the navmesh.
+	More complex version of the previous command. Allows detail setup of the ```RVOSimulator``` subcomponents and parameters of agent movement routine. If navigation mash data is not ```null``` then the boundary edges of the navmesh will be used as obstacles in each ```RVOSimulator```. These simulators will create for each connected component of the navmesh.
 
     * ```neighbor_dist```: the maximum distance to other agents a new agent takes into account in the simulation
     * ```max_neighbors```: the maximum number of other agents a new agent takes into account in the simulation
@@ -36,7 +36,7 @@ The module consists of two parts. The first part find the shortest path in 3-dim
 	* ```update_path_find```: the amount of time between recalculations of move paths for agents
 	* ```continuous_moving```: if ```true``` then agents go to the final destination point every time, even it already has reached it. If other agent shift the agent from it final position, then it will return to the final destination
 	* ```move_agents```: if ```true``` then agents will change it positions during the simulation. If ```false``` then the system will only calculate it velocities, but does not change positions
-	* ```snap_agents```: if ```true``` then each update call all agents will snap to the closest point in the navigation mesh
+	* ```snap_agents```: if ```true``` then each update call all agents will snap to the closest point in the navigation mesh. If this value is ```false``` and the navigation mesh is not planar, then the height position of agents linear interpolated between points in the path. Also, when ```snap_agents = false```, one agent can shift the other agent outside of the navigation mesh. In this case the shifted agent will not move, because it fails to find the path to the destination point. These undesired shifts can be eliminated by properly defined ```agent_radius``` value. So, if ```snap_agents = true``` then the system is stable but less performance, if ```snap_agents = false``` then calculations are more performance, but the system is not stable in some cases
 	* ```use_normals```: if ```true``` then during projections into xz-plane, proportionally change agent speeds so, that it move slowly on more steep slope
 
 * ```create_navmesh(vertices: Float32Array, polygons: Int32Array, sizes: Int32Array): Navmesh```
