@@ -14,6 +14,48 @@ To install:
 pip install pynavmesh
 ```
 
+To baking navigation mesh:
+
+```
+from pathfinder import navmesh_baker as nmb
+# create baker object
+baker = nmb.NavmeshBaker()
+# add geometry, for example a simple plane
+# the first array contains vertex positions, the second array contains polygons of the geometry
+baker.add_geometry([(-4.0, 0.0, -4.0), (-4.0, 0.0, 4.0), (4.0, 0.0, 4.0), (4.0, 0.0, -4.0)], [[0, 1, 2, 3]])
+# bake navigation mesh
+baker.bake()
+# obtain polygonal description of the mesh
+vertices, polygons = baker.get_polygonization()
+```
+
+```baker.bake()``` can accept several parameters. The most important of them are:
+* ```cell_size``` is a voxel size, used for rasterization input polygons
+* ```cell_height``` is a vozel height
+* ```agent_height``` suppositional agent size
+* ```agent_radius``` suppositional agent radius
+
+The following parameters define walkable areas:  ```agent_max_climb```, ```agent_max_slope```.
+
+Other parameters define polygonization settings:
+* ```region_min_size``` islands with less area will be ignored
+* ```region_merge_size```
+* ```edge_max_len``` maximum length of polygon edges
+* ```edge_max_error```
+* ```verts_per_poly``` define maximum number of corners in polygons (if this value is equal, for eaxmple, to 3, then all polygons will be triangles)
+* ```detail_sample_distance```
+* ```detail_sample_maximum_error```
+
+To store generated navigation mesh to the file you can use one of two functions:
+* ```baker.save_to_text(file_path)``` to save polygonal description of the navigation mesh into simple text file
+* ```baker.save_to_binary(file_path)``` to save polygonal description of the navigation mesh into binary file with the same structure
+
+To load navigation mesh data from file you can use similar functions from ```pathfinder``` module:
+* ```read_from_text(file_path)```
+* ```read_from_binary(file_path)```
+
+Both functions return 2-tuple ```(vertices, polygons)```, where ```vertices``` is array of 3-tuples with vertex coordinates, ```polygons``` is array of integer arrays with polygon vertex indices.
+
 To create path finder object:
 
 ```
@@ -69,6 +111,8 @@ pathfinder.set_agent_destination(agent_id, position)
 
 ### Examples
 
+```baker_examples.py``` contains some basic examples, where we load some geometry into baker and generate corresponding navigation mesh.
+
 ```bvh_examples.py``` contains small benchmark for testing the speed of using bvh in the navigation mesh object. It create grid of square polygons, sample random positions and find the index of the closest polygon to each position.
 
 ```graph_examples.py``` contains examples for creating graphs and using A* algorithm for finding the shortest path in it. One of them creates grid-like graph with randomly erased edges and find path between random vertices. The result is plotted by using ```matplotlib```.
@@ -90,6 +134,44 @@ In some cases the path is not optimal. It depends on polygon decomposition. Here
 ![Application example](../images/app_02.png?raw=true)
 
 Start and finish points are in top and bottom polygons. At first step the algorithm finds the shortest path between these two polygons. But the mesh is symmetric, and that's why there are two equal paths - at the left side and at the right side. The algorithm select one of them (at the right side), and form result path by connecting it with input points. So, it produce non-optimal result.
+
+### NavmeshBaker API
+
+```
+baker = NavmeshBaker()
+```
+
+Create a baker object.
+
+```
+baker.add_geometry(vertices: List[Tuple[float, float, float], polygons: List[List[int]])
+```
+
+Add input polygonal data to the baker. ```vertices``` is an array of 3-tuples with vertex positions, ```polygons``` is array of integer arrays with polygon indexes. If you need add several meshes to the baker, you can call this method several times with different arguments. Polygon indices should be the same as tuples indices in in ```vertices``` array.
+
+```
+baker.bake()
+```
+
+Generate navigation mesh polygonal description.
+
+```
+baker.get_polygonization()
+```
+
+Return polygonal description of the baked navigation mesh as 2-tuple ```(vertices, polygons)```.
+
+```
+baker.save_to_binary(file_path: str)
+```
+
+Save navigation mesh polygonal description into binary file.
+
+```
+baker.save_to_text(file_path: str)
+```
+
+Save navigation mesh polygonal description into text file.
 
 ### PathFinder API
 

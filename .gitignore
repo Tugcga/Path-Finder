@@ -6,31 +6,33 @@ maps
 python/__pycache__
 README.txt
 test_types.py
-wasm/node_modules
-wasm/run.js
-wasm/build command.txt
-wasm/navmesh_test.js
-wasm/grid_graph_test.js
-wasm/bvh_test.js
+assemblyscript/node_modules
+assemblyscript/run.js
+assemblyscript/build command.txt
+assemblyscript/navmesh_test.js
+assemblyscript/grid_graph_test.js
+assemblyscript/bvh_test.js
 *.js
+*.nm
 python/map_benchmark.py
 python/navmeshdata.txt
 python/map_01.txt
 python/map_01_points.txt
+python/cube_and_plane.txt
 python/pynavmesh.egg-info
 python/level_two_zones.txt
 python/navmesh_test.py
 python/rvo_test.py
-wasm/build command.txt
-wasm/map_02.txt
-wasm/map_02_reduce.txt
-wasm/build/*.js
-wasm/build/*.py
-wasm/build/index.wasm
-wasm/assembly/index.ts
-wasm/assembly/maps_data.ts
+assemblyscript/build command.txt
+assemblyscript/map_02.txt
+assemblyscript/map_02_reduce.txt
+assemblyscript/build/*.js
+assemblyscript/build/*.py
+assemblyscript/build/index.wasm
+assemblyscript/assembly/index.ts
+assemblyscript/assembly/maps_data.ts
 *.json
-wasm/tests_files
+assemblyscript/tests_files
 pyproject.toml
 setup.cfg
 dist

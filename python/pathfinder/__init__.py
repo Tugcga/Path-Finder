@@ -1,5 +1,5 @@
 from typing import Tuple, List, Optional
-import math, time
+import math, time, struct
 from pathfinder.navmesh import Navmesh
 import pathfinder.pyrvo as rvo
 
@@ -18,6 +18,94 @@ def get_unit_vector(vector_2d: Tuple[float, float]):
         return (0.0, 0.0)
     else:
         return (vector_2d[0] / l, vector_2d[1] / l)
+
+
+def read_from_binary(file_path: str) -> Tuple[List[Tuple[float, float, float]], List[List[int]]]:
+    '''Read input binary file with navigation mesh polygonal data and return arrays with vertices and polygons
+
+    The formatof a binary file is very simple
+    It contains three array, splitted by 64 bit infinite float
+    The first array contains vertex positions as array of 64 bit floats
+    The second array contains 32 bit integers, whixh corresponds to polygon vertex indices
+    The third array contains 32 bit integers, which define polygon sizes
+    The file ends by 32 bits infinite float
+
+    Byte order is big-endian
+    '''
+    vertices: List[Tuple[float, float, float]] = []
+    polygons: List[List[int]] = []
+    with open(file_path, "rb") as file:
+        is_finish_vertices: bool = False
+        x: float = 0.0
+        y: float = 0.0
+        index = 0
+        while not is_finish_vertices:
+            bs = file.read(4)  # read by 8 bytes
+            value = struct.unpack(">f", bs)[0]
+            if value == float("inf"):
+                is_finish_vertices = True
+            else:
+                index += 1
+                if index == 1:
+                    x = value
+                elif index == 2:
+                    y = value
+                elif index == 3:
+                    index = 0
+                    vertices.append((x, y, value))
+
+        is_finish_polygons: bool = False
+        polygons_indexes: List[int] = []  # store here flat array of polygon indexes
+        while not is_finish_polygons:
+            bs = file.read(4)  # read by 4 bytes, because file store integers as 32 bits
+            value = struct.unpack(">i", bs)[0]
+            value_float = struct.unpack(">f", bs)[0]
+            if value_float == float("inf"):
+                is_finish_polygons = True
+            else:
+                polygons_indexes.append(value)
+
+        is_finish_sizes: bool = False
+        index = 0
+        while not is_finish_sizes:
+            bs = file.read(4)
+            value = struct.unpack(">i", bs)[0]
+            value_float = struct.unpack(">f", bs)[0]
+            if value_float == float("inf"):
+                is_finish_sizes = True
+            else:
+                polygons.append(polygons_indexes[index:index+value])
+                index += value
+
+    return (vertices, polygons)
+
+
+def read_from_text(file_path: str) -> Tuple[List[Tuple[float, float, float]], List[List[int]]]:
+    '''Read input text file with navigation mesh polygonal data and return arrays with vertices and polygons
+    '''
+    with open(file_path, "r") as file:
+        file_text = file.read()
+        lines = file_text.split("\n")
+        if len(lines) == 3:  # polygons data
+            vertices_raw = [float(v) for v in lines[0].split(" ")]
+            polygons_raw = [int(v) for v in lines[1].split(" ")]
+            sizes = [int(v) for v in lines[2].split(" ")]
+
+            verts_count = len(vertices_raw) // 3
+            vertices = []
+            for i in range(verts_count):
+                vertices.append((vertices_raw[3*i], vertices_raw[3*i + 1], vertices_raw[3*i + 2]))
+
+            i = 0
+            polygons = []
+            for s in sizes:
+                polygon = []
+                for j in range(s):
+                    polygon.append(polygons_raw[i])
+                    i += 1
+                polygons.append(polygon)
+            return (vertices, polygons)
+    return ([], [])
 
 
 class PathFinder(object):
