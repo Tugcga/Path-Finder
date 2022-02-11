@@ -949,6 +949,7 @@ def build_poly_mesh(cset: ContourSet,
     while i < mesh.nverts:
         if vflags[i] > 0:
             if not can_remove_vertex(mesh, i):
+                i += 1
                 continue
             if not remove_vertex(mesh, i, max_tris):
                 # Failed to remove vertex

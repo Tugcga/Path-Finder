@@ -565,8 +565,8 @@ def flood_region(x: int,
             for dir in range(4):
                 # 8 connected
                 if get_con(cs, dir) != RC_NOT_CONNECTED:
-                    ax = x + get_dir_offset_x(dir)
-                    ay = y + get_dir_offset_y(dir)
+                    ax = cx + get_dir_offset_x(dir)
+                    ay = cy + get_dir_offset_y(dir)
                     c1 = chf.cells[ax + ay*w]
                     if c1 is not None:
                         ai = c1.index + get_con(cs, dir)
@@ -1061,7 +1061,6 @@ def build_regions(chf: CompactHeightfield,
 
         # Expand current regions until no empty connected cells found
         expand_regions(expand_iters, level, chf, buf, src_reg, src_dist, lvl_stacks[s_id], False)
-
         # Mark new regions with IDs
         for j in range(len(lvl_stacks[s_id])):
             current: LevelStackEntry = lvl_stacks[s_id][j]
@@ -1075,7 +1074,6 @@ def build_regions(chf: CompactHeightfield,
                         return False
                     region_id += 1
 
-    
     # Expand current regions until no empty connected cells found
     expand_regions(expand_iters * 8, 0, chf, buf, src_reg, src_dist, stack, True)
 

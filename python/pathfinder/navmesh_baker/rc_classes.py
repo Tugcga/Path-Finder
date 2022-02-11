@@ -95,6 +95,9 @@ class Region:
         self.connections: List[int] = []
         self.floors: List[int] = []
 
+    def __repr__(self) -> str:
+        return "[" + str(self.id) + ", " + str(self.span_count) + ", " + str(str(self.overlap)) + "]"
+
 class Contour:
     def __init__(self):
         self.verts: List[int] = []  # Simplified contour vertex and connection data [Size: 4 * nverts]
