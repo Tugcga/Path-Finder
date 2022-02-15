@@ -433,7 +433,7 @@ def remove_degenerate_segments(simplified: List[int]):
 def calc_area_of_polygon_2d(verts: List[int],
                             nverts: int) -> int:
     area: int = 0
-    j = nverts - 1
+    j: int = nverts - 1
     for i in range(0, nverts):
         area += verts[4*i] * verts[4*j + 2] - verts[4*j] * verts[4*i + 2]
         j = i
@@ -545,9 +545,9 @@ def between(a: int,
     if not collinear(a, a_array, b, b_array, c, c_array):
         return False
     if a_array[a] != b_array[b]:
-        return (a_array[a] <= c_array[c]) and (c_array[c] <= b_array[b]) or (a_array[a] >= c_array[c]) and (c_array[c] >= b_array[b])
+        return ((a_array[a] <= c_array[c]) and (c_array[c] <= b_array[b])) or ((a_array[a] >= c_array[c]) and (c_array[c] >= b_array[b]))
     else:
-        return (a_array[a+2] <= c_array[c+2]) and (c_array[c+2] <= b_array[b+2]) or (a_array[a+2] >= c_array[c+2]) and (c_array[c+2] >= b_array[b+2])
+        return ((a_array[a+2] <= c_array[c+2]) and (c_array[c+2] <= b_array[b+2])) or ((a_array[a+2] >= c_array[c+2]) and (c_array[c+2] >= b_array[b+2]))
 
 def intersect(a: int,
               a_array: List[int],
@@ -570,7 +570,7 @@ def intersect_seg_countour(d0: int,
                            d1_array: List[int],
                            i: int,
                            n: int,
-                           verts: List[int]):
+                           verts: List[int]) -> bool:
     for k in range(n):
         k1: int = next(k, n)
         if i == k or i == k1:
@@ -637,8 +637,9 @@ def merge_region_holes(region: ContourRegion, holes: List[ContourHole]):
         holes[region.holes_index + i] = sorted_holes[i]
 
     reg_outline: Optional[Contour] = region.outline
+    max_verts: int = 0
     if reg_outline is not None:
-        max_verts: int = reg_outline.nverts
+        max_verts = reg_outline.nverts
         for i in range(region.nholes):
             contour = holes[region.holes_index + i].contour
             if contour is not None:
@@ -675,7 +676,7 @@ def merge_region_holes(region: ContourRegion, holes: List[ContourHole]):
                             ndiags += 1
 
                     # Sort potential diagonals by distance, we want to make the connection as short as possible
-                    sorted_diags = sorted(diags[0:ndiags], key=cmp_to_key(compare_diag_dist))
+                    sorted_diags: List[PotentialDiagonal] = sorted(diags[0:ndiags], key=cmp_to_key(compare_diag_dist))
                     for m in range(ndiags):
                         diags[m] = sorted_diags[m]
                     
@@ -785,54 +786,54 @@ def build_contours(chf: CompactHeightfield,
                         reg: int = s.reg  # 2 bytes
                         if (reg == 0) or (reg & RC_BORDER_REG):
                             continue
-                    area: int = chf.areas[i]  # 1 byte
+                        area: int = chf.areas[i]  # 1 byte
 
-                    verts.clear()
-                    simplified.clear()
+                        verts.clear()
+                        simplified.clear()
 
-                    walk_contour(x, y, i, chf, flags, verts)
-                    simplify_contour(verts, simplified, max_error, max_edge_len, build_flags)
-                    remove_degenerate_segments(simplified)
+                        walk_contour(x, y, i, chf, flags, verts)
+                        simplify_contour(verts, simplified, max_error, max_edge_len, build_flags)
+                        remove_degenerate_segments(simplified)
 
-                    # Store region->contour remap info
-                    # Create contour
-                    if len(simplified) // 4 >= 3:
-                        if cset.nconts > max_contours:
-                            # Allocate more contours
-                            # This happens when a region has holes
-                            old_max: int = max_contours
-                            max_contours *= 2
-                            new_conts: List[Contour] = [Contour() for _ in range(max_contours)]
-                            for j in range(cset.nconts):
-                                new_conts[j] = cset.conts[j]
-                                # Reset source pointers to prevent data deletion
-                                cset.conts[j].verts = []
-                                cset.conts[j].rverts = []
-                            cset.conts = new_conts
+                        # Store region->contour remap info
+                        # Create contour
+                        if len(simplified) // 4 >= 3:
+                            if cset.nconts > max_contours:
+                                # Allocate more contours
+                                # This happens when a region has holes
+                                old_max: int = max_contours
+                                max_contours *= 2
+                                new_conts: List[Contour] = [Contour() for _ in range(max_contours)]
+                                for j in range(cset.nconts):
+                                    new_conts[j] = cset.conts[j]
+                                    # Reset source pointers to prevent data deletion
+                                    cset.conts[j].verts = []
+                                    cset.conts[j].rverts = []
+                                cset.conts = new_conts
 
-                        cont: Contour = cset.conts[cset.nconts]
-                        cset.nconts += 1
+                            cont: Contour = cset.conts[cset.nconts]
+                            cset.nconts += 1
 
-                        cont.nverts = len(simplified) // 4
-                        cont.verts = [0] * (cont.nverts * 4)
-                        for j in range(len(cont.verts)):
-                            cont.verts[j] = simplified[j]
-                        if border_size > 0:
-                            # If the heightfield was build with bordersize, remove the offset
-                            for j in range(cont.nverts):
-                                cont.verts[4*j] -= border_size
-                                cont.verts[4*j + 2] -= border_size
-                        cont.nrverts = len(verts) // 4
-                        cont.rverts = [0] * (cont.nrverts * 4)
-                        for j in range(len(cont.rverts)):
-                            cont.rverts[j] = verts[j]
-                        if border_size > 0:
-                            # If the heightfield was build with bordersize, remove the offset
-                            for j in range(cont.nrverts):
-                                cont.rverts[4*j] -= border_size
-                                cont.rverts[4*j + 2] -= border_size
-                        cont.reg = reg
-                        cont.area = area
+                            cont.nverts = len(simplified) // 4
+                            cont.verts = [0] * (cont.nverts * 4)
+                            for j in range(len(cont.verts)):
+                                cont.verts[j] = simplified[j]
+                            if border_size > 0:
+                                # If the heightfield was build with bordersize, remove the offset
+                                for j in range(cont.nverts):
+                                    cont.verts[4*j] -= border_size
+                                    cont.verts[4*j + 2] -= border_size
+                            cont.nrverts = len(verts) // 4
+                            cont.rverts = [0] * (cont.nrverts * 4)
+                            for j in range(len(cont.rverts)):
+                                cont.rverts[j] = verts[j]
+                            if border_size > 0:
+                                # If the heightfield was build with bordersize, remove the offset
+                                for j in range(cont.nrverts):
+                                    cont.rverts[4*j] -= border_size
+                                    cont.rverts[4*j + 2] -= border_size
+                            cont.reg = reg
+                            cont.area = area
 
     # Merge holes if needed
     if cset.nconts > 0:

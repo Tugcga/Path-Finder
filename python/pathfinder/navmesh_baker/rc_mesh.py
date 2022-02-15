@@ -79,7 +79,7 @@ def diagonalie(i: int,
         # Skip edges incident to i or j
         if not((k == i) or (k1 == i) or (k == j) or (k1 == j)):
             p0_ptr: int = (indices[k] & 0x0fffffff) * 4
-            p1_ptr = (indices[k1] & 0x0fffffff) * 4
+            p1_ptr: int = (indices[k1] & 0x0fffffff) * 4
 
             if v_equal(d0_ptr, p0_ptr, verts) or v_equal(d1_ptr, p0_ptr, verts) or v_equal(d0_ptr, p1_ptr, verts) or v_equal(d1_ptr, p1_ptr, verts):
                 continue

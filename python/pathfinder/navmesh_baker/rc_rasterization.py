@@ -18,13 +18,13 @@ def divide_poly(buf: List[float],
 
     j: int = nin - 1
     for i in range(nin):
-        ina = d[j] >= 0.0
-        inb = d[i] >= 0.0
+        ina: bool = d[j] >= 0.0
+        inb: bool = d[i] >= 0.0
         if ina != inb:
             s: float = d[j] / (d[j] - d[i])
-            buf[m*3 + out1] = buf[j*3 + in_ptr] + (buf[i*3 + in_ptr] - buf[j*3 + in_ptr]) * s;
-            buf[m*3 + out1 + 1] = buf[j*3 + 1 + in_ptr] + (buf[i*3 + 1 + in_ptr] - buf[j*3 + 1 + in_ptr]) * s;
-            buf[m*3 + out1 + 2] = buf[j*3 + 2 + in_ptr] + (buf[i*3 + 2 + in_ptr] - buf[j*3 + 2 + in_ptr]) * s;
+            buf[m*3 + out1] = buf[j*3 + in_ptr] + (buf[i*3 + in_ptr] - buf[j*3 + in_ptr]) * s
+            buf[m*3 + out1 + 1] = buf[j*3 + 1 + in_ptr] + (buf[i*3 + 1 + in_ptr] - buf[j*3 + 1 + in_ptr]) * s
+            buf[m*3 + out1 + 2] = buf[j*3 + 2 + in_ptr] + (buf[i*3 + 2 + in_ptr] - buf[j*3 + 2 + in_ptr]) * s
             v_copy(buf, buf, dest_shift=out2+n*3, src_shift=out1+m*3)
             m += 1
             n += 1
@@ -153,19 +153,19 @@ def rasterize_tri(v0: List[float],
 
     # Clip the triangle into all grid cells it touches
     buf: List[float] = [0.0] * (7 * 3 * 4)
-    in_ptr = 0
-    inrow_ptr = 7*3
-    p1_ptr = inrow_ptr + 7*3
-    p2_ptr = p1_ptr + 7*3
+    in_ptr: int = 0
+    inrow_ptr: int = 7*3
+    p1_ptr: int = inrow_ptr + 7*3
+    p2_ptr: int = p1_ptr + 7*3
     v_copy(buf, v0)
     v_copy(buf, v1, dest_shift=3)
     v_copy(buf, v2, dest_shift=6)
-    nvrow = 3;
-    nv_in = 3;
+    nvrow: int = 3
+    nv_in: int = 3
 
     for y in range(y0, y1 + 1):
         # Clip polygon to row. Store the remaining polygon as well
-        cz = bmin[2] + y * cs
+        cz: float = bmin[2] + y * cs
         nvrow, nv_in = divide_poly(buf, in_ptr, nv_in, inrow_ptr, p1_ptr, cz+cs, 2)
         in_ptr, p1_ptr = p1_ptr, in_ptr
         if nvrow < 3:

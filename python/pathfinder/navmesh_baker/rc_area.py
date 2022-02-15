@@ -711,7 +711,8 @@ def walk_contour(x: int,
         iter += 1
     # Remove adjacent duplicates
     if len(cont) > 1:
-        for j in range(len(cont)):
+        j: int = 0
+        while j < len(cont):
             nj: int = (j + 1) % len(cont)
             if cont[j] == cont[nj]:
                 for k in range(j, len(cont) - 1):
@@ -1025,10 +1026,10 @@ def build_regions(chf: CompactHeightfield,
     stack: List[LevelStackEntry] = [LevelStackEntry() for i in range(256)]
 
     src_reg: int = 0  # first pointer to the buffer
-    src_dist = chf.span_count  # second pointer to the buffer
+    src_dist: int = chf.span_count  # second pointer to the buffer
 
     region_id: int = 1  # 2 bytes
-    level = (chf.max_distance + 1) & ~1  # equal to the first argument
+    level: int = (chf.max_distance + 1) & ~1  # equal to the first argument
 
     expand_iters: int = 8
 

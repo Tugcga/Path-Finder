@@ -12,12 +12,6 @@ class Span:
     def __repr__(self) -> str:
         return "<" + str(self.smin) + ", " + str(self.smax) + ", " + str(self.area) + ", " + ("-" if self.next is None else "+") + ">"
 
-# A memory pool used for quick allocation of spans within a heightfield
-class SpanPool:
-    def __init__(self):
-        self.next = None
-        self.items = [Span() for i in range(RC_SPANS_PER_POOL)]
-
 # A dynamic heightfield representing obstructed space
 class Heightfield:
     def __init__(self):
@@ -27,9 +21,8 @@ class Heightfield:
         self.bmax = (0.0, 0.0, 0.0)  # The maximum bounds in world space. [(x, y, z)]
         self.cs = 0.0  # The size of each cell. (On the xz-plane.)
         self.ch = 0.0  # The height of each cell. (The minimum increment along the y-axis.)
-        self.spans: List[Optional[Span]] = []  # Heightfield of spans (width*height).
-        self.pools = []  # Linked list of span pools.
-        self.freelist: Optional[Span] = None  # The next free span.
+        self.spans: List[Optional[Span]] = []  # Heightfield of spans (width*height)
+        self.freelist: Optional[Span] = None  # The next free span
 
 # Provides information on the content of a cell column in a compact heightfield
 class CompactCell:
@@ -96,7 +89,7 @@ class Region:
         self.floors: List[int] = []
 
     def __repr__(self) -> str:
-        return "[" + str(self.id) + ", " + str(self.span_count) + ", " + str(str(self.overlap)) + "]"
+        return "[" + str(self.id) + ", " + str(self.span_count) + ", " + str(self.overlap) + "]"
 
 class Contour:
     def __init__(self):

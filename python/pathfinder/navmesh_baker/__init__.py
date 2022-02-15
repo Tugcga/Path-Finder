@@ -79,7 +79,7 @@ class NavmeshBaker:
             bmax = (bb_max[0], bb_max[1], bb_max[2])
             
             # setup bake parameters
-            cs= cell_size
+            cs = cell_size
             ch = cell_height
             walkable_slope_angle = agent_max_slope
             walkable_height = math.ceil(agent_height / ch)
@@ -119,7 +119,6 @@ class NavmeshBaker:
             # This will result more cache coherent data as well as the neighbours
             # between walkable cells will be calculated
             chf = build_compact_heightfield(walkable_height, walkable_climb, solid)
-
             # Erode the walkable area by agent radius
             is_erode: bool = erode_walkable_area(walkable_radius, chf)
             if not is_erode:

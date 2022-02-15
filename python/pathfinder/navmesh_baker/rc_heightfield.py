@@ -29,7 +29,7 @@ def mark_walkable_triangles(walkable_slope_angle: float,
                             nt: int):
     areas = [0] * nt
 
-    walkable_thr = math.cos(RC_PI * walkable_slope_angle/180.0);
+    walkable_thr = math.cos(RC_PI * walkable_slope_angle/180.0)
     norm = [0.0, 0.0, 0.0]  # buffer for normal vector
     for i in range(nt):
         tri_0, tri_1, tri_2 = tris[3*i : 3*i+3]
