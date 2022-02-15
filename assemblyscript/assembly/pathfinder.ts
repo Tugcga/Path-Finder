@@ -1,8 +1,8 @@
-import { Navmesh } from "./navmesh";
-import { RVOSimulator } from "./rvo_simulator";
-import { List } from "./list";
-import { Vector2, normalize } from "./vector2";
-import { log_message, is_pair_in_list, Pair } from "./utilities";
+import { Navmesh } from "./navmesh/navmesh";
+import { RVOSimulator } from "./rvo/rvo_simulator";
+import { List } from "./common/list";
+import { Vector2, normalize } from "./common/vector2";
+import { log_message, is_pair_in_list, Pair } from "./common/utilities";
 
 export class PathFinder{
     private m_navmesh: Navmesh | null;

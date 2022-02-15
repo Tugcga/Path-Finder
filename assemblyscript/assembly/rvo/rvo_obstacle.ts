@@ -1,5 +1,5 @@
-import { left_of } from "./utilities";
-import { Vector2 } from "./vector2";
+import { left_of } from "../common/utilities";
+import { Vector2 } from "../common/vector2";
 
 export class Obstacle{
     m_is_convex: bool = false;

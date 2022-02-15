@@ -1,4 +1,4 @@
-import { distance } from "./utilities";
+import { distance } from "../common/utilities";
 
 export class Graph {
     private m_positions: StaticArray<f32>;  // store by triples [x1, y1, z1, x2, y2, z2, ...]

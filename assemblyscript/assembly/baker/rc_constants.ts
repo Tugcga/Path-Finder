@@ -1,0 +1,15 @@
+export const RC_SPANS_PER_POOL: i32 = 2048;
+export const RC_WALKABLE_AREA: i32 = 63;
+export const RC_NULL_AREA: i32 = 0;
+export const RC_PI: f64 = 3.14159265;
+export const RC_SPAN_HEIGHT_BITS: i32 = 13;
+export const RC_SPAN_MAX_HEIGHT: i32 = (1 << RC_SPAN_HEIGHT_BITS) - 1;
+export const RC_NOT_CONNECTED: i32 = 0x3f;
+export const RC_BORDER_REG: i32 = 0x8000;  // 32768
+export const RC_CONTOUR_TESS_WALL_EDGES: i32 = 1;
+export const RC_BORDER_VERTEX: i32 = 0x10000;  // 65536
+export const RC_AREA_BORDER: i32 = 0x20000;  // 131072
+export const RC_CONTOUR_REG_MASK: i32 = 0xffff;  // 65535
+export const RC_CONTOUR_TESS_AREA_EDGES: i32 = 0x02;
+export const RC_MESH_NULL_IDX: i32 = 0xffff;  // 65535
+export const RC_MULTIPLE_REGS: i32 = 0;

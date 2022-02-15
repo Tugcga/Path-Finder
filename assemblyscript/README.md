@@ -2,6 +2,8 @@
 
 The module consists of two parts. The first part find the shortest path in 3-dimensional navigation mesh. The second part use RVO2 algorithm for collision avoidance. These two parts can be used as separately, as together in one ```PathFinder``` object. This complex ```PathFinder``` object control the agents movements in the navigation mesh. The user only set the destination points for each agent, and the module executes the other routine. RVO simulations use two dimensions (x and z), while navigation mesh is three-dimensional. In ```RVOSimulator``` all agent positions are projected into xz-plane.
 
+The module allows to bake navigation mesh polygonal data from input geometry. All you need is create ```NavmeshBaker``` object, setup input geometry and call ```bake()``` method (see API below).
+
 ### Creation API
 
 * ```create_pathfinder(vertices: Float32Array | null, polygons: Int32Array | null, sizes: Int32Array | null): PathFinder```
@@ -54,6 +56,10 @@ The module consists of two parts. The first part find the shortest path in 3-dim
 	* ```vertex_positions```: plain array with 3-dimensional coordinates of graph vertices
 	* ```vertices```: unique identifications of vertices (it names)
 	* ```edges```: plain array with pairs of vertices names. The first two value define the first edge of the graph, the third and froth values - the second edge and so on
+
+* ```create_baker(): NavmeshBaker```
+
+	Create object, which allows to bake navigation mesh. No input parameters needed.
 
 ### ```Graph``` API
 
@@ -306,7 +312,67 @@ There are also some additional global methods for setting parameters, which shou
 
 	Return navigation mesh subcomponent of the pathfinder object. Return ```null``` if navmesh is not defined.
 
+	
+### ```NavmeshBaker``` API
 
+* ```add_geometry(vertices: Float32Array, polygons: Int32Array, sizes: Int32Array)```
+
+	Add input polygons to the baker object. ```vertices``` is a plain float array with vertex positions, ```polygons``` is a plain array with polygon corners indices, ```sizes``` is a plain array with polygon sizes. You can call this method several tomes, but at each call polygon indices should be in local enumeration (the minimum is 0, the maximum is ```vertices.length / 3```).
+
+* ```bake(cell_size: f64, cell_height: f64, agent_height: f64, agent_radius: f64, agent_max_climb: f64, agent_max_slope: f64, region_min_size: i32, region_merge_size: i32, edge_max_len: f64, edge_max_error: f64, verts_per_poly: i32, detail_sample_distance: f64, detail_sample_maximum_error: f64): bool```
+
+	Bake navigation mesh ad return ```true``` if all done and ```false``` in other case. There are many input paramters for the baking process. Recommended start values are the following: 
+	
+	```cell_size = 0.3```, 
+	
+	```cell_height = 0.2```, 
+	
+	```agent_height = 2.0```, 
+	
+	```agent_radius = 0.6```, 
+	
+	```agent_max_climb = 0.9```, 
+	
+	```agent_max_slope = 45.0```, 
+	
+	```region_min_size = 8```, 
+	
+	```region_merge_size = 20```, 
+	
+	```edge_max_len = 12.0```, 
+	
+	```edge_max_error = 1.3```, 
+	
+	```verts_per_poly = 6```, 
+	
+	```detail_sample_distance = 6.0```, 
+	
+	```detail_sample_maximum_error = 1.0```.
+	
+	The most important are
+	
+	```cell_size``` define the voxels size in rasterization process. Less values allows to catch small details but produce more density mesh.
+
+	```cell_height``` define voxels height.
+	
+	```agent_radius``` define radius of the agents, which will be moved by navigation mesh. In fact this values define the gap between walls and actual navigation mesh polygons.
+	
+	```agent_max_slope``` define the slope in degrees where agents can move.
+	
+	```verts_per_poly``` define how many vertices polygons in the navigation mesh can contains. If this value is equal to 3, the output mesh will be triangulated.
+
+* ```get_navmesh_vertices(): StaticArray<f64>```
+
+	Return plain float array with vertex coordinates of the baked navigation mesh (or empty array if the navigation mesh is not baked).
+
+* ```get_navmesh_polygons(): StaticArray<i32>```
+
+	Return plain integer array with polygon vertex indices of the baked navigation mesh (or empty array if the navigation mesh is not baked).
+	
+* ```get_navmesh_sizes(): StaticArray<i32>```
+
+	Return plain integer array with sizes of the baked navigation mesh polygons (or empty array if the navigation mesh is not baked).
+	
 
 ## Performance comparison
 

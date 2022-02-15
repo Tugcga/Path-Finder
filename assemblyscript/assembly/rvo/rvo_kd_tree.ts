@@ -1,8 +1,8 @@
 import { Obstacle } from "./rvo_obstacle";
 import { Agent } from "./rvo_agent";
 import { RVOSimulator } from "./rvo_simulator";
-import { log_message, left_of_points, sqr, RVO_EPSILON } from "./utilities";
-import { Vector2, det, abs_sq } from "./vector2";
+import { log_message, left_of_points, sqr, RVO_EPSILON } from "../common/utilities";
+import { Vector2, det, abs_sq } from "../common/vector2";
 
 class AgentTreeNode{
     m_begin: i32;

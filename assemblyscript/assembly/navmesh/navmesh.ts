@@ -1,8 +1,8 @@
 import { NavmeshNode } from "./navmesh_node";
 import { NavmeshBVH, TrianglesBVH } from "./navmesh_bvh";
 import { Graph } from "./navmesh_graph";
-import { is_edge_new, squared_len, log_message } from "./utilities";
-import { List } from "./list";
+import { is_edge_new, squared_len, log_message } from "../common/utilities";
+import { List } from "../common/list";
 
 export var NAVMESH_INITIAL_BUFFER_SIZE = 128;
 export var BVH_AABB_DELTA: f32 = 0.5;

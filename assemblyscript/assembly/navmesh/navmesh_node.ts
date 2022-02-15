@@ -1,4 +1,4 @@
-import { log_message } from "./utilities";
+import { log_message } from "../common/utilities";
 
 let STATIC_ARRAY_BUFFER_STEP = 8;  // when increase the data values count in static array and overflow it length, then we recreate new bigger array
 

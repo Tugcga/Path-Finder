@@ -1,8 +1,8 @@
-import { Vector2, Line, abs_sq, dot, det, normalize } from "./vector2";
-import { List } from "./list";
+import { Vector2, Line, abs_sq, dot, det, normalize } from "../common/vector2";
+import { List } from "../common/list";
 import { Obstacle } from "./rvo_obstacle";
 import { RVOSimulator } from "./rvo_simulator";
-import { log_message, dist_sq_point_line_segment, sqr, RVO_EPSILON, RVO_INFINITY } from "./utilities";
+import { log_message, dist_sq_point_line_segment, sqr, RVO_EPSILON, RVO_INFINITY } from "../common/utilities";
 
 function linearProgram1(lines: List<Line>, lineNo: i32, radius: f32, optVelocity: Vector2, directionOpt: bool, result: Vector2): bool{
     let line_no = lines[lineNo];

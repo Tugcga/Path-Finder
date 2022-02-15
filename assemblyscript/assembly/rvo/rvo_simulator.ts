@@ -1,9 +1,9 @@
 import { KDTree } from "./rvo_kd_tree";
 import { Obstacle } from "./rvo_obstacle";
 import { Agent } from "./rvo_agent";
-import { Vector2 } from "./vector2";
-import { List } from "./list";
-import { log_message, is_in_array } from "./utilities";
+import { Vector2 } from "../common/vector2";
+import { List } from "../common/list";
+import { log_message, is_in_array } from "../common/utilities";
 
 export class RVOSimulator{
     private m_agents: List<Agent>;

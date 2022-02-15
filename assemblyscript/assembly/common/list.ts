@@ -81,6 +81,15 @@ export class List<T>{
         unchecked(this.m_array[index] = value);
     }
 
+    @inline
+    to_static(): StaticArray<T>{
+        var to_return = new StaticArray<T>(this.m_size);
+        for(let i = 0; i < this.m_size; i++){
+            to_return[i] = this.m_array[i];
+        }
+        return to_return;
+    }
+
     toString(): string{
         return "[" + this.m_array.slice(0, this.m_size).toString() + "]";
     }

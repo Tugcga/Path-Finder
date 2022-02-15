@@ -1,5 +1,5 @@
 import { NavmeshNode } from "./navmesh_node";
-import { clamp, squared_len, log_message } from "./utilities";
+import { clamp, squared_len, log_message } from "../common/utilities";
 
 class AABB {
     x_min: f32;

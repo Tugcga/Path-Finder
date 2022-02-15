@@ -1,7 +1,8 @@
-import { Navmesh } from "./navmesh";
+import { Navmesh } from "./navmesh/navmesh";
 import { PathFinder} from "./pathfinder";
-import { RVOSimulator } from "./rvo_simulator";
-import { Graph } from "./navmesh_graph";
+import { RVOSimulator } from "./rvo/rvo_simulator";
+import { Graph } from "./navmesh/navmesh_graph";
+import { NavmeshBaker } from "./baker/navmesh_baker";
 
 export const float_array = idof<Float32Array>();
 export const int_array = idof<Int32Array>();
@@ -118,4 +119,11 @@ export function create_graph(vertex_positions: Float32Array, vertices: Int32Arra
         unchecked(m_edges[i] = edges[i]);
     }
     return new Graph(m_positions, m_vertex_names, m_edges);
+}
+
+/*
+Create navigation mesh baker object. No input parameters are needed.
+*/
+export function create_baker(): NavmeshBaker{
+    return new NavmeshBaker();
 }
