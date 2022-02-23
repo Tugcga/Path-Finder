@@ -405,3 +405,12 @@ export class RVOSimulator{
         this.m_agents[agent_index].set_velocity(new Vector2(velocity_x, velocity_y));
     }
 }
+
+export function create_rvo_simulator(neighbor_dist: f32,
+                                     max_neighbors: i32,
+                                     time_horizon: f32,
+                                     time_horizon_obst: f32,
+                                     agent_radius: f32,
+                                     max_speed: f32): RVOSimulator{
+    return new RVOSimulator(neighbor_dist, max_neighbors, time_horizon, time_horizon_obst, agent_radius, max_speed);
+}

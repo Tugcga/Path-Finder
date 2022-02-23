@@ -4,9 +4,40 @@ The module consists of two parts. The first part find the shortest path in 3-dim
 
 The module allows to bake navigation mesh polygonal data from input geometry. All you need is create ```NavmeshBaker``` object, setup input geometry and call ```bake()``` method (see API below).
 
+### Modules structure
+
+Repository contains several modules, compiled from source files. These modules contains different functionality and have different sizes. If there are no limits in module size, then use the full module ```pathfinder_full.wasm```. In other cases use smaller modules with specific functionality. For example, in most cases the navigation mesh baking is not needed in the actual game application, but it should be used in the editor of the game.
+
+Elementary modules:
+
+* ```navmesh.wasm``` (44 kb) contains graph and navigation mesh functionality
+* ```rvo.wasm``` (46 kb) contains RVO simulation functionality
+* ```navmesh_baker.wasm``` (87 kb) contains navigation mesh baking functionality
+
+Combined modules:
+
+* ```pathfinder.wasm``` (105 kb) combine ```navmesh.wasm```, ```rvo.wasm``` and also contains additional functionality for agent movements and collision avoidance on navigation mesh
+* ```pathfinder_full.wasm``` (183 kb) combine ```pathfinder.wasm``` and ```navmesh_baker.wasm```
+
+### Build commands
+
+```pathfinder_full.wasm```: ```asc assembly/pathfinder.ts assembly/navmesh/navmesh.ts assembly/rvo/rvo_simulator.ts assembly/navmesh/navmesh_graph.ts assembly/baker/navmesh_baker.ts assembly/common/vector2.ts assembly/common/exports.ts -o build/pathfinder_full.wasm --exportRuntime```
+
+```navmesh.wasm```: ```asc assembly/navmesh/navmesh.ts assembly/navmesh/navmesh_graph.ts assembly/common/exports.ts -o build/navmesh.wasm --exportRuntime```
+
+```rvo.wasm```: ```asc assembly/rvo/rvo_simulator.ts assembly/common/vector2.ts assembly/common/exports.ts -o build/rvo.wasm --exportRuntime```
+
+```navmesh_baker.wasm```: ```asc assembly/baker/navmesh_baker.ts assembly/common/exports.ts -o build/navmesh_baker.wasm --exportRuntime```
+
+```pathfinder.wasm```: ```asc assembly/pathfinder.ts assembly/navmesh/navmesh.ts assembly/rvo/rvo_simulator.ts assembly/navmesh/navmesh_graph.ts assembly/common/vector2.ts assembly/common/exports.ts -o build/pathfinder.wasm --exportRuntime```
+
+Of course, you can add additional compile keys for optimizations, something like ```--optimize --noAssert --optimizeLevel 3 --converge```
+
 ### Creation API
 
 * ```create_pathfinder(vertices: Float32Array | null, polygons: Int32Array | null, sizes: Int32Array | null): PathFinder```
+
+	Contained in ```pathfinder.wasm``` and ```pathfinder_full.wasm```.
 
 	Create the ```PathFinder``` object. Inputs are plain arrays with navigation mesh vertices coordinates and polygonal descriptions. If one of arrays is ```null``` then the object will be created only with ```RVOSimulator``` component on infinite XZ-plane.
 	
@@ -28,6 +59,8 @@ The module allows to bake navigation mesh polygonal data from input geometry. Al
 
 * ```create_pathfinder_ext(vertices: Float32Array | null, polygons: Int32Array | null, sizes: Int32Array | null, neighbor_dist: f32, max_neighbors: i32, time_horizon: f32, time_horizon_obst: f32, agent_radius: f32, update_path_find: f32, continuous_moving: bool, move_agents: bool, snap_agents: bool, use_normals: bool): PathFinder```
 
+	Contained in ```pathfinder.wasm``` and ```pathfinder_full.wasm```.
+
 	More complex version of the previous command. Allows detail setup of the ```RVOSimulator``` subcomponents and parameters of agent movement routine. If navigation mash data is not ```null``` then the boundary edges of the navmesh will be used as obstacles in each ```RVOSimulator```. These simulators will create for each connected component of the navmesh.
 
     * ```neighbor_dist```: the maximum distance to other agents a new agent takes into account in the simulation
@@ -43,14 +76,20 @@ The module allows to bake navigation mesh polygonal data from input geometry. Al
 
 * ```create_navmesh(vertices: Float32Array, polygons: Int32Array, sizes: Int32Array): Navmesh```
 
+	Contained in ```navmesh.wasm```, ```pathfinder.wasm``` and ```pathfinder_full.wasm```.
+
 	Create the ```Navmesh``` object. Parameters are the same as on ```PathFinder``` creation command.
 
 * ```function create_rvo_simulator(neighbor_dist: f32, max_neighbors: i32, time_horizon: f32, time_horizon_obst: f32, agent_radius: f32, max_speed: f32): RVOSimulator```
+
+	Contained in ```rvo.wasm```, ```pathfinder.wasm``` and ```pathfinder_full.wasm```.
 
 	Create ```RVOSimulator``` on infinite XZ-plane. You can add obstacles to this simulator by using it API. All parameters are the same as on extended ```PathFinder``` creation command.
 	* ```max_speed```: maximal speed of an agent.
 
 * ```function create_graph(vertex_positions: Float32Array, vertices: Int32Array, edges: Int32Array): Graph```
+
+	Contained in ```navmesh.wasm```, ```pathfinder.wasm``` and ```pathfinder_full.wasm```.
 
 	Create ```Graph``` object.
 	* ```vertex_positions```: plain array with 3-dimensional coordinates of graph vertices
@@ -58,6 +97,8 @@ The module allows to bake navigation mesh polygonal data from input geometry. Al
 	* ```edges```: plain array with pairs of vertices names. The first two value define the first edge of the graph, the third and froth values - the second edge and so on
 
 * ```create_baker(): NavmeshBaker```
+
+	Contained in ```navmesh_baker.wasm``` and ```pathfinder_full.wasm```.
 
 	Create object, which allows to bake navigation mesh. No input parameters needed.
 

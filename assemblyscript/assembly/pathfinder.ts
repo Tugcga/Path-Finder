@@ -888,3 +888,61 @@ export class PathFinder{
         return this.m_navmesh;
     }
 }
+
+/*
+Create pathfinder object with default RVO parameters:
+    neighbor_dist = 1.0
+    max_neighbors = 5
+    time_horizon = 0.5
+    time_horizon_obst = 0.5
+    agent_radius = 0.4
+    update_path_find = 1.0
+    continuous_moving = false
+    move_agents = true
+    snap_agents = true
+    use_normals = true
+
+Vertices, polygons and sizes arrays can be null. In this case navigation mesh will be infinite horizontal plane
+*/
+export function create_pathfinder(vertices: Float32Array | null, 
+                                  polygons: Int32Array | null, 
+                                  sizes: Int32Array | null): PathFinder{
+    return create_pathfinder_ext(vertices, polygons, sizes, 1.0, 5, 0.5, 0.5, 0.4, 1.0, false, true, true, true);
+}
+
+export function create_pathfinder_ext(vertices: Float32Array | null, 
+                                      polygons: Int32Array | null, 
+                                      sizes: Int32Array | null,
+                                      neighbor_dist: f32,
+                                      max_neighbors: i32,
+                                      time_horizon: f32,
+                                      time_horizon_obst: f32,
+                                      agent_radius: f32,
+                                      update_path_find: f32,
+                                      continuous_moving: bool,
+                                      move_agents: bool,
+                                      snap_agents: bool,
+                                      use_normals: bool): PathFinder{
+    if(vertices && polygons && sizes){
+        let st_vertices = new StaticArray<f32>(vertices.length);
+        let st_polygons = new StaticArray<i32>(polygons.length);
+        let st_sizes = new StaticArray<i32>(sizes.length);
+
+        for (let i = 0, len = vertices.length; i < len; i++) {
+            unchecked(st_vertices[i] = vertices[i]);
+        }
+
+        for (let i = 0, len = polygons.length; i < len; i++) {
+            unchecked(st_polygons[i] = polygons[i]);
+        }
+
+        for (let i = 0, len = sizes.length; i < len; i++) {
+            unchecked(st_sizes[i] = sizes[i]);
+        }
+
+        return new PathFinder(st_vertices, st_polygons, st_sizes, neighbor_dist, max_neighbors, time_horizon, time_horizon_obst, agent_radius, update_path_find, continuous_moving, move_agents, snap_agents, use_normals);
+    }
+    else{
+        return new PathFinder(null, null, null, neighbor_dist, max_neighbors, time_horizon, time_horizon_obst, agent_radius, update_path_find, continuous_moving, move_agents, snap_agents, use_normals);
+    }
+}

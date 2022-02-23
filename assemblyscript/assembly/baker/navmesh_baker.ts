@@ -10,7 +10,6 @@ import { build_poly_mesh } from "./rc_mesh";
 
 import { log_message } from "../common/utilities";
 
-
 type int = i32;
 type float = f64;
 
@@ -221,4 +220,11 @@ export class NavmeshBaker{
             return this.m_output_sizes;
         }
     }
+}
+
+/*
+Create navigation mesh baker object. No input parameters are needed.
+*/
+export function create_baker(): NavmeshBaker{
+    return new NavmeshBaker();
 }
