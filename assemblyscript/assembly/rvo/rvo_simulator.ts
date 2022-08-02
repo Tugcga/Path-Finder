@@ -111,7 +111,7 @@ export class RVOSimulator{
     }
 
     //the same as add_obstacle, but input is plain float array
-    add_obstacle_array(vertices: Float32Array): i32{
+    add_obstacle_array(vertices: StaticArray<f32>): i32{
         let vec2_vertices = new StaticArray<Vector2>(vertices.length / 2);
         for(let  i = 0, len = vec2_vertices.length; i < len; i++){
             unchecked(vec2_vertices[i]).set_values(unchecked(vertices[2*i]), unchecked(vertices[2*i + 1]));
@@ -250,8 +250,8 @@ export class RVOSimulator{
 
     //return one plain float array with 2d-positions of all agents in the simulator
     @inline
-    get_agents_positions(): Float32Array{
-        let to_return = new Float32Array(2 * this.m_agents_count);
+    get_agents_positions(): StaticArray<f32> {
+        let to_return = new StaticArray<f32>(2 * this.m_agents_count);
         for(let i = 0, len = this.m_agents_count; i < len; i++){
             let p = this.get_agent_position(i);
             unchecked(to_return[2*i] = p.x());
@@ -287,8 +287,8 @@ export class RVOSimulator{
 
     //return one plain float array with velocities of all agents
     @inline
-    get_agents_velocities(): Float32Array{
-        let to_return = new Float32Array(2 * this.m_agents_count);
+    get_agents_velocities(): StaticArray<f32> {
+        let to_return = new StaticArray<f32>(2 * this.m_agents_count);
         for(let i = 0, len = this.m_agents_count; i < len; i++){
             let v = this.get_agent_velocity(i);
             unchecked(to_return[2*i] = v.x());
@@ -358,7 +358,7 @@ export class RVOSimulator{
 
     //input is array with 2d-positions of all agents
     @inline
-    set_agents_positions(positions: Float32Array): void{
+    set_agents_positions(positions: StaticArray<f32>): void{
         const input_positions = positions.length / 2;
         const count = input_positions < this.m_agents_count ? input_positions : this.m_agents_count;
         for(let i = 0; i < count; i++){
@@ -373,7 +373,7 @@ export class RVOSimulator{
 
     //input is array with prefered 2d-velocities for all agents
     @inline
-    set_agents_pref_velocities(velocities: Float32Array): void{
+    set_agents_pref_velocities(velocities: StaticArray<f32>): void{
         const input_velocities = velocities.length / 2;
         const count = input_velocities < this.m_agents_count ? input_velocities : this.m_agents_count;
         for(let i = 0; i < count; i++){
@@ -404,13 +404,4 @@ export class RVOSimulator{
     set_agent_velocity(agent_index: i32, velocity_x: f32, velocity_y: f32): void{
         this.m_agents[agent_index].set_velocity(new Vector2(velocity_x, velocity_y));
     }
-}
-
-export function create_rvo_simulator(neighbor_dist: f32,
-                                     max_neighbors: i32,
-                                     time_horizon: f32,
-                                     time_horizon_obst: f32,
-                                     agent_radius: f32,
-                                     max_speed: f32): RVOSimulator{
-    return new RVOSimulator(neighbor_dist, max_neighbors, time_horizon, time_horizon_obst, agent_radius, max_speed);
 }

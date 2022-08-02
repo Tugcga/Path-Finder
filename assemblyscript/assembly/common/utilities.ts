@@ -1,10 +1,9 @@
 //import "wasi";
-//import { Console } from "as-wasi";
 import { Vector2, abs_sq, dot } from "./vector2";
 import { List } from "./list";
 
 export function log_message(message: string): void{
-    //Console.log(message + "\n");
+    //console.log(message);
 }
 
 export const RVO_EPSILON: f32 = 0.0001;

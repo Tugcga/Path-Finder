@@ -13,7 +13,7 @@ import { log_message } from "../common/utilities";
 type int = i32;
 type float = f64;
 
-export class NavmeshBaker{
+export class NavmeshBaker {
     m_input_vertices: List<float>;
     m_input_triangles: List<int>;
 
@@ -23,7 +23,7 @@ export class NavmeshBaker{
 
     m_is_dirty: bool;
 
-    constructor(){
+    constructor() {
         this.m_input_vertices = new List<float>();
         this.m_input_triangles = new List<int>();  // plain array with vertex indices for triangles
 
@@ -34,9 +34,7 @@ export class NavmeshBaker{
         this.m_is_dirty = true;
     }
 
-    add_geometry(vertices: Float32Array,
-                 polygons: Int32Array,
-                 sizes: Int32Array): void{
+    add_geometry(vertices: StaticArray<f32>, polygons: StaticArray<i32>, sizes: StaticArray<i32>): void {
         const n: int = this.m_input_vertices.length / 3;
         for(let i = 0, len = vertices.length; i < len; i++){
             this.m_input_vertices.push(<f64>vertices[i]);
@@ -220,11 +218,4 @@ export class NavmeshBaker{
             return this.m_output_sizes;
         }
     }
-}
-
-/*
-Create navigation mesh baker object. No input parameters are needed.
-*/
-export function create_baker(): NavmeshBaker{
-    return new NavmeshBaker();
 }

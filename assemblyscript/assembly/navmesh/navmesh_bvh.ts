@@ -253,11 +253,11 @@ export class TrianglesBVH {
     m_right_child!: TrianglesBVH;
     m_children_exists: bool;
 
-    m_return_buffer: Float32Array;  // use this array to return values from sample command
+    m_return_buffer: StaticArray<f32>;  // use this array to return values from sample command
 
 
     constructor(triangles_vertices: StaticArray<f32>, BVH_AABB_DELTA: f32 = 0.5) {
-        this.m_return_buffer = new Float32Array(4);
+        this.m_return_buffer = new StaticArray<f32>(4);
         this.m_is_object = false;
         this.m_children_exists = false;
 
@@ -596,7 +596,7 @@ export class TrianglesBVH {
         );
     }
 
-    sample(x: f32, y: f32, z: f32): Float32Array {
+    sample(x: f32, y: f32, z: f32): StaticArray<f32> {
         let triangle_data = this.m_triangle_data;
         //return the 4-th [x, y, z, w], where w = 1.0 - correct answer, 0.0 - empty answer
         if (this._is_inside_aabb(x, y, z)) {  // point inside aabb, so, check the node

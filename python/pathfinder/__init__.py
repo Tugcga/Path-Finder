@@ -23,10 +23,10 @@ def get_unit_vector(vector_2d: Tuple[float, float]):
 def read_from_binary(file_path: str) -> Tuple[List[Tuple[float, float, float]], List[List[int]]]:
     '''Read input binary file with navigation mesh polygonal data and return arrays with vertices and polygons
 
-    The formatof a binary file is very simple
+    The format of a binary file is very simple
     It contains three array, splitted by 64 bit infinite float
     The first array contains vertex positions as array of 64 bit floats
-    The second array contains 32 bit integers, whixh corresponds to polygon vertex indices
+    The second array contains 32 bit integers, which corresponds to polygon vertex indices
     The third array contains 32 bit integers, which define polygon sizes
     The file ends by 32 bits infinite float
 

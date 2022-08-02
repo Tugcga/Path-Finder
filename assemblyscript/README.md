@@ -4,38 +4,71 @@ The module consists of two parts. The first part find the shortest path in 3-dim
 
 The module allows to bake navigation mesh polygonal data from input geometry. All you need is create ```NavmeshBaker``` object, setup input geometry and call ```bake()``` method (see API below).
 
+
 ### Modules structure
 
 Repository contains several modules, compiled from source files. These modules contains different functionality and have different sizes. If there are no limits in module size, then use the full module ```pathfinder_full.wasm```. In other cases use smaller modules with specific functionality. For example, in most cases the navigation mesh baking is not needed in the actual game application, but it should be used in the editor of the game.
 
 Elementary modules:
 
-* ```navmesh.wasm``` (44 kb) contains graph and navigation mesh functionality
-* ```rvo.wasm``` (46 kb) contains RVO simulation functionality
-* ```navmesh_baker.wasm``` (87 kb) contains navigation mesh baking functionality
+* ```navmesh.wasm``` (31 kb) contains graph and navigation mesh functionality
+* ```rvo.wasm``` (28 kb) contains RVO simulation functionality
+* ```baker.wasm``` (82 kb) contains navigation mesh baking functionality
 
 Combined modules:
 
-* ```pathfinder.wasm``` (105 kb) combine ```navmesh.wasm```, ```rvo.wasm``` and also contains additional functionality for agent movements and collision avoidance on navigation mesh
-* ```pathfinder_full.wasm``` (183 kb) combine ```pathfinder.wasm``` and ```navmesh_baker.wasm```
+* ```pathfinder.wasm``` (82 kb) combine ```navmesh.wasm```, ```rvo.wasm``` and also contains additional functionality for agent movements and collision avoidance on navigation mesh
+* ```pathfinder_full.wasm``` (160 kb) combine ```pathfinder.wasm``` and ```baker.wasm```
 
 ### Build commands
 
-```pathfinder_full.wasm```: ```asc assembly/pathfinder.ts assembly/navmesh/navmesh.ts assembly/rvo/rvo_simulator.ts assembly/navmesh/navmesh_graph.ts assembly/baker/navmesh_baker.ts assembly/common/vector2.ts assembly/common/exports.ts -o build/pathfinder_full.wasm --exportRuntime```
+Current version of modules designed for AssemblyScript version 0.20.x. This version allows exports only functions and does not support classes. So, there are special source files ```*_api.ts``` with all exported functionality. You should build these files only.
 
-```navmesh.wasm```: ```asc assembly/navmesh/navmesh.ts assembly/navmesh/navmesh_graph.ts assembly/common/exports.ts -o build/navmesh.wasm --exportRuntime```
+```navmesh.wasm```: ```asc assembly/navmesh_api.ts --outFile build/navmesh.wasm --bindings esm --exportRuntime```
 
-```rvo.wasm```: ```asc assembly/rvo/rvo_simulator.ts assembly/common/vector2.ts assembly/common/exports.ts -o build/rvo.wasm --exportRuntime```
+```rvo.wasm```: ```asc assembly/rvo_api.ts --outFile build/rvo.wasm --bindings esm --exportRuntime```
 
-```navmesh_baker.wasm```: ```asc assembly/baker/navmesh_baker.ts assembly/common/exports.ts -o build/navmesh_baker.wasm --exportRuntime```
+```navmesh_baker.wasm```: ```asc assembly/baker_api.ts --outFile build/baker.wasm --bindings esm --exportRuntime```
 
-```pathfinder.wasm```: ```asc assembly/pathfinder.ts assembly/navmesh/navmesh.ts assembly/rvo/rvo_simulator.ts assembly/navmesh/navmesh_graph.ts assembly/common/vector2.ts assembly/common/exports.ts -o build/pathfinder.wasm --exportRuntime```
+```pathfinder.wasm```: ```asc assembly/pathfinder_api.ts assembly/navmesh_api.ts assembly/rvo_api.ts --outFile build/pathfinder.wasm --bindings esm --exportRuntime```
 
-Of course, you can add additional compile keys for optimizations, something like ```--optimize --noAssert --optimizeLevel 3 --converge```
+```pathfinder_full.wasm```: ```asc assembly/pathfinder_api.ts assembly/navmesh_api.ts assembly/rvo_api.ts assembly/baker_api.ts --outFile build/pathfinder_full.wasm --bindings esm --exportRuntime```
+
+Of course, you can add additional compile keys for optimizations, something like ```--optimizeLevel 3 --converge --noAssert -Ospeed```
+
+### How to use
+
+Consider using navigation mesh module as example.
+
+Import the module
+
+```
+import * as navmesh_exports from "./navmesh.js";
+```
+
+Form arrays with vertex coordinates and polygon descriptions
+
+```
+const vertices = [1.0, 0.0, 0.0, 0.5, 0.0, -1.0, -0.5, 0.0, -1.0, -1.0, 0.0, 0.0, -0.5, 0.0, 1.0, 0.5, 0.0, 1.0];
+const polygons = [0, 1, 2, 3, 0, 3, 4, 5];
+const sizes = [4, 4];
+```
+
+Create navigation mesh
+
+```
+const navmesh_ptr = navmesh_exports.create_navmesh(vertices, polygons, sizes);
+```
+
+Calculate the path between two points
+
+```
+const path = navmesh_exports.navmesh_search_path(navmesh_ptr, 0.5, 0.0, 0.5, -0.5, 0.0, -0.5);
+```
 
 ### Creation API
 
-* ```create_pathfinder(vertices: Float32Array | null, polygons: Int32Array | null, sizes: Int32Array | null): PathFinder```
+* ```create_pathfinder(vertices: StaticArray<f32> | null, polygons: StaticArray<i32> | null, sizes: StaticArray<i32> | null): PathFinder```
 
 	Contained in ```pathfinder.wasm``` and ```pathfinder_full.wasm```.
 
@@ -57,7 +90,7 @@ Of course, you can add additional compile keys for optimizations, something like
 	let sizes = [4, 4];  // because both polygons are 4-sided
 	```
 
-* ```create_pathfinder_ext(vertices: Float32Array | null, polygons: Int32Array | null, sizes: Int32Array | null, neighbor_dist: f32, max_neighbors: i32, time_horizon: f32, time_horizon_obst: f32, agent_radius: f32, update_path_find: f32, continuous_moving: bool, move_agents: bool, snap_agents: bool, use_normals: bool): PathFinder```
+* ```create_pathfinder_ext(vertices: StaticArray<f32> | null, polygons: StaticArray<i32> | null, sizes: StaticArray<i32> | null, neighbor_dist: f32, max_neighbors: i32, time_horizon: f32, time_horizon_obst: f32, agent_radius: f32, update_path_find: f32, continuous_moving: bool, move_agents: bool, snap_agents: bool, use_normals: bool): PathFinder```
 
 	Contained in ```pathfinder.wasm``` and ```pathfinder_full.wasm```.
 
@@ -74,7 +107,7 @@ Of course, you can add additional compile keys for optimizations, something like
 	* ```snap_agents```: if ```true``` then each update call all agents will snap to the closest point in the navigation mesh. If this value is ```false``` and the navigation mesh is not planar, then the height position of agents linear interpolated between points in the path. Also, when ```snap_agents = false```, one agent can shift the other agent outside of the navigation mesh. In this case the shifted agent will not move, because it fails to find the path to the destination point. These undesired shifts can be eliminated by properly defined ```agent_radius``` value. So, if ```snap_agents = true``` then the system is stable but less performance, if ```snap_agents = false``` then calculations are more performance, but the system is not stable in some cases
 	* ```use_normals```: if ```true``` then during projections into xz-plane, proportionally change agent speeds so, that it move slowly on more steep slope
 
-* ```create_navmesh(vertices: Float32Array, polygons: Int32Array, sizes: Int32Array): Navmesh```
+* ```create_navmesh(vertices: StaticArray<f32>, polygons: StaticArray<i32>, sizes: StaticArray<i32>): Navmesh```
 
 	Contained in ```navmesh.wasm```, ```pathfinder.wasm``` and ```pathfinder_full.wasm```.
 
@@ -87,7 +120,7 @@ Of course, you can add additional compile keys for optimizations, something like
 	Create ```RVOSimulator``` on infinite XZ-plane. You can add obstacles to this simulator by using it API. All parameters are the same as on extended ```PathFinder``` creation command.
 	* ```max_speed```: maximal speed of an agent.
 
-* ```function create_graph(vertex_positions: Float32Array, vertices: Int32Array, edges: Int32Array): Graph```
+* ```function create_graph(vertex_positions: StaticArray<f32>, vertices: StaticArray<i32>, edges: StaticArray<i32>): Graph```
 
 	Contained in ```navmesh.wasm```, ```pathfinder.wasm``` and ```pathfinder_full.wasm```.
 
@@ -98,269 +131,279 @@ Of course, you can add additional compile keys for optimizations, something like
 
 * ```create_baker(): NavmeshBaker```
 
-	Contained in ```navmesh_baker.wasm``` and ```pathfinder_full.wasm```.
+	Contained in ```baker.wasm``` and ```pathfinder_full.wasm```.
 
 	Create object, which allows to bake navigation mesh. No input parameters needed.
 
 ### ```Graph``` API
 
-* ```search(start_vertex: i32, end_vertex: i32): Int32Array```
+Contained in ```navmesh.wasm```, ```pathfinder.wasm``` and ```pathfinder_full.wasm```.
 
-	Find the shortest path between input vertices in the graph by using Dijkstra’s algorithm.
+* ```graph_search(graph: Graph, start_vertex: i32, end_vertex: i32): StaticArray<i32>```
+
+	Find the shortest path between input vertices in the graph by using Dijkstra’s algorithm. Input parameters are names of two vertices, output is array with names of the path's vertices.
 
 ### ```Navmesh``` API
 
-* ```get_groups_count(): i32```
+Contained in ```navmesh.wasm```, ```pathfinder.wasm``` and ```pathfinder_full.wasm```.
+
+* ```navmesh_get_groups_count(navmesh: Navmesh): i32```
 
 	Return the number of connected components in the navigation mesh.
 
-* ```search_path(s_x: f32, s_y: f32, s_z: f32, e_x: f32, e_y: f32, e_z: f32): Float32Array```
+* ```navmesh_search_path(navmesh: Navmesh, s_x: f32, s_y: f32, s_z: f32, e_x: f32, e_y: f32, e_z: f32): StaticArray<f32>```
 
 	Return coordinates of the vertices in the shortest path between input start point (with coordinates ```s_x, s_y, s_z```) and input end point (with coordinates ```e_x, e_y, e_z```). If there are no path between point, then return empty array. If the path is exists, then return array, which contains as the start point, and the finish point. All other coordinates in the output array are coordinates of the middle path points.
 
-* ```sample(x: f32, y: f32, z: f32): Float32Array```
+* ```navmesh_sample(navmesh: Navmesh, x: f32, y: f32, z: f32): StaticArray<f32>```
 
 	Return the point in the navigation mesh, close to the input point with coordinates ```x, y, z```. Return 4-values array. If the forth value in the array is ```1.0```, then first three vales are coordinates of the closest point. If the forth values is ```0.0```, then there are no close points in the navigation mesh (and the first three values are wrong).
 
 There are also some additional global methods for setting parameters, which should be defined before creation the navigation mesh.
 
-* ```set_bvh_delta(delta: f32)```
+* ```navmesh_set_bvh_delta(navmesh: Navmesh, delta: f32)```
 
 	Define the delta-value, which will be used for constructing bvh inside navigation mesh. It contains two bvh structures. The first one for polygons, the second one for triangles. Delta-value used in aabb of the tree nodes.
 
-* ```get_bvh_delta(): f32```
+* ```navmesh_get_bvh_delta(navmesh: Navmesh): f32```
 
 	Return delta-value, used for constructing bvh inside navigation mesh.
 
 ### ```RVOSimulator``` API
 
-* ```add_agent(position_x: f32, position_y: f32): i32```
+Contained in ```rvo.wasm```, ```pathfinder.wasm``` and ```pathfinder_full.wasm```.
+
+* ```rvo_add_agent(rvo: RVOSimulator, position_x: f32, position_y: f32): i32```
 
 	Add a new agent to the simulator at the input position. All agent parameters (like radius, maximal speed etc) assigned from simulator parameters.
 
-* ```add_agent_ext(position_x: f32, position_y: f32, velocity_x: f32, velocity_y: f32, radius: f32, neighbor_dist: f32, max_neighbors: i32, time_horizon: f32, time_horizon_obst: f32, max_speed: f32): i32```
+* ```rvo_add_agent_ext(rvo: RVOSimulator, position_x: f32, position_y: f32, velocity_x: f32, velocity_y: f32, radius: f32, neighbor_dist: f32, max_neighbors: i32, time_horizon: f32, time_horizon_obst: f32, max_speed: f32): i32```
 
 	Add a new agent into simulator with complete list of parameters.
 
-* ```delete_agent(agent_index: i32)```
+* ```rvo_delete_agent(rvo: RVOSimulator, agent_index: i32)```
 
 	Delete agent with a given index from the simulator. Actual delete process called automatically before ```do_step``` method calls.
 
-* ```get_agents_count(): i32```
+* ```rvo_get_agents_count(rvo: RVOSimulator): i32```
 
 	Return the number of agents in the simulator.
 
-* ```add_obstacle_array(vertices: Float32Array): i32```
+* ```rvo_add_obstacle_array(rvo: RVOSimulator, vertices: StaticArray<f32>): i32```
 
 	Add obstacles into simulator. Input array is array of 2d-positions for the positions of line segments. The last segment between the first and the last point is added automatically.
 
-* ```do_step(delta_time: f32, move_agents: bool = true)```
+* ```rvo_do_step(rvo: RVOSimulator, delta_time: f32, move_agents: bool = true)```
 
 	The command to update agents velocities. It use current preferred agent velocities to calculate optimal velocities. As a result it save these velocities to ```velocity``` property of an each agent. If ```move_agents``` is ```true``` then the system also change agent positions.
 
-* ```get_agent_max_neighbors(agent_index: i32): i32```
+* ```rvo_get_agent_max_neighbors(rvo: RVOSimulator, agent_index: i32): i32```
 
 	Return maximum neighborhood agents count for the given agent.
 
-* ```get_agent_max_speed(agent_index: i32): f32```
+* ```rvo_get_agent_max_speed(rvo: RVOSimulator, agent_index: i32): f32```
 
 	Return agent maximum speed.
 
-* ```get_agent_position(agent_index: i32): Vector2```
+* ```rvo_get_agent_position(rvo: RVOSimulator, agent_index: i32): Vector2```
 
-	Return agent position. The method return the pointer to ```Vector2``` object. Actual coordinates can be obtains by using methods ```vector.x()``` and ```vector.y()```.
+	Return agent position. The method return the pointer to ```Vector2``` object. Actual coordinates can be obtains by using functions ```vector2_x(vector: Vector2)``` and ```vector2_y(vector: Vector2)```.
 
-* ```get_agents_positions(): Float32Array```
+* ```rvo_get_agents_positions(rvo: RVOSimulator): StaticArray<f32>```
 
 	Return plain array with all positions of all agents in the simulator. Each agent has 2d-position, so, the length of the array is x2 for agent count.
 
-* ```get_agent_pref_velocity(agent_index: i32): Vector2```
+* ```rvo_get_agent_pref_velocity(rvo: RVOSimulator, agent_index: i32): Vector2```
 
 	Return the defined preferred velocity of the agent.
 
-* ```get_agent_radius(agent_index: i32): f32```
+* ```rvo_get_agent_radius(rvo: RVOSimulator, agent_index: i32): f32```
 
 	Return the agent radius.
 
-* ```get_agent_time_horizon(agent_index: i32): f32```
+* ```rvo_get_agent_time_horizon(rvo: RVOSimulator, agent_index: i32): f32```
 
 	Return the agent time horizon parameter.
 
-* ```get_agent_time_horizon_obst(agent_index: i32): f32```
+* ```rvo_get_agent_time_horizon_obst(rvo: RVOSimulator, agent_index: i32): f32```
 
 	Return the agent time horizon parameter for obstacles.
 
-* ```get_agent_velocity(agent_index: i32): Vector2```
+* ```rvo_get_agent_velocity(rvo: RVOSimulator, agent_index: i32): Vector2```
 
 	Return agent velocity. Contains optimal values after ```do_step``` call.
 
-* ```get_agents_velocities(): Float32Array```
+* ```rvo_get_agents_velocities(rvo: RVOSimulator): StaticArray<f32>```
 
 	Return velocities of all agents in the simulator.
 
-* ```query_visibility(start_x: f32, start_y: f32, end_x: f32, end_y: f32, radius: f32): bool```
+* ```rvo_query_visibility(rvo: RVOSimulator, start_x: f32, start_y: f32, end_x: f32, end_y: f32, radius: f32): bool```
 
 	Return ```true``` if end position (with coordinates ```end_x, end_y```) is visible from start position (with coordinates ```start_x, start_y```).
 
-* ```set_agent_position(agent_index: i32, position_x: f32, position_y: f32)```
+* ```rvo_set_agent_position(rvo: RVOSimulator, agent_index: i32, position_x: f32, position_y: f32)```
 
 	Set the agent position.
 
-* ```set_agents_positions(positions: Float32Array)```
+* ```rvo_set_agents_positions(rvo: RVOSimulator, positions: StaticArray<f32>)```
 
 	Set positions of all agents in the simulator. Input array should contains coordinates of 2d-positions for the first agent, then for the second and so on.
 
-* ```set_agent_pref_velocity(agent_index: i32, velocity_x: f32, velocity_y: f32)```
+* ```rvo_set_agent_pref_velocity(rvo: RVOSimulator, agent_index: i32, velocity_x: f32, velocity_y: f32)```
 	
 	Set preferred velocities for the agent.
 
-* ```set_agents_pref_velocities(velocities: Float32Array)```
+* ```rvo_set_agents_pref_velocities(rvo: RVOSimulator, velocities: StaticArray<f32>)```
 
 	Set preferred velocities for all agents in the simulator. Input array should contains coordinates of 2d-velocities for the first agent, then for the second and so on.
 
 
 ### ```PathFinder``` API
 
-* ```add_agent(position_x: f32, position_y: f32, position_z: f32, radius: f32, speed: f32):```
+Contained in ```pathfinder.wasm``` and ```pathfinder_full.wasm```.
+
+* ```pathfinder_add_agent(pathfinder: PathFinder, position_x: f32, position_y: f32, position_z: f32, radius: f32, speed: f32)```
 
 	Create new agent at the input position with given radius and move speed. Return unique id of the new agent. If something fails, then return -1.
 
-* ```delete_agent(agent_id: i32)```
+* ```pathfinder_delete_agent(pathfinder: PathFinder, agent_id: i32)```
 
 	Delete agent with given id form the ```PathFinder``` object and all ```RVOSimulator``` subcomponents.
 
-* ```set_agent_destination(agent_id: i32, position_x: f32, position_y: f32, position_z: f32): bool```
+* ```pathfinder_set_agent_destination(pathfinder: PathFinder, agent_id: i32, position_x: f32, position_y: f32, position_z: f32): bool```
 
 	Set coordinates of the destination point for a give agent. Under the hood it find the shortest path and start move agent along this path. Return ```true``` if all is ok, and ``false``` if something fails (there is no agent with input id, target point outside of the navigation mesh or in another connected component ans so on).
 
-* ```update(delta_time: f32)```
+* ```pathfinder_update(pathfinder: PathFinder, delta_time: f32)```
 
 	Update all positions and velocities of all agents in the ```PathFinder``` object. ```delta_time``` is a time between previous and current method call.
 
-* ```get_default_agent_radius(): f32```
+* ```pathfinder_get_default_agent_radius(pathfinder: PathFinder): f32```
 
 	Return value, used for constructing obstacles in ```RVOSimulator``` subcomponents from boundary of the navigation mesh polygons.
 
-* ```get_all_agents_positions(): Float32Array```
+* ```pathfinder_get_all_agents_positions(pathfinder: PathFinder): StaticArray<f32>```
 
 	Return 3d-positions of all agents in the ```PathFinder``` object.
 
-* ```get_all_agents_velocities(): Float32Array```
+* ```pathfinder_get_all_agents_velocities(pathfinder: PathFinder): StaticArray<f32>```
 
 	Return 2d-velocities of all agents in all ```RVOSimulator``` subcomponents. Return values ion the same order as ```get_agents_id()``` method.
 
-* ```get_agent_path(agent_id: i32): Float32Array```
+* ```pathfinder_get_agent_path(pathfinder: PathFinder, agent_id: i32): Float32Array```
 
 	Return path of the agent with input id as plain float array. If there is no agent with give id, then return empty array.
 
-* ```get_all_agents_activities(): StaticArray<bool>```
+* ```pathfinder_get_all_agents_activities(pathfinder: PathFinder): StaticArray<bool>```
 
 	Return boolean array with activities of all agents in the ```PathFinder``` object. Returned values in the same order as in ```get_agents_id()``` method.
 
-* ```get_agent_activity(agent_id: i32): bool```
+* ```pathfinder_get_agent_activity(pathfinder: PathFinder, agent_id: i32): bool```
 
 	Return ```ture``` if the agent with input id is active, otherwise return ```false```. Also return ```false``` if there is no agent with input id.
 
-* ```get_agent_velocity(agent_id: i32): Float32Array```
+* ```pathfinder_get_agent_velocity(pathfinder: PathFinder, agent_id: i32): StaticArray<f32>```
 
 	Return two-values array with current velocity of the input agent. If there is not agent with this id, then return empty array.
 
-* ```get_agent_position(agent_id: i32): Float32Array```
+* ```pathfinder_get_agent_position(pathfinder: PathFinder, agent_id: i32): StaticArray<f32>```
 
 	Return three-valued array with coordinates of the agent with input id. If there is not agent with this id, then return empty array.
 
-* ```get_agents_count(): i32```
+* ```pathfinder_get_agents_count(pathfinder: PathFinder): i32```
 
 	Return the number of agents in the ```PathFinder``` object.
 
-* ```get_agents_id(): Int32Array```
+* ```pathfinder_get_agents_id(pathfinder: PathFinder): StaticArray<i32>```
 
 	Return plain integer array with unique ids of all agents.
 
-* ```get_active_agents_count(): i32```
+* ```pathfinder_get_active_agents_count(pathfinder: PathFinder): i32```
 
 	Return the number of active agents in the ```PathFinder``` object. An agent is active, if it follows to the final destination.
 
-* ```search_path(s_x: f32, s_y: f32, s_z: f32, e_x: f32, e_y: f32, e_z: f32): Float32Array```
+* ```pathfinder_search_path(pathfinder: PathFinder, s_x: f32, s_y: f32, s_z: f32, e_x: f32, e_y: f32, e_z: f32): Float32Array```
 
 	Return plain array with 3d-coordinates of points in the shortest path between input positions.
 
-* ```sample(x: f32, y: f32, z: f32): Float32Array```
+* ```pathfinder_sample(pathfinder: PathFinder, x: f32, y: f32, z: f32): StaticArray<f32>```
 
 	Return 4-values float array with coordinates of the point in the navigation mesh, close to the input position. If the forth value is 1.0, then the answer is valid, if it equals to 0.0, then there are no close points and coordinates in the array is invalid.
 
-* ```get_neighbor_dist(): f32```
+* ```pathfinder_get_neighbor_dist(pathfinder: PathFinder): f32```
 
 	Return ```neighbor_dist``` parameter value used in all simulators subcomponents.
 
-* ```get_max_neighbors(): i32```
+* ```pathfinder_get_max_neighbors(pathfinder: PathFinder): i32```
 
 	Return ```max_neighbors``` parameter value used in all simulators subcomponents.
 
-* ```get_time_horizon(): f32```
+* ```pathfinder_get_time_horizon(pathfinder: PathFinder): f32```
 
 	Return ```time_horizon``` parameter value used in all simulators subcomponents.
 
-* ```get_time_horizon_obst(): f32```
+* ```pathfinder_get_time_horizon_obst(pathfinder: PathFinder): f32```
 
 	Return ```time_horizon_obst``` parameter value used in all simulators subcomponents.
 
-* ```get_update_path_find(): f32```
+* ```pathfinder_get_update_path_find(pathfinder: PathFinder): f32```
 
 	Return ```update_path_find``` parameter value.
 
-* ```set_update_path_find(value: f32)```
+* ```pathfinder_set_update_path_find(pathfinder: PathFinder, value: f32)```
 
 	Set ```update_path_find``` parameter.
 
-* ```get_continuous_moving(): bool```
+* ```pathfinder_get_continuous_moving(pathfinder: PathFinder): bool```
 
 	Return ```continuous_moving``` parameter value.
 
-* ```set_continuous_moving(value: bool)```
+* ```pathfinder_set_continuous_moving(pathfinder: PathFinder, value: bool)```
 
 	Set ```continuous_moving``` parameter.
 
-* ```get_move_agents(): bool```
+* ```pathfinder_get_move_agents(pathfinder: PathFinder): bool```
 
 	Return ```move_agents``` parameter value.
 
-* ```set_move_agents(value: bool)```
+* ```pathfinder_set_move_agents(pathfinder: PathFinder, value: bool)```
 
 	Set ```move_agents``` parameter.
 
-* ```get_snap_agents(): bool```
+* ```pathfinder_get_snap_agents(pathfinder: PathFinder): bool```
 
 	Return ```snap_agents``` parameter value.
 
-* ```set_snap_agents(value: bool)```
+* ```pathfinder_set_snap_agents(pathfinder: PathFinder, value: bool)```
 
 	Set ```snap_agents``` parameter.
 
-* ```get_use_normals(): bool```
+* ```pathfinder_get_use_normals(pathfinder: PathFinder): bool```
 
 	Return ```use_normals``` parameter value.
 
-* ```set_use_normals(value: bool)```
+* ```pathfinder_set_use_normals(pathfinder: PathFinder, value: bool)```
 
 	Set ```use_normals``` parameter.
 
-* ```get_rvo_simulator(group: i32): RVOSimulator | null```
+* ```pathfinder_get_rvo_simulator(pathfinder: PathFinder, group: i32): RVOSimulator | null```
 
 	Return ```RVOSimulator``` on the input connected component of the navigation mesh. If navigation mesh is not defined, then input parameter ```group``` should be 0.
 
-* ```get_navmesh(): Navmesh | null```
+* ```pathfinder_get_navmesh(pathfinder: PathFinder): Navmesh | null```
 
 	Return navigation mesh subcomponent of the pathfinder object. Return ```null``` if navmesh is not defined.
 
 	
 ### ```NavmeshBaker``` API
 
-* ```add_geometry(vertices: Float32Array, polygons: Int32Array, sizes: Int32Array)```
+Contained in ```baker.wasm``` and ```pathfinder_full.wasm```.
+
+* ```baker_add_geometry(baker: NavmeshBaker, vertices: StaticArray<f32>, polygons: StaticArray<i32>, sizes: StaticArray<i32>)```
 
 	Add input polygons to the baker object. ```vertices``` is a plain float array with vertex positions, ```polygons``` is a plain array with polygon corners indices, ```sizes``` is a plain array with polygon sizes. You can call this method several tomes, but at each call polygon indices should be in local enumeration (the minimum is 0, the maximum is ```vertices.length / 3```).
 
-* ```bake(cell_size: f64, cell_height: f64, agent_height: f64, agent_radius: f64, agent_max_climb: f64, agent_max_slope: f64, region_min_size: i32, region_merge_size: i32, edge_max_len: f64, edge_max_error: f64, verts_per_poly: i32, detail_sample_distance: f64, detail_sample_maximum_error: f64): bool```
+* ```baker_bake(baker: NavmeshBaker, cell_size: f64, cell_height: f64, agent_height: f64, agent_radius: f64, agent_max_climb: f64, agent_max_slope: f64, region_min_size: i32, region_merge_size: i32, edge_max_len: f64, edge_max_error: f64, verts_per_poly: i32, detail_sample_distance: f64, detail_sample_maximum_error: f64): bool```
 
 	Bake navigation mesh ad return ```true``` if all done and ```false``` in other case. There are many input paramters for the baking process. Recommended start values are the following: 
 	
@@ -402,15 +445,15 @@ There are also some additional global methods for setting parameters, which shou
 	
 	```verts_per_poly``` define how many vertices polygons in the navigation mesh can contains. If this value is equal to 3, the output mesh will be triangulated.
 
-* ```get_navmesh_vertices(): StaticArray<f64>```
+* ```baker_get_navmesh_vertices(baker: NavmeshBaker): StaticArray<f64>```
 
 	Return plain float array with vertex coordinates of the baked navigation mesh (or empty array if the navigation mesh is not baked).
 
-* ```get_navmesh_polygons(): StaticArray<i32>```
+* ```baker_get_navmesh_polygons(baker: NavmeshBaker): StaticArray<i32>```
 
 	Return plain integer array with polygon vertex indices of the baked navigation mesh (or empty array if the navigation mesh is not baked).
 	
-* ```get_navmesh_sizes(): StaticArray<i32>```
+* ```baker_get_navmesh_sizes(baker: NavmeshBaker): StaticArray<i32>```
 
 	Return plain integer array with sizes of the baked navigation mesh polygons (or empty array if the navigation mesh is not baked).
 	
@@ -428,14 +471,14 @@ This navigation mesh contains 2 294 polygons. We compare our WASM implementation
 Task | WASM | PyRecastDetour
 --- | --- | ---
 Initialization time | 0.05 sec | 0.02 sec
-1024 pairs | 0.15 sec | 0.08 sec
-4096 pairs | 0.48 sec | 0.28 sec
-16 384 pairs | 2.01 sec | 1.24 sec
-38 416 pairs | 4.62 sec | 2.69 sec
-65 536 pairs | 7.79 sec | 4.59 sec
-147 456 pairs | 17.52 sec | 10.20 sec
+1024 pairs | 0.10 sec | 0.08 sec
+4096 pairs | 0.38 sec | 0.28 sec
+16 384 pairs | 1.48 sec | 1.24 sec
+38 416 pairs | 3.76 sec | 2.69 sec
+65 536 pairs | 6.21 sec | 4.59 sec
+147 456 pairs | 13.60 sec | 10.20 sec
 
-So, our WASM version is nearly x1.7 times slowly with respect to c++ solution.
+So, our WASM version is nearly x1.3 times slowly with respect to c++ solution.
 
 
 ### Collision avoidance algorithm
@@ -444,10 +487,10 @@ For benchmark we simply generate a number of agents on the plane, set destinatio
 
 Task | as-RVO | em-RVO | c-RVO
 --- | --- | --- | ---
-1000 agents, 1000 steps | 16.1 sec | 9.45 sec | 3.01 sec
-100 000 agents, 1 step | 3.42 sec | 2.19 sec | 0.51 sec
+1000 agents, 1000 steps | 14.21 sec | 9.45 sec | 3.01 sec
+100 000 agents, 1 step | 3.22 sec | 2.19 sec | 0.51 sec
 
-So, Emscripten version is x1.6 times faster, c++ version is x6 times faster.
+So, Emscripten version is x1.5 times faster, c++ version is x5 times faster.
 
 
 ## Example application
@@ -465,3 +508,5 @@ The second scene demonstrate the simple case of the using RVO2 algorithm. A numb
 The third scene demonstrate the complex usage of the path finding and collision avoidance. A number of agents moves on navigation mesh to random destination points.
 
 <img src="../images/pc_scene_03.png" width="400" />
+
+This application use the old version of the module. The functionality is the same, but there are some difference with the module import process. The old version used the AssemblyScript loader, but current version use automatically generated bindings.

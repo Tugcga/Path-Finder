@@ -8,12 +8,12 @@ README.txt
 test_types.py
 assemblyscript/node_modules
 assemblyscript/run.js
-assemblyscript/build command.txt
 assemblyscript/navmesh_test.js
 assemblyscript/grid_graph_test.js
 assemblyscript/bvh_test.js
 *.js
 *.nm
+python/issues
 python/map_benchmark.py
 python/navmeshdata.txt
 python/map_01.txt
@@ -23,12 +23,14 @@ python/pynavmesh.egg-info
 python/level_two_zones.txt
 python/navmesh_test.py
 python/rvo_test.py
+assemblyscript/build
 assemblyscript/build command.txt
 assemblyscript/map_02.txt
 assemblyscript/map_02_reduce.txt
 assemblyscript/build/*.js
 assemblyscript/build/*.py
-assemblyscript/build/index.wasm
+assemblyscript/build/*.wasm
+assemblyscript/build/*.ts
 assemblyscript/assembly/index.ts
 assemblyscript/assembly/maps_data.ts
 *.json

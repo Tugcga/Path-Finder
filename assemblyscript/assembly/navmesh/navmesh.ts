@@ -35,6 +35,7 @@ export class Navmesh {
     private b_last_path_point: StaticArray<f32>;
 
     constructor(vertices: StaticArray<f32>, polygons: StaticArray<i32>, sizes: StaticArray<i32>) {
+        //TODO: properly create with empty input data
         this.m_vertices = vertices;
         this.m_polygons = polygons;
         this.m_sizes = sizes;
@@ -337,17 +338,17 @@ export class Navmesh {
         }
     }
 
-    search_path(s_x: f32, s_y: f32, s_z: f32, e_x: f32, e_y: f32, e_z: f32): Float32Array {
+    search_path(s_x: f32, s_y: f32, s_z: f32, e_x: f32, e_y: f32, e_z: f32): StaticArray<f32> {
         //generate the path between point (s_x, s_y, s_z) and (e_x, e_y, e_z)
         let start_index  = this.m_nodes_bvh.sample(s_x, s_y, s_z);
         let finish_index = this.m_nodes_bvh.sample(e_x, e_y, e_z);
 
         if (start_index == -1 || finish_index == -1) {
-            return new Float32Array(0);  // points are not in navmesh, return empty path
+            return new StaticArray<f32>(0);  // points are not in navmesh, return empty path
         }
 
         if (start_index == finish_index) {
-            let to_return = new Float32Array(6);
+            let to_return = new StaticArray<f32>(6);
             unchecked(to_return[0] = s_x);
             unchecked(to_return[1] = s_y);
             unchecked(to_return[2] = s_z);
@@ -534,17 +535,17 @@ export class Navmesh {
 
             //convert final path to output format
             let len = finall_path_length * 3;
-            let to_return = new Float32Array(len);
+            let to_return = new StaticArray<f32>(len);
             for (let k = 0; k < len; k++) {
                 unchecked(to_return[k] = this.b_finall_path[k]);
             }
             return to_return;
         }
-        return new Float32Array(0);
+        return new StaticArray<f32>(0);
     }
 
     @inline
-    sample(x: f32, y: f32, z: f32): Float32Array {
+    sample(x: f32, y: f32, z: f32): StaticArray<f32> {
         return this.m_triangles_bvh.sample(x, y, z);
     }
 
@@ -588,51 +589,4 @@ export function set_bvh_delta(delta: f32): void {
 
 export function get_bvh_delta(): f32 {
     return BVH_AABB_DELTA;
-}
-
-/*
-Create graph.
-    vertex_positions - plane array of floats and contains vertex 3d-coordinates of the first vertex, then of the second and so on [v1_x, v1_y, v1_z, v2_x, v2_y, v2_z, ...]
-    vertices - integer names of the vertices in the same order as input positions [v1, v2, v3, ...]
-    edges - pairs of graph vertices, for the first edge, then for the second and so on [e1_1, e1_2, e2_1, e2_2, e3_1, e3_2, ...]
-*/
-export function create_graph(vertex_positions: Float32Array, vertices: Int32Array, edges: Int32Array): Graph {
-    //save positions
-    let m_positions = new StaticArray<f32>(vertex_positions.length);
-    for (let i = 0, len = vertex_positions.length; i < len; i++) {
-        unchecked(m_positions[i] = vertex_positions[i]);
-    }
-
-    //save names
-    let m_vertex_names = new StaticArray<i32>(vertices.length);
-    for (let i = 0, len = vertices.length; i < len; i++) {
-        unchecked(m_vertex_names[i] = vertices[i]);
-    }
-
-    //save edges
-    let m_edges = new StaticArray<i32>(edges.length);
-    for (let i = 0, len = edges.length; i < len; i++) {
-        unchecked(m_edges[i] = edges[i]);
-    }
-    return new Graph(m_positions, m_vertex_names, m_edges);
-}
-
-export function create_navmesh(vertices: Float32Array, polygons: Int32Array, sizes: Int32Array): Navmesh{
-    let st_vertices = new StaticArray<f32>(vertices.length);
-    let st_polygons = new StaticArray<i32>(polygons.length);
-    let st_sizes = new StaticArray<i32>(sizes.length);
-
-    for (let i = 0, len = vertices.length; i < len; i++) {
-        unchecked(st_vertices[i] = vertices[i]);
-    }
-
-    for (let i = 0, len = polygons.length; i < len; i++) {
-        unchecked(st_polygons[i] = polygons[i]);
-    }
-
-    for (let i = 0, len = sizes.length; i < len; i++) {
-        unchecked(st_sizes[i] = sizes[i]);
-    }
-
-    return new Navmesh(st_vertices, st_polygons, st_sizes);
 }

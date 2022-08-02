@@ -628,8 +628,8 @@ export class PathFinder{
     }
 
     @inline
-    get_all_agents_positions(): Float32Array{
-        let to_return = new Float32Array(this.m_agents_positions.length);
+    get_all_agents_positions(): StaticArray<f32>{
+        let to_return = new StaticArray<f32>(this.m_agents_positions.length);
         for(let i = 0, len = this.m_agents_positions.length; i < len; i++){
             to_return[i] = this.m_agents_positions[i];
         }
@@ -637,8 +637,8 @@ export class PathFinder{
     }
 
     @inline
-    get_all_agents_velocities(): Float32Array{
-        let to_return = new Float32Array(2 * this.m_agents_id.length);
+    get_all_agents_velocities(): StaticArray<f32>{
+        let to_return = new StaticArray<f32>(2 * this.m_agents_id.length);
         for(let agent_inner_index = 0, len = this.m_agents_id.length; agent_inner_index <len; agent_inner_index++){
             const agent_group = this.m_agents_group[agent_inner_index];
             const agent_id = this.m_agents_id[agent_inner_index];
@@ -663,7 +663,7 @@ export class PathFinder{
     }
 
     @inline
-    get_agent_path(agent_id: i32): Float32Array{
+    get_agent_path(agent_id: i32): Float32Array {
         const agent_index = this._get_agent_inner_index(agent_id);
         if(agent_index > -1){
             return unchecked(this.m_agents_path[agent_index]);
@@ -705,36 +705,36 @@ export class PathFinder{
     }
 
     @inline
-    get_agent_velocity(agent_id: i32): Float32Array{
+    get_agent_velocity(agent_id: i32): StaticArray<f32>{
         const agent_inner_index = this._get_agent_inner_index(agent_id);
         if(agent_inner_index > -1){
             const agent_group = this.m_agents_group[agent_inner_index];
             let sim = unchecked(this.m_simulators[agent_group]);
             const agent_index = this._get_agent_group_index(agent_id, this.m_agents_group_id[agent_group]);
             let velocity = sim.get_agent_velocity(agent_index);
-            let to_return = new Float32Array(2);
+            let to_return = new StaticArray<f32>(2);
             to_return[0] = velocity.x();
             to_return[1] = velocity.y();
 
             return to_return;
         }
         else{
-            return new Float32Array(0);
+            return new StaticArray<f32>(0);
         }
     }
 
     @inline
-    get_agent_position(agent_id: i32): Float32Array{
+    get_agent_position(agent_id: i32): StaticArray<f32> {
         const agent_inner_index = this._get_agent_inner_index(agent_id);
         if(agent_inner_index > -1){
-            let to_return = new Float32Array(3);
+            let to_return = new StaticArray<f32>(3);
             to_return[0] = this.m_agents_positions[3*agent_inner_index];
             to_return[1] = this.m_agents_positions[3*agent_inner_index + 1];
             to_return[2] = this.m_agents_positions[3*agent_inner_index + 2];
             return to_return;
         }
         else{
-            return new Float32Array(0);
+            return new StaticArray<f32>(0);
         }
     }
 
@@ -744,8 +744,8 @@ export class PathFinder{
     }
 
     @inline
-    get_agents_id(): Int32Array{
-        let to_return = new Int32Array(this.m_agents_id.length);
+    get_agents_id(): StaticArray<i32> {
+        let to_return = new StaticArray<i32>(this.m_agents_id.length);
         for(let i = 0, len = to_return.length; i < len; i++){
             to_return[i] = this.m_agents_id[i];
         }
@@ -770,7 +770,11 @@ export class PathFinder{
             let path = nm.search_path(s_x, s_y, s_z, e_x, e_y, e_z);
             const length = path.length;
             if(length == 0 || length >= 6){
-                return path;
+                let to_return = new Float32Array(length);
+                for(let i = 0; i < length; i++) {
+                    unchecked(to_return[i] = path[i]);
+                }
+                return to_return;
             }
             else{
                 //return only three value, so, add the target point into the output
@@ -789,7 +793,7 @@ export class PathFinder{
     }
 
     @inline
-    sample(x: f32, y: f32, z: f32): Float32Array{
+    sample(x: f32, y: f32, z: f32): StaticArray<f32>{
         // return point on the navmesh close to the input position
         // return 4 values: x, y, z and valid key (0.0 - invald input, 1.0 - valid output)
         let navmesh = this.m_navmesh;
@@ -797,7 +801,7 @@ export class PathFinder{
             return navmesh.sample(x, y, z);
         }
         else{
-            let to_return = new Float32Array(4);
+            let to_return = new StaticArray<f32>(4);
             to_return[0] = x; to_return[1] = y; to_return[2] = z; to_return[3] = 1.0;
             return to_return;
         }
@@ -886,63 +890,5 @@ export class PathFinder{
     @inline
     get_navmesh(): Navmesh | null{
         return this.m_navmesh;
-    }
-}
-
-/*
-Create pathfinder object with default RVO parameters:
-    neighbor_dist = 1.0
-    max_neighbors = 5
-    time_horizon = 0.5
-    time_horizon_obst = 0.5
-    agent_radius = 0.4
-    update_path_find = 1.0
-    continuous_moving = false
-    move_agents = true
-    snap_agents = true
-    use_normals = true
-
-Vertices, polygons and sizes arrays can be null. In this case navigation mesh will be infinite horizontal plane
-*/
-export function create_pathfinder(vertices: Float32Array | null, 
-                                  polygons: Int32Array | null, 
-                                  sizes: Int32Array | null): PathFinder{
-    return create_pathfinder_ext(vertices, polygons, sizes, 1.0, 5, 0.5, 0.5, 0.4, 1.0, false, true, true, true);
-}
-
-export function create_pathfinder_ext(vertices: Float32Array | null, 
-                                      polygons: Int32Array | null, 
-                                      sizes: Int32Array | null,
-                                      neighbor_dist: f32,
-                                      max_neighbors: i32,
-                                      time_horizon: f32,
-                                      time_horizon_obst: f32,
-                                      agent_radius: f32,
-                                      update_path_find: f32,
-                                      continuous_moving: bool,
-                                      move_agents: bool,
-                                      snap_agents: bool,
-                                      use_normals: bool): PathFinder{
-    if(vertices && polygons && sizes){
-        let st_vertices = new StaticArray<f32>(vertices.length);
-        let st_polygons = new StaticArray<i32>(polygons.length);
-        let st_sizes = new StaticArray<i32>(sizes.length);
-
-        for (let i = 0, len = vertices.length; i < len; i++) {
-            unchecked(st_vertices[i] = vertices[i]);
-        }
-
-        for (let i = 0, len = polygons.length; i < len; i++) {
-            unchecked(st_polygons[i] = polygons[i]);
-        }
-
-        for (let i = 0, len = sizes.length; i < len; i++) {
-            unchecked(st_sizes[i] = sizes[i]);
-        }
-
-        return new PathFinder(st_vertices, st_polygons, st_sizes, neighbor_dist, max_neighbors, time_horizon, time_horizon_obst, agent_radius, update_path_find, continuous_moving, move_agents, snap_agents, use_normals);
-    }
-    else{
-        return new PathFinder(null, null, null, neighbor_dist, max_neighbors, time_horizon, time_horizon_obst, agent_radius, update_path_find, continuous_moving, move_agents, snap_agents, use_normals);
     }
 }

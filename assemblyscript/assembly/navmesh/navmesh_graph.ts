@@ -169,7 +169,7 @@ export class Graph {
         return to_return + "}";
     }
 
-    search(start_vertex: i32, end_vertex: i32): Int32Array {
+    search(start_vertex: i32, end_vertex: i32): StaticArray<i32> {
         //check are these vertices exists
         if (this.m_index_map.has(start_vertex) &&
             this.m_index_map.has(end_vertex)) {
@@ -220,7 +220,7 @@ export class Graph {
                     temp_path.push(this.t_min_vertex);
                     //form the streight path and apply their names
                     let temp_path_len = temp_path.length;
-                    let to_return = new Int32Array(temp_path_len);
+                    let to_return = new StaticArray<i32>(temp_path_len);
                     for (let i = 0; i < temp_path_len; i++) {
                         unchecked(to_return[i] = this.m_vertex_names[temp_path[temp_path_len - 1 - i]]);
                     }
@@ -257,7 +257,7 @@ export class Graph {
             }
         }
 
-        return new Int32Array(0);
+        return new StaticArray<i32>(0);
     }
 
     to_string(): string {
