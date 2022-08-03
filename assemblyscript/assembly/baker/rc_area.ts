@@ -13,9 +13,7 @@ export function erode_walkable_area(radius: int,
     const h: int = chf.height;
 
     let dist: StaticArray<int> = new StaticArray<int>(chf.span_count);
-    for(let i = 0; i < chf.span_count; i++){
-        dist[i] = 255;
-    }
+    dist.fill(255);
 
     let s: CompactSpan | null = null;
     let c: CompactCell | null = null;
@@ -28,28 +26,31 @@ export function erode_walkable_area(radius: int,
     let aax: int = 0;
     let aay: int = 0;
     let aai: int = 0;
+    let chf_cells = chf.cells;
+    let chf_areas = chf.areas;
+    let chf_spans = chf.spans;
     for(let y = 0; y < h; y++){
         for(let x = 0; x < w; x++){
-            c = chf.cells[x + y*w];
+            c = chf_cells[x + y*w];
             if(c){
                 const c_index = c.index;
                 const c_count = c.count;
                 for(let i = c_index; i < c_index + c_count; i++){
-                    if(chf.areas[i] == RC_NULL_AREA){
+                    if(chf_areas[i] == RC_NULL_AREA){
                         dist[i] = 0;
                     }
                     else{
-                        s = chf.spans[i];
+                        s = chf_spans[i];
                         let nc: int = 0;
                         if(s){
                             for(let dir = 0; dir < 4; dir++){
                                 if(get_con(s, dir) != RC_NOT_CONNECTED){
                                     const nx: int = x + get_dir_offset_x(dir);
                                     const ny: int = y + get_dir_offset_y(dir);
-                                    c = chf.cells[nx + ny*w];
+                                    c = chf_cells[nx + ny*w];
                                     if(c){
                                         const nidx: int = c.index + get_con(s, dir);
-                                        if(chf.areas[nidx] != RC_NULL_AREA){
+                                        if(chf_areas[nidx] != RC_NULL_AREA){
                                             nc += 1;
                                         }
                                     }
@@ -69,10 +70,10 @@ export function erode_walkable_area(radius: int,
 
     for(let y = 0; y < h; y++){
         for(let x = 0; x < w; x++){
-            c = chf.cells[x + y*w];
+            c = chf_cells[x + y*w];
             if(c){
-                for(let i = c.index; i < c.index + c.count; i++){
-                    s = chf.spans[i];
+                for(let i = c.index, len = c.index + c.count; i < len; i++){
+                    s = chf_spans[i];
                     if(s){
                         if(get_con(s, 0) != RC_NOT_CONNECTED){
                             ax = x + get_dir_offset_x(0);
@@ -80,8 +81,8 @@ export function erode_walkable_area(radius: int,
                             c2 = chf.cells[ax + ay*w];
                             if(c2){
                                 ai = c2.index + get_con(s, 0);
-                                asp = chf.spans[ai];
-                                nd = <i32>Math.min(dist[ai] + 2, 255);
+                                asp = chf_spans[ai];
+                                nd = min(dist[ai] + 2, 255);
                                 if(nd < dist[i]){
                                     dist[i] = nd;
                                 }
@@ -93,7 +94,7 @@ export function erode_walkable_area(radius: int,
                                         c3 = chf.cells[aax + aay*w];
                                         if(c3){
                                             aai = c3.index + get_con(asp, 3);
-                                            nd = <i32>Math.min(dist[aai] + 3, 255);
+                                            nd = min(dist[aai] + 3, 255);
                                             if(nd < dist[i]){
                                                 dist[i] = nd;
                                             }
@@ -105,11 +106,11 @@ export function erode_walkable_area(radius: int,
                         if(get_con(s, 3) != RC_NOT_CONNECTED){
                             ax = x + get_dir_offset_x(3);
                             ay = y + get_dir_offset_y(3);
-                            c2 = chf.cells[ax + ay*w];
+                            c2 = chf_cells[ax + ay*w];
                             if(c2){
                                 ai = c2.index + get_con(s, 3);
-                                asp = chf.spans[ai];
-                                nd = <i32>Math.min(dist[ai] + 2, 255);
+                                asp = chf_spans[ai];
+                                nd = min(dist[ai] + 2, 255);
                                 if(nd < dist[i]){
                                     dist[i] = nd;
                                 }
@@ -118,10 +119,10 @@ export function erode_walkable_area(radius: int,
                                     if(get_con(asp, 2) != RC_NOT_CONNECTED){
                                         aax = ax + get_dir_offset_x(2);
                                         aay = ay + get_dir_offset_y(2);
-                                        c3 = chf.cells[aax + aay*w];
+                                        c3 = chf_cells[aax + aay*w];
                                         if(c3){
                                             aai = c3.index + get_con(asp, 2);
-                                            nd = <i32>Math.min(dist[aai] + 3, 255);
+                                            nd = min(dist[aai] + 3, 255);
                                             if(nd < dist[i]){
                                                 dist[i] = nd;
                                             }
@@ -138,20 +139,20 @@ export function erode_walkable_area(radius: int,
 
     for(let y = h - 1; y > -1; y--){
         for(let x = w - 1; x > -1; x--){
-            c = chf.cells[x + y*w];
+            c = chf_cells[x + y*w];
             if(c){
-                for(let i = c.index; i < c.index + c.count; i++){
-                    s = chf.spans[i];
+                for(let i = c.index, len = c.index + c.count; i < len; i++){
+                    s = chf_spans[i];
 
                     if(s){
                         if(get_con(s, 2) != RC_NOT_CONNECTED){
                             ax = x + get_dir_offset_x(2);
                             ay = y + get_dir_offset_y(2);
-                            c2 = chf.cells[ax + ay*w];
+                            c2 = chf_cells[ax + ay*w];
                             if(c2){
                                 ai = c2.index + get_con(s, 2);
-                                asp = chf.spans[ai];
-                                nd = <i32>Math.min(dist[ai] + 2, 255);
+                                asp = chf_spans[ai];
+                                nd = min(dist[ai] + 2, 255);
                                 if(nd < dist[i]){
                                     dist[i] = nd;
                                 }
@@ -159,10 +160,10 @@ export function erode_walkable_area(radius: int,
                                     if(get_con(asp, 1) != RC_NOT_CONNECTED){
                                         aax = ax + get_dir_offset_x(1);
                                         aay = ay + get_dir_offset_y(1);
-                                        c3 = chf.cells[aax + aay*w];
+                                        c3 = chf_cells[aax + aay*w];
                                         if(c3){
                                             aai = c3.index + get_con(asp, 1);
-                                            nd = <i32>Math.min(dist[aai] + 3, 255);
+                                            nd = min(dist[aai] + 3, 255);
                                             if(nd < dist[i]){
                                                 dist[i] = nd;
                                             }
@@ -174,11 +175,11 @@ export function erode_walkable_area(radius: int,
                         if(get_con(s, 1) != RC_NOT_CONNECTED){
                             ax = x + get_dir_offset_x(1);
                             ay = y + get_dir_offset_y(1);
-                            c2 = chf.cells[ax + ay*w];
+                            c2 = chf_cells[ax + ay*w];
                             if(c2){
                                 ai = c2.index + get_con(s, 1);
-                                asp = chf.spans[ai];
-                                nd = <i32>Math.min(dist[ai] + 2, 255);
+                                asp = chf_spans[ai];
+                                nd = min(dist[ai] + 2, 255);
                                 if(nd < dist[i]){
                                     dist[i] = nd;
                                 }
@@ -187,10 +188,10 @@ export function erode_walkable_area(radius: int,
                                     if(get_con(asp, 0) != RC_NOT_CONNECTED){
                                         aax = ax + get_dir_offset_x(0);
                                         aay = ay + get_dir_offset_y(0);
-                                        c3 = chf.cells[aax + aay*w];
+                                        c3 = chf_cells[aax + aay*w];
                                         if(c3){
                                             aai = c3.index + get_con(asp, 0);
-                                            nd = <i32>Math.min(dist[aai] + 3, 255);
+                                            nd = min(dist[aai] + 3, 255);
                                             if(nd < dist[i]){
                                                 dist[i] = nd;
                                             }
@@ -206,9 +207,9 @@ export function erode_walkable_area(radius: int,
     }
 
     const thr: int = radius * 2;  // 1 byte
-    for(let i = 0; i < chf.span_count; i++){
+    for(let i = 0, len = chf.span_count; i < len; ++i){
         if(dist[i] < thr){
-            chf.areas[i] = RC_NULL_AREA;
+            chf_areas[i] = RC_NULL_AREA;
         }
     }
 
@@ -912,7 +913,7 @@ function is_region_connected_to_border(reg: Region): bool{
     return false;
 }
 
-function can_merge_with_region(rega: Region, 
+function can_merge_with_region(rega: Region,
                                regb: Region): bool{
     if(rega.area_type != regb.area_type){
         return false;
@@ -1246,8 +1247,8 @@ function merge_and_filter_regions(min_region_area: int,
     return to_return;
 }
 
-export function build_regions(chf: CompactHeightfield, 
-                              border_size: int, 
+export function build_regions(chf: CompactHeightfield,
+                              border_size: int,
                               min_region_area: int,
                               merge_region_area: int): bool{
     const w: int = chf.width;

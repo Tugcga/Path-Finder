@@ -14,25 +14,14 @@ type int = i32;
 type float = f64;
 
 export class NavmeshBaker {
-    m_input_vertices: List<float>;
-    m_input_triangles: List<int>;
+    m_input_vertices: List<float> = new List<float>();
+    m_input_triangles: List<int>  = new List<int>();  // plain array with vertex indices for triangles
 
-    m_output_vertices: StaticArray<float>;
-    m_output_polygons: StaticArray<int>;
-    m_output_sizes: StaticArray<int>;
+    m_output_vertices: StaticArray<float> = new StaticArray<float>(0);
+    m_output_polygons: StaticArray<int> = new StaticArray<int>(0);
+    m_output_sizes: StaticArray<int> = new StaticArray<int>(0);
 
-    m_is_dirty: bool;
-
-    constructor() {
-        this.m_input_vertices = new List<float>();
-        this.m_input_triangles = new List<int>();  // plain array with vertex indices for triangles
-
-        this.m_output_vertices = new StaticArray<float>(0);
-        this.m_output_polygons = new StaticArray<int>(0);
-        this.m_output_sizes = new StaticArray<int>(0);
-
-        this.m_is_dirty = true;
-    }
+    m_is_dirty: bool = true;
 
     add_geometry(vertices: StaticArray<f32>, polygons: StaticArray<i32>, sizes: StaticArray<i32>): void {
         const n: int = this.m_input_vertices.length / 3;
@@ -42,8 +31,8 @@ export class NavmeshBaker {
 
         var shift: i32 = 0;
         for(let p_index = 0, p_count = sizes.length; p_index < p_count; p_index++){
-            const p_size = sizes[p_index];
-            for(let i = 1; i < p_size - 1; i++){
+            const p_size = unchecked(sizes[p_index]);
+            for(let i = 1, len = p_size - 1; i < len; i++){
                 this.m_input_triangles.push(polygons[shift] + n);
                 this.m_input_triangles.push(polygons[shift + i] + n);
                 this.m_input_triangles.push(polygons[shift + i + 1] + n);
@@ -74,47 +63,42 @@ export class NavmeshBaker {
         var tris: StaticArray<int> = this.m_input_triangles.to_static();
 
         if(nverts > 0 && ntris > 0){
-            const infinity = <f64>Number.MAX_VALUE;
-            var bb_min: StaticArray<float> = new StaticArray<float>(3);
-            var bb_max: StaticArray<float> = new StaticArray<float>(3);
-            bb_min[0] = infinity; bb_min[1] = infinity; bb_min[2] = infinity;
-            bb_max[0] = -infinity; bb_max[1] = -infinity; bb_max[2] = -infinity;
+            const inf = f64.MAX_VALUE;
+
+            let min_x = inf;
+            let min_y = inf;
+            let min_z = inf;
+
+            let max_x = -inf;
+            let max_y = -inf;
+            let max_z = -inf;
+
             for(let v_index = 0; v_index < nverts; v_index++){
-                const x = verts[3*v_index];
-                const y = verts[3*v_index + 1];
-                const z = verts[3*v_index + 2];
-                if(x < bb_min[0]){
-                    bb_min[0] = x;
-                }
-                if(x > bb_max[0]){
-                    bb_max[0] = x;
-                }
-                if(y < bb_min[1]){
-                    bb_min[1] = y;
-                }
-                if(y > bb_max[1]){
-                    bb_max[1] = y;
-                }
-                if(z < bb_min[2]){
-                    bb_min[2] = z;
-                }
-                if(z > bb_max[2]){
-                    bb_max[2] = z;
-                }
+                const x = unchecked(verts[3*v_index + 0]);
+                const y = unchecked(verts[3*v_index + 1]);
+                const z = unchecked(verts[3*v_index + 2]);
+                if(x < min_x) min_x = x;
+                if(x > max_x) max_x = x;
+                if(y < min_y) min_y = y;
+                if(y > max_y) max_y = y;
+                if(z < min_z) min_z = z;
+                if(z > max_z) max_z = z;
             }
+            var bb_min: StaticArray<float> = [min_x, min_y, min_z];
+            var bb_max: StaticArray<float> = [max_x, max_y, max_z];
             const cs = cell_size;
             const ch = cell_height;
             const walkable_slope_angle: float = agent_max_slope;
-            const walkable_height: int = <i32>Math.ceil(agent_height / ch);
-            const walkable_climb: int = <i32>Math.floor(agent_max_climb / ch);
-            const walkable_radius: int = <i32>Math.ceil(agent_radius / cs);
-            const max_edge_len: int = i32(edge_max_len / cs);
+            const walkable_height: int = <int>Math.ceil(agent_height / ch);
+            const walkable_climb: int = <int>Math.floor(agent_max_climb / ch);
+            const walkable_radius: int = <int>Math.ceil(agent_radius / cs);
+            const max_edge_len: int = <int>(edge_max_len / cs);
             const max_simplification_error: float = edge_max_error;
             const min_region_area: int = region_min_size*region_min_size;
             const merge_region_area: int = region_merge_size*region_merge_size;
             const max_verts_per_poly: int = verts_per_poly;
-            const detail_sample_dist: float = detail_sample_distance < 0.9 ? 0.0 : cs * detail_sample_distance;
-            const detail_sample_max_error: float = ch * detail_sample_maximum_error;
+            // const detail_sample_dist: float = detail_sample_distance < 0.9 ? 0.0 : cs * detail_sample_distance;
+            // const detail_sample_max_error: float = ch * detail_sample_maximum_error;
 
             let size_array: StaticArray<int> = calc_grid_size(bb_min, bb_max, cs);
             const width = size_array[0];
@@ -163,23 +147,30 @@ export class NavmeshBaker {
                 log_message("[Navmesh Baker] bake: Could not triangulate contours");
             }
 
-            this.m_output_vertices = new StaticArray<float>(pmesh.nverts * 3);
-            for(let v_index = 0; v_index < pmesh.nverts; v_index++){
-                this.m_output_vertices[3*v_index] = pmesh.bmin[0] + pmesh.cs * pmesh.verts[3*v_index];
-                this.m_output_vertices[3*v_index + 1] = pmesh.bmin[1] + pmesh.ch * (pmesh.verts[3*v_index + 1] - 1);
-                this.m_output_vertices[3*v_index + 2] = pmesh.bmin[2] + pmesh.cs * pmesh.verts[3*v_index + 2];
+            let output_vertices = new StaticArray<float>(pmesh.nverts * 3);
+            let pm_verts: StaticArray<i32> = pmesh.verts;
+            let bmin = pmesh.bmin;
+            let cs = pmesh.cs;
+            let ch = pmesh.ch;
+            for(let v_index = 0, v_len = pmesh.nverts; v_index < v_len; v_index++){
+                let idx = 3 * v_index;
+                unchecked(output_vertices[idx + 0] = unchecked(bmin[0]) + cs * pm_verts[idx + 0]);
+                unchecked(output_vertices[idx + 1] = unchecked(bmin[1]) + ch * (pm_verts[idx + 1] - 1));
+                unchecked(output_vertices[idx + 2] = unchecked(bmin[2]) + cs * pm_verts[idx + 2]);
             }
+            this.m_output_vertices = output_vertices;
             let polygons = new List<int>();
+            let polys = pmesh.polys;
             this.m_output_sizes = new StaticArray<int>(pmesh.npolys);
-            for(let p_index = 0; p_index < pmesh.npolys; p_index++){
+            for(let p_index = 0, len = pmesh.npolys; p_index < len; ++p_index){
                 let pv: int = p_index * 2 * pmesh.nvp;
-                let vv: int = pmesh.polys[pv];
+                let vv: int = polys[pv];
                 let p_count = 0;
                 while(vv != 0xffff){
                     polygons.push(vv);
                     p_count++;
                     pv += 1;
-                    vv = pmesh.polys[pv];
+                    vv = polys[pv];
                 }
                 this.m_output_sizes[p_index] = p_count;
             }

@@ -2,21 +2,11 @@
 import { Vector2, abs_sq, dot } from "./vector2";
 import { List } from "./list";
 
-export function log_message(message: string): void{
-    //console.log(message);
-}
-
 export const RVO_EPSILON: f32 = 0.0001;
 export const RVO_INFINITY: f32 = <f32>Number.MAX_VALUE;
 
 export class Pair<T>{
-    m_x: T;
-    m_y: T;
-
-    constructor(x: T, y: T) {
-        this.m_x = x;
-        this.m_y = y;
-    }
+    constructor(public m_x: T, public m_y: T) {}
 
     @inline
     x(): T{
@@ -37,7 +27,7 @@ export class Pair<T>{
     }
 
     toString(): string{
-        return "(" + this.m_x.toString() + ", " + this.m_y.toString() + ")";
+        return `(${this.m_x}, ${this.m_y})`;
     }
 }
 
@@ -85,8 +75,8 @@ export function left_of_points(a: Vector2, b: Vector2, c: Vector2): f32{
 }
 
 @inline
-export function left_of(a_x: f32, a_y: f32, 
-                        b_x: f32, b_y: f32, 
+export function left_of(a_x: f32, a_y: f32,
+                        b_x: f32, b_y: f32,
                         c_x: f32, c_y: f32): f32{
     const v1_x = a_x - c_x;
     const v1_y = a_y - c_y;
@@ -119,10 +109,10 @@ export function is_pair_in_list(pair: Pair<i32>, list: List<Pair<i32>>): bool{
 
 @inline
 export function dist_sq_point_line_segment(a: Vector2, b: Vector2, c: Vector2): f32{
-    let ac: Vector2 = c.subtract(a);
-    let ab: Vector2 = b.subtract(a);
+    let ac = c.subtract(a);
+    let ab = b.subtract(a);
 
-    const r: f32 = dot(ac, ab) / abs_sq(ab);
+    const r = dot(ac, ab) / abs_sq(ab);
 
     if (r < 0.0) {
         return abs_sq(ac);
