@@ -7,7 +7,7 @@ The module allows to bake navigation mesh polygonal data from input geometry. Al
 
 ### Modules structure
 
-Repository contains several modules, compiled from source files. These modules contains different functionality and have different sizes. If there are no limits in module size, then use the full module ```pathfinder_full.wasm```. In other cases use smaller modules with specific functionality. For example, in most cases the navigation mesh baking is not needed in the actual game application, but it should be used in the editor of the game.
+[Release](https://github.com/Tugcga/Path-Finder/releases/tag/as.2.1) page contains several modules, compiled from source files. These modules contains different functionality and have different sizes. If there are no limits in module size, then use the full module ```pathfinder_full.wasm```. In other cases use smaller modules with specific functionality. For example, in most cases the navigation mesh baking is not needed in the actual game application, but it should be used in the editor of the game.
 
 Elementary modules:
 

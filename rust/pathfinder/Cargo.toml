@@ -1,0 +1,52 @@
+[package]
+name = "pathfinder"
+version = "1.0.0"
+authors = ["Shekn <cgproggame@gmail.com>"]
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+name = "pathfinder"
+path = "src/lib.rs"
+
+[[bin]]
+name = "pathfinder_app"
+path = "src/main.rs"
+
+# [features]
+# default = ["console_error_panic_hook"]
+
+[dependencies]
+wasm-bindgen = "0.2.63"
+js-sys = "0.3"
+getrandom = { version = "0.2", features = ["js"] }
+navmesh = "0.12.1"
+uuid = { version = "0.8", features = ["serde", "v4", "stdweb"] }
+
+
+# The `console_error_panic_hook` crate provides better debugging of panics by
+# logging them with `console.error`. This is great for development, but requires
+# all the `std::fmt` and `std::panicking` infrastructure, so isn't great for
+# code size when deploying.
+# console_error_panic_hook = { version = "0.1.6", optional = true }
+
+# `wee_alloc` is a tiny allocator for wasm that is only ~1K in code size
+# compared to the default allocator's ~10K. It is slower than the default
+# allocator, however.
+#
+# Unfortunately, `wee_alloc` requires nightly Rust when targeting wasm for now.
+wee_alloc = { version = "0.4.5", optional = true }
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3.13"
+
+[profile.release]
+opt-level = 3
+debug = false
+strip = true
+debug-assertions = false
+overflow-checks = false
+lto = true
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = true
