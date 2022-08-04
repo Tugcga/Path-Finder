@@ -1,3 +1,5 @@
+import { Serializable, SD_TYPE_VECTOR2, float32_to_bytes, int32_to_bytes, bytes_to_i32, bytes_to_f32, union_buffers } from "./binary_io";
+import { log_message } from "./utilities";
 
 export class Line{
     m_point: Vector2;
@@ -39,11 +41,12 @@ export class Line{
     }
 }
 
-export class Vector2{
+export class Vector2 extends Serializable{
     m_x: f32;
     m_y: f32;
 
     constructor(x: f32 = 0.0, y: f32 = 0.0) {
+        super();
         this.m_x = x;
         this.m_y = y;
     }
@@ -114,6 +117,23 @@ export class Vector2{
 
     toString(): string{
         return this.to_string();
+    }
+
+    override to_bytes(): Uint8Array {
+        const id = int32_to_bytes(SD_TYPE_VECTOR2);
+        const length = int32_to_bytes(8);
+        const data = union_buffers(float32_to_bytes(this.m_x), float32_to_bytes(this.m_y));
+        return union_buffers(union_buffers(id, length), data);
+    }
+
+    override from_bytes(bytes: Uint8Array): void {
+        const id = bytes_to_i32(bytes, 0);
+        if(id == SD_TYPE_VECTOR2) {
+            const x = bytes_to_f32(bytes, 8);
+            const y = bytes_to_f32(bytes, 12);
+            this.m_x = x;
+            this.m_y = y;
+        }
     }
 }
 

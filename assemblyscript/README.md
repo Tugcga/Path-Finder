@@ -401,7 +401,7 @@ Contained in ```baker.wasm``` and ```pathfinder_full.wasm```.
 
 * ```baker_add_geometry(baker: NavmeshBaker, vertices: StaticArray<f32>, polygons: StaticArray<i32>, sizes: StaticArray<i32>)```
 
-	Add input polygons to the baker object. ```vertices``` is a plain float array with vertex positions, ```polygons``` is a plain array with polygon corners indices, ```sizes``` is a plain array with polygon sizes. You can call this method several tomes, but at each call polygon indices should be in local enumeration (the minimum is 0, the maximum is ```vertices.length / 3```).
+	Add input polygons to the baker object. ```vertices``` is a plain float array with vertex positions, ```polygons``` is a plain array with polygon corners indices, ```sizes``` is a plain array with polygon sizes. You can call this method several times, but at each call polygon indices should be in local enumeration (the minimum is 0, the maximum is ```vertices.length / 3```).
 
 * ```baker_bake(baker: NavmeshBaker, cell_size: f64, cell_height: f64, agent_height: f64, agent_radius: f64, agent_max_climb: f64, agent_max_slope: f64, region_min_size: i32, region_merge_size: i32, edge_max_len: f64, edge_max_error: f64, verts_per_poly: i32, detail_sample_distance: f64, detail_sample_maximum_error: f64): bool```
 
