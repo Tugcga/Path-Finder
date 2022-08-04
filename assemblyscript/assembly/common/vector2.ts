@@ -112,7 +112,7 @@ export class Vector2 extends Serializable{
     }
 
     to_string(): string{
-        return "(" + this.m_x.toString() + ", " + this.m_y.toString() + ")";
+        return `(${this.m_x}, ${this.m_y})`;
     }
 
     toString(): string{
