@@ -1,13 +1,23 @@
-import { NavmeshNode } from "./navmesh_node";
+import { NavmeshNode,
+    staticarray_navmeshnode_bytes_length, staticarray_navmeshnode_to_bytes, staticarray_navmeshnode_from_bytes } from "./navmesh_node";
 import { NavmeshBVH, TrianglesBVH } from "./navmesh_bvh";
-import { Graph } from "./navmesh_graph";
+import { Graph,
+    staticarray_graph_bytes_length, staticarray_graph_to_bytes, staticarray_graph_from_bytes } from "./navmesh_graph";
 import { is_edge_new, squared_len, log_message } from "../common/utilities";
 import { List } from "../common/list";
+
+import { Serializable, SD_TYPE,
+    i32_bytes_length, i32_to_bytes, i32_from_bytes,
+    f32_bytes_length, f32_to_bytes, f32_from_bytes,
+    bool_bytes_length, bool_to_bytes, bool_from_bytes,
+    staticarray_f32_bytes_length, staticarray_f32_to_bytes, staticarray_f32_from_bytes,
+    staticarray_i32_bytes_length, staticarray_i32_to_bytes, staticarray_i32_from_bytes,
+    staticarray_staticarray_i32_bytes_length, staticarray_staticarray_i32_to_bytes, staticarray_staticarray_i32_from_bytes } from "../common/binary_io";
 
 export var NAVMESH_INITIAL_BUFFER_SIZE = 128;
 export var BVH_AABB_DELTA: f32 = 0.5;
 
-export class Navmesh {
+export class Navmesh extends Serializable {
     private m_vertices: StaticArray<f32>;
     private m_polygons: StaticArray<i32>;
     private m_sizes: StaticArray<i32>;
@@ -34,8 +44,10 @@ export class Navmesh {
     private b_finall_path: StaticArray<f32>;
     private b_last_path_point: StaticArray<f32>;
 
-    constructor(vertices: StaticArray<f32>, polygons: StaticArray<i32>, sizes: StaticArray<i32>) {
-        //TODO: properly create with empty input data
+    constructor(vertices: StaticArray<f32> = new StaticArray<f32>(0),
+                polygons: StaticArray<i32> = new StaticArray<i32>(0),
+                sizes: StaticArray<i32> = new StaticArray<i32>(0)) {
+        super();
         this.m_vertices = vertices;
         this.m_polygons = polygons;
         this.m_sizes = sizes;
@@ -580,6 +592,171 @@ export class Navmesh {
             unchecked(c[0] - a[0]) * unchecked(b[2] - a[2]) -
             unchecked(b[0] - a[0]) * unchecked(c[2] - a[2])
         );
+    }
+
+    override to_bytes(): Uint8Array {
+        const bytes_length = this.bytes_length();
+        let to_return = new Uint8Array(bytes_length);
+        let view = new DataView(to_return.buffer);
+
+        view.setInt32(0, SD_TYPE.SD_TYPE_NAVMESH);
+        view.setInt32(4, bytes_length);
+        let shift = 8;
+
+        to_return.set(staticarray_f32_to_bytes(this.m_vertices), shift);
+        shift += staticarray_f32_bytes_length(this.m_vertices)
+
+        to_return.set(staticarray_i32_to_bytes(this.m_polygons), shift);
+        shift += staticarray_i32_bytes_length(this.m_polygons)
+
+        to_return.set(staticarray_i32_to_bytes(this.m_sizes), shift);
+        shift += staticarray_i32_bytes_length(this.m_sizes)
+
+        to_return.set(i32_to_bytes(this.m_nodes_count), shift);
+        shift += i32_bytes_length();
+
+        to_return.set(staticarray_navmeshnode_to_bytes(this.m_nodes), shift);
+        shift += staticarray_navmeshnode_bytes_length(this.m_nodes);
+
+        to_return.set(staticarray_staticarray_i32_to_bytes(this.m_groups), shift);
+        shift += staticarray_staticarray_i32_bytes_length(this.m_groups);
+
+        to_return.set(i32_to_bytes(this.m_groups_count), shift);
+        shift += i32_bytes_length();
+
+        to_return.set(staticarray_graph_to_bytes(this.m_graphs), shift);
+        shift += staticarray_graph_bytes_length(this.m_graphs);
+
+        to_return.set(this.m_nodes_bvh.to_bytes(), shift);
+        shift += this.m_nodes_bvh.bytes_length();
+
+        to_return.set(this.m_triangles_bvh.to_bytes(), shift);
+        shift += this.m_triangles_bvh.bytes_length();
+
+        to_return.set(bool_to_bytes(this.m_is_planar), shift);
+        shift += bool_bytes_length();
+
+        to_return.set(f32_to_bytes(this.m_planar_y), shift);
+        shift += f32_bytes_length();
+
+        return to_return;
+    }
+
+    override from_bytes(bytes: Uint8Array): void {
+        if(bytes.length > 0) {
+            let view = new DataView(bytes.buffer);
+            const id = view.getInt32(0);
+            let shift = 0;
+            if(id == SD_TYPE.SD_TYPE_NAVMESH) {
+                shift = 8;
+            } else { return; }
+
+            const m_vertices_id = view.getInt32(shift);
+            if(m_vertices_id == SD_TYPE.SD_TYPE_STATICARRAY_FLOAT32) {
+                const bl = view.getInt32(shift + 4);
+                this.m_vertices = staticarray_f32_from_bytes(bytes.slice(shift, shift + bl));
+                shift += bl;
+            } else { return; }
+
+            const m_polygons_id = view.getInt32(shift);
+            if(m_polygons_id == SD_TYPE.SD_TYPE_STATICARRAY_INT32) {
+                const bl = view.getInt32(shift + 4);
+                this.m_polygons = staticarray_i32_from_bytes(bytes.slice(shift, shift + bl));
+                shift += bl;
+            } else { return; }
+
+            const m_sizes_id = view.getInt32(shift);
+            if(m_sizes_id == SD_TYPE.SD_TYPE_STATICARRAY_INT32) {
+                const bl = view.getInt32(shift + 4);
+                this.m_sizes = staticarray_i32_from_bytes(bytes.slice(shift, shift + bl));
+                shift += bl;
+            } else { return; }
+
+            const m_nodes_count_id = view.getInt32(shift);
+            if(m_nodes_count_id == SD_TYPE.SD_TYPE_INT32) {
+                const bl = view.getInt32(shift + 4);
+                this.m_nodes_count = i32_from_bytes(bytes.slice(shift, shift + bl));
+                shift += bl;
+            } else { return; }
+
+            const m_nodes_id = view.getInt32(shift);
+            if(m_nodes_id == SD_TYPE.SD_TYPE_STATICARRAY_NAVMESHNODE) {
+                const bl = view.getInt32(shift + 4);
+                this.m_nodes = staticarray_navmeshnode_from_bytes(bytes.slice(shift, shift + bl));
+                shift += bl;
+            } else { return; }
+
+            const m_groups_id = view.getInt32(shift);
+            if(m_groups_id == SD_TYPE.SD_TYPE_STATICARRAY_STATICARRAY_INT32) {
+                const bl = view.getInt32(shift + 4);
+                this.m_groups = staticarray_staticarray_i32_from_bytes(bytes.slice(shift, shift + bl));
+                shift += bl;
+            } else { return; }
+
+            const m_groups_count_id = view.getInt32(shift);
+            if(m_groups_count_id == SD_TYPE.SD_TYPE_INT32) {
+                const bl = view.getInt32(shift + 4);
+                this.m_groups_count = i32_from_bytes(bytes.slice(shift, shift + bl));
+                shift += bl;
+            } else { return; }
+
+            const m_graphs_id = view.getInt32(shift);
+            if(m_graphs_id == SD_TYPE.SD_TYPE_STATICARRAY_GRAPH) {
+                const bl = view.getInt32(shift + 4);
+                this.m_graphs = staticarray_graph_from_bytes(bytes.slice(shift, shift + bl));
+                shift += bl;
+            } else { return; }
+
+            const m_nodes_bvh_id = view.getInt32(shift);
+            if(m_nodes_bvh_id == SD_TYPE.SD_TYPE_NAVMESHBVH) {
+                const bl = view.getInt32(shift + 4);
+                this.m_nodes_bvh = new NavmeshBVH();
+                this.m_nodes_bvh.from_bytes(bytes.slice(shift, shift + bl), this.m_nodes);
+                shift += bl;
+            } else { return; }
+
+            const m_triangles_bvh_id = view.getInt32(shift);
+            if(m_triangles_bvh_id == SD_TYPE.SD_TYPE_TRIANGLESBVH) {
+                const bl = view.getInt32(shift + 4);
+                this.m_triangles_bvh = new TrianglesBVH();
+                this.m_triangles_bvh.from_bytes(bytes.slice(shift, shift + bl));
+                shift += bl;
+            } else { return; }
+
+            const m_is_planar_id = view.getInt32(shift);
+            if(m_is_planar_id == SD_TYPE.SD_TYPE_BOOL) {
+                const bl = view.getInt32(shift + 4);
+                this.m_is_planar = bool_from_bytes(bytes.slice(shift, shift + bl));
+                shift += bl;
+            } else { return; }
+
+            const m_planar_y_id = view.getInt32(shift);
+            if(m_planar_y_id == SD_TYPE.SD_TYPE_FLOAT32) {
+                const bl = view.getInt32(shift + 4);
+                this.m_planar_y = f32_from_bytes(bytes.slice(shift, shift + bl));
+                shift += bl;
+            } else { return; }
+        }
+    }
+
+    override bytes_length(): u32 {
+        let to_return = 8; // id, bytes length
+
+        to_return += staticarray_f32_bytes_length(this.m_vertices);
+        to_return += staticarray_i32_bytes_length(this.m_polygons);
+        to_return += staticarray_i32_bytes_length(this.m_sizes);
+        to_return += i32_bytes_length();  // m_nodes_count
+        to_return += staticarray_navmeshnode_bytes_length(this.m_nodes);
+        to_return += staticarray_staticarray_i32_bytes_length(this.m_groups);
+        to_return += i32_bytes_length();  // m_groups_count
+        to_return += staticarray_graph_bytes_length(this.m_graphs);
+        to_return += this.m_nodes_bvh.bytes_length();
+        to_return += this.m_triangles_bvh.bytes_length();
+
+        to_return += bool_bytes_length();  // m_is_planar
+        to_return += f32_bytes_length();  // m_planar_y
+
+        return to_return;
     }
 }
 

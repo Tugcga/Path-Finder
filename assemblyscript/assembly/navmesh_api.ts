@@ -19,6 +19,16 @@ export function graph_search(graph: Graph, start_vertex: i32, end_vertex: i32): 
     return graph.search(start_vertex, end_vertex);
 }
 
+export function graph_to_bytes(graph: Graph): Uint8Array {
+    return graph.to_bytes();
+}
+
+export function graph_from_bytes(bytes: Uint8Array): Graph {
+    let graph = new Graph();
+    graph.from_bytes(bytes);
+    return graph;
+}
+
 export function navmesh_get_groups_count(navmesh: Navmesh): i32 {
     return navmesh.get_groups_count();
 }
@@ -37,4 +47,15 @@ export function navmesh_set_bvh_delta(delta: f32): void {
 
 export function navmesh_get_bvh_delta(): f32 {
     return get_bvh_delta();
+}
+
+export function navmesh_to_bytes(navmesh: Navmesh): Uint8Array {
+    return navmesh.to_bytes();
+}
+
+export function navmesh_from_bytes(bytes: Uint8Array): Navmesh {
+    let nm = new Navmesh();
+    nm.from_bytes(bytes);
+
+    return nm;
 }

@@ -21,7 +21,10 @@ export class NavmeshBaker {
     m_output_polygons: StaticArray<int> = new StaticArray<int>(0);
     m_output_sizes: StaticArray<int> = new StaticArray<int>(0);
 
-    m_is_dirty: bool = true;
+    m_is_dirty: bool;
+    constructor() {
+        this.m_is_dirty = true;
+    }
 
     add_geometry(vertices: StaticArray<f32>, polygons: StaticArray<i32>, sizes: StaticArray<i32>): void {
         const n: int = this.m_input_vertices.length / 3;
@@ -92,13 +95,12 @@ export class NavmeshBaker {
             const walkable_height: int = <int>Math.ceil(agent_height / ch);
             const walkable_climb: int = <int>Math.floor(agent_max_climb / ch);
             const walkable_radius: int = <int>Math.ceil(agent_radius / cs);
-            const max_edge_len: int = <int>(edge_max_len / cs);
+            const max_edge_len_float = edge_max_len / cs;
+            const max_edge_len: int = <int>max_edge_len_float;
             const max_simplification_error: float = edge_max_error;
             const min_region_area: int = region_min_size*region_min_size;
             const merge_region_area: int = region_merge_size*region_merge_size;
             const max_verts_per_poly: int = verts_per_poly;
-            // const detail_sample_dist: float = detail_sample_distance < 0.9 ? 0.0 : cs * detail_sample_distance;
-            // const detail_sample_max_error: float = ch * detail_sample_maximum_error;
 
             let size_array: StaticArray<int> = calc_grid_size(bb_min, bb_max, cs);
             const width = size_array[0];
@@ -145,18 +147,19 @@ export class NavmeshBaker {
             let is_build_polymesh: bool = build_poly_mesh(cset, max_verts_per_poly, pmesh);
             if(!is_build_polymesh){
                 log_message("[Navmesh Baker] bake: Could not triangulate contours");
+                return false;
             }
 
             let output_vertices = new StaticArray<float>(pmesh.nverts * 3);
             let pm_verts: StaticArray<i32> = pmesh.verts;
             let bmin = pmesh.bmin;
-            let cs = pmesh.cs;
-            let ch = pmesh.ch;
+            let mesh_cs = pmesh.cs;
+            let mesh_ch = pmesh.ch;
             for(let v_index = 0, v_len = pmesh.nverts; v_index < v_len; v_index++){
                 let idx = 3 * v_index;
-                unchecked(output_vertices[idx + 0] = unchecked(bmin[0]) + cs * pm_verts[idx + 0]);
-                unchecked(output_vertices[idx + 1] = unchecked(bmin[1]) + ch * (pm_verts[idx + 1] - 1));
-                unchecked(output_vertices[idx + 2] = unchecked(bmin[2]) + cs * pm_verts[idx + 2]);
+                unchecked(output_vertices[idx + 0] = unchecked(bmin[0]) + mesh_cs * pm_verts[idx + 0]);
+                unchecked(output_vertices[idx + 1] = unchecked(bmin[1]) + mesh_ch * (pm_verts[idx + 1] - 1));
+                unchecked(output_vertices[idx + 2] = unchecked(bmin[2]) + mesh_cs * pm_verts[idx + 2]);
             }
             this.m_output_vertices = output_vertices;
             let polygons = new List<int>();

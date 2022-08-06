@@ -1,4 +1,4 @@
-import { Serializable, SD_TYPE_VECTOR2, float32_to_bytes, int32_to_bytes, bytes_to_i32, bytes_to_f32, union_buffers } from "./binary_io";
+import { Serializable, SD_TYPE } from "./binary_io";
 import { log_message } from "./utilities";
 
 export class Line{
@@ -120,20 +120,33 @@ export class Vector2 extends Serializable{
     }
 
     override to_bytes(): Uint8Array {
-        const id = int32_to_bytes(SD_TYPE_VECTOR2);
-        const length = int32_to_bytes(8);
-        const data = union_buffers(float32_to_bytes(this.m_x), float32_to_bytes(this.m_y));
-        return union_buffers(union_buffers(id, length), data);
+        const byte_lengths = this.bytes_length();
+        let to_return = new Uint8Array(byte_lengths);
+        let view = new DataView(to_return.buffer);
+        view.setInt32(0, SD_TYPE.SD_TYPE_VECTOR2);
+        view.setInt32(4, byte_lengths);
+        view.setFloat32(8, this.m_x);
+        view.setFloat32(12, this.m_y);
+        return to_return;
     }
 
     override from_bytes(bytes: Uint8Array): void {
-        const id = bytes_to_i32(bytes, 0);
-        if(id == SD_TYPE_VECTOR2) {
-            const x = bytes_to_f32(bytes, 8);
-            const y = bytes_to_f32(bytes, 12);
-            this.m_x = x;
-            this.m_y = y;
+        if(bytes.length > 0){
+            let view = new DataView(bytes.buffer);
+            const id = view.getInt32(0);
+            //skip bytes length
+            if(id == SD_TYPE.SD_TYPE_VECTOR2) {
+                this.m_x = view.getFloat32(8);
+                this.m_y = view.getFloat32(12);
+            }
         }
+    }
+
+    override bytes_length(): u32 {
+        return 4 // id
+             + 4 // byte length
+             + 4 // x
+             + 4; // y
     }
 }
 

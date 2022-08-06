@@ -1,16 +1,19 @@
-import "wasi";
+//import "wasi";
 import { Vector2, abs_sq, dot } from "./vector2";
 import { List } from "./list";
+import { Serializable, SD_TYPE } from "./binary_io";
 
 export function log_message(message: string): void{
-    console.log(message);
+    //console.log(message);
 }
 
 export const RVO_EPSILON: f32 = 0.0001;
 export const RVO_INFINITY: f32 = <f32>Number.MAX_VALUE;
 
-export class Pair<T>{
-    constructor(public m_x: T, public m_y: T) {}
+export class Pair<T> extends Serializable{
+    constructor(public m_x: T, public m_y: T) {
+        super();
+    }
 
     @inline
     x(): T{
@@ -30,7 +33,69 @@ export class Pair<T>{
         return false;
     }
 
-    toString(): string{
+    override to_bytes(): Uint8Array {
+        const bytes_length = this.bytes_length();
+        let to_return = new Uint8Array(bytes_length);
+        if(to_return.length > 0){
+            let view = new DataView(to_return.buffer);
+            const type = nameof<T>();
+            if(type == "i32"){
+                view.setInt32(0, SD_TYPE.SD_TYPE_PAIR_INT32);
+                view.setInt32(4, bytes_length);
+                view.setInt32(8, <i32>this.m_x);
+                view.setInt32(12, <i32>this.m_y);
+            }
+            else if(type == "f32"){
+                view.setInt32(0, SD_TYPE.SD_TYPE_PAIR_FLOAT32);
+                view.setInt32(4, bytes_length);
+                view.setFloat32(8, <f32>this.m_x);
+                view.setFloat32(12, <f32>this.m_y);
+            }
+            else if(type == "f64"){
+                view.setInt32(0, SD_TYPE.SD_TYPE_PAIR_FLOAT64);
+                view.setInt32(4, bytes_length);
+                view.setFloat64(8, <f64>this.m_x);
+                view.setFloat64(16, <f64>this.m_y);
+            }
+            else{
+                view.setInt32(0, SD_TYPE.SD_TYPE_UNKNOWN);
+                view.setInt32(4, bytes_length);  // bytes_length = 0
+            }
+        }
+        return to_return;
+    }
+
+    override from_bytes(bytes: Uint8Array): void {
+        if(bytes.length > 0){
+            let view = new DataView(bytes.buffer);
+            const id = view.getInt32(0);
+            if(id == SD_TYPE.SD_TYPE_PAIR_INT32){
+                this.m_x = <T>view.getInt32(8);
+                this.m_y = <T>view.getInt32(12);
+            }
+            else if(id == SD_TYPE.SD_TYPE_PAIR_FLOAT32){
+                this.m_x = <T>view.getFloat32(8);
+                this.m_y = <T>view.getFloat32(12);
+            }
+            else if(id == SD_TYPE.SD_TYPE_PAIR_FLOAT64){
+                this.m_x = <T>view.getFloat64(8);
+                this.m_y = <T>view.getFloat64(16);
+            }
+        }
+    }
+
+    override bytes_length(): u32 {
+        const type = nameof<T>();
+        if(type == "i32" || type == "f32") {
+            return 4 + 4 + 4 + 4;
+        }
+        else if(type == "f64") {
+            return 4 + 4 + 8 + 8;
+        }
+        return 0;
+    }
+
+    toString(): string {
         return `(${this.m_x}, ${this.m_y})`;
     }
 }
@@ -136,4 +201,28 @@ export function dist_sq_point_line_segment(a: Vector2, b: Vector2, c: Vector2): 
 @inline
 export function sqr(value: f32): f32{
     return value * value;
+}
+
+export function map_to_string(map: Map<i32, i32>): string {
+    let keys = map.keys();
+    let values = map.values();
+    let to_return = "{";
+    for(let i = 0, len = keys.length; i < len; i++){
+        to_return += keys[i].toString() + ": " + values[i].toString() + (i == len - 1 ? "}" : ", ");
+    }
+    return to_return;
+}
+
+export function arrays_eq(a: StaticArray<f32>, b: StaticArray<f32>): bool {
+    if(a.length != b.length) {
+        return false;
+    }
+
+    for(let i = 0, len = a.length; i < len; i++) {
+        if(Mathf.abs(a[i] - b[i]) > 0.00001) {
+            return false;
+        }
+    }
+
+    return true;
 }

@@ -1,6 +1,13 @@
-import { distance } from "../common/utilities";
+import { distance, log_message } from "../common/utilities";
+import { Serializable, SD_TYPE, 
+    i32_bytes_length, i32_to_bytes, i32_from_bytes,
+    staticarray_f32_bytes_length, staticarray_f32_to_bytes, staticarray_f32_from_bytes,
+    staticarray_i32_bytes_length, staticarray_i32_to_bytes, staticarray_i32_from_bytes,
+    staticarray_bool_bytes_length, staticarray_bool_to_bytes, staticarray_bool_from_bytes,
+    map_i32_i32_bytes_length, map_i32_i32_to_bytes, map_i32_i32_from_bytes,
+    map_i32_staticarray_i32_bytes_length, map_i32_staticarray_i32_to_bytes, map_i32_staticarray_i32_from_bytes } from "../common/binary_io";
 
-export class Graph {
+export class Graph extends Serializable {
     private m_positions: StaticArray<f32>;  // store by triples [x1, y1, z1, x2, y2, z2, ...]
     private m_vertex_names: StaticArray<i32>;  // in the same order as positions
     private m_vertex_count: i32;
@@ -24,63 +31,88 @@ export class Graph {
     private t_min_vertex: i32;
     private t_min_vertex_index: i32;
 
-    constructor(vertex_positions: StaticArray<f32>, vertices: StaticArray<i32>, edges: StaticArray<i32>) {
-        this.m_positions = vertex_positions;
-        this.m_vertex_names = vertices;
-        this.m_edges = edges;
-
-        this.m_vertex_count = vertices.length;
-
-        //build index map
-        this.m_index_map = new Map<i32, i32>();
-        for (let i = 0, len = this.m_vertex_count; i < len; i++) {
-            this.m_index_map.set(unchecked(this.m_vertex_names[i]), i);
+    constructor(vertex_positions: StaticArray<f32> = new StaticArray<f32>(0), 
+                vertices: StaticArray<i32> = new StaticArray<i32>(0),
+                edges: StaticArray<i32> = new StaticArray<i32>(0)) {
+        super();
+        if(vertex_positions.length == 0 || vertices.length == 0 || edges.length == 0) {
+            //if we create the graph with empty arrays, then it should be set empty
+            //may be we load i from the binary data later
+            this.m_positions = new StaticArray<f32>(0);
+            this.m_vertex_names = new StaticArray<i32>(0);
+            this.m_vertex_count = 0;
+            this.m_edges = new StaticArray<i32>(0);
+            this.m_index_map = new Map<i32, i32>();
+            this.m_incident_map = new Map<i32, StaticArray<i32>>();
+            this.i_vertices_g = new StaticArray<f32>(0);
+            this.i_vertices_h = new StaticArray<f32>(0);
+            this.i_vertices_f = new StaticArray<f32>(0);
+            this.i_vertices_close = new StaticArray<bool>(0);
+            this.i_vertices_parent = new StaticArray<i32>(0);
+            this.i_open_list = new StaticArray<i32>(0);
+            this.i_open_length_length = 0;
+            this.t_min_f = 0.0;
+            this.t_min_vertex = 0;
+            this.t_min_vertex_index = 0;
         }
+        else {
+            this.m_positions = vertex_positions;
+            this.m_vertex_names = vertices;
+            this.m_edges = edges;
 
-        //build incident map
-        //crate temp map with Array values
-        let temp_map = new Map<i32, Array<i32>>();
-        //init for all vertices
-        for (let v = 0, len = this.m_vertex_count; v < len; v++) {
-            temp_map.set(v, []);
-        }
-        //add vertex indices from edges
-        for (let e = 0, len = this.m_edges.length / 2; e < len; e++) {
-            let v1 = this.m_index_map.get(unchecked(this.m_edges[2 * e + 0]));
-            let v2 = this.m_index_map.get(unchecked(this.m_edges[2 * e + 1]));
+            this.m_vertex_count = vertices.length;
 
-            temp_map.get(v1).push(v2);
-            temp_map.get(v2).push(v1);
-        }
-
-        //copy to memory the map wih static array values
-        this.m_incident_map = new Map<i32, StaticArray<i32>>();
-        let temp_keys = temp_map.keys();
-
-        for (let i = 0, len = temp_keys.length; i < len; i++) {
-            let v = unchecked(temp_keys[i]);
-            let vs = temp_map.get(v);
-            let vs_static = new StaticArray<i32>(vs.length);
-            for (let j = 0, vs_len = vs.length; j < vs_len; j++) {
-                unchecked(vs_static[j] = vs[j]);
+            //build index map
+            this.m_index_map = new Map<i32, i32>();
+            for (let i = 0, len = this.m_vertex_count; i < len; i++) {
+                this.m_index_map.set(unchecked(this.m_vertex_names[i]), i);
             }
-            this.m_incident_map.set(v, vs_static);
-        }
 
-        //init inner arrays for search process
-        let vertex_count = this.m_vertex_count;
-        this.i_vertices_g = new StaticArray<f32>(vertex_count);
-        this.i_vertices_h = new StaticArray<f32>(vertex_count);
-        this.i_vertices_f = new StaticArray<f32>(vertex_count);
-        this.i_vertices_close  = new StaticArray<bool>(vertex_count);
-        this.i_vertices_parent = new StaticArray<i32>(vertex_count);
-        //set default values
-        for (let i = 0; i < vertex_count; i++) {
-            //default constructor for f32 arrays init it by 0.0, for bool array by false
-            unchecked(this.i_vertices_parent[i] = -1);
+            //build incident map
+            //crate temp map with Array values
+            let temp_map = new Map<i32, Array<i32>>();
+            //init for all vertices
+            for (let v = 0, len = this.m_vertex_count; v < len; v++) {
+                temp_map.set(v, []);
+            }
+            //add vertex indices from edges
+            for (let e = 0, len = this.m_edges.length / 2; e < len; e++) {
+                let v1 = this.m_index_map.get(unchecked(this.m_edges[2 * e + 0]));
+                let v2 = this.m_index_map.get(unchecked(this.m_edges[2 * e + 1]));
+
+                temp_map.get(v1).push(v2);
+                temp_map.get(v2).push(v1);
+            }
+
+            //copy to memory the map wih static array values
+            this.m_incident_map = new Map<i32, StaticArray<i32>>();
+            let temp_keys = temp_map.keys();
+
+            for (let i = 0, len = temp_keys.length; i < len; i++) {
+                let v = unchecked(temp_keys[i]);
+                let vs = temp_map.get(v);
+                let vs_static = new StaticArray<i32>(vs.length);
+                for (let j = 0, vs_len = vs.length; j < vs_len; j++) {
+                    unchecked(vs_static[j] = vs[j]);
+                }
+                this.m_incident_map.set(v, vs_static);
+            }
+
+            //init inner arrays for search process
+            let vertex_count = this.m_vertex_count;
+            this.i_vertices_g = new StaticArray<f32>(vertex_count);
+            this.i_vertices_h = new StaticArray<f32>(vertex_count);
+            this.i_vertices_f = new StaticArray<f32>(vertex_count);
+            this.i_vertices_close  = new StaticArray<bool>(vertex_count);
+            this.i_vertices_parent = new StaticArray<i32>(vertex_count);
+            //set default values
+            for (let i = 0; i < vertex_count; i++) {
+                //default constructor for f32 arrays init it by 0.0, for bool array by false
+                unchecked(this.i_vertices_parent[i] = -1);
+            }
+            this.i_open_list = new StaticArray<i32>(vertex_count);
+            this.i_open_length_length = 0;
         }
-        this.i_open_list = new StaticArray<i32>(vertex_count);
-        this.i_open_length_length = 0;
     }
 
     private _pre_start(target: i32): void {
@@ -260,6 +292,133 @@ export class Graph {
         return new StaticArray<i32>(0);
     }
 
+    override to_bytes(): Uint8Array {
+        const bytes_length = this.bytes_length();
+        let to_return = new Uint8Array(bytes_length);
+        let view = new DataView(to_return.buffer);
+        // id
+        view.setInt32(0, SD_TYPE.SD_TYPE_GRAPH);
+        let shift = 4;
+
+        // bytes length
+        view.setInt32(shift, bytes_length);
+        shift += 4;
+        
+        // positions
+        let positions = staticarray_f32_to_bytes(this.m_positions);
+        to_return.set(positions, shift);
+        shift += staticarray_f32_bytes_length(this.m_positions);
+        
+        // vertex names
+        let names = staticarray_i32_to_bytes(this.m_vertex_names);
+        to_return.set(names, shift);
+        shift += staticarray_i32_bytes_length(this.m_vertex_names)
+        
+        // vertex count
+        let vertex_count = i32_to_bytes(this.m_vertex_count);
+        to_return.set(vertex_count, shift);
+        shift += i32_bytes_length();
+        
+        // edges
+        let edges = staticarray_i32_to_bytes(this.m_edges);
+        to_return.set(edges, shift);
+        shift += staticarray_i32_bytes_length(this.m_edges)
+
+        // index map
+        let index_map = map_i32_i32_to_bytes(this.m_index_map);
+        to_return.set(index_map, shift);
+        shift += map_i32_i32_bytes_length(this.m_index_map);
+
+        // incident map
+        let incident_map = map_i32_staticarray_i32_to_bytes(this.m_incident_map);
+        to_return.set(incident_map, shift);
+        return to_return;
+    }
+
+    override from_bytes(bytes: Uint8Array): void {
+        let view = new DataView(bytes.buffer);
+        const id = view.getInt32(0);
+        const bytes_length = view.getInt32(4);
+        let shift = 0;
+        // shift is pointer to the start of the bytes section
+        if(id == SD_TYPE.SD_TYPE_GRAPH) {
+            shift = 8;
+        } else { return; }
+
+        // read positions
+        const pos_id = view.getInt32(shift);
+        if(pos_id == SD_TYPE.SD_TYPE_STATICARRAY_FLOAT32) {
+            const pos_bytes_length = view.getInt32(shift + 4);
+            this.m_positions = staticarray_f32_from_bytes(bytes.slice(shift, shift + pos_bytes_length));
+            shift += pos_bytes_length;
+        } else { return; }
+
+        // next read vertex names
+        const names_id = view.getInt32(shift);
+        const names_bytes_length = view.getInt32(shift + 4);
+        if(names_id == SD_TYPE.SD_TYPE_STATICARRAY_INT32) {
+            this.m_vertex_names = staticarray_i32_from_bytes(bytes.slice(shift, shift + names_bytes_length));
+            shift += names_bytes_length;
+        } else { return; }
+
+        // vertex count
+        const count_id = view.getInt32(shift);
+        const count_bytes_length = view.getInt32(shift + 4);
+        if(count_id == SD_TYPE.SD_TYPE_INT32) {
+            this.m_vertex_count = i32_from_bytes(bytes.slice(shift, shift + count_bytes_length));
+            shift += count_bytes_length;
+        } else { return; }
+
+        // edges
+        const edges_id = view.getInt32(shift);
+        const edges_bytes_length = view.getInt32(shift + 4);
+        if(edges_id == SD_TYPE.SD_TYPE_STATICARRAY_INT32) {
+            this.m_edges = staticarray_i32_from_bytes(bytes.slice(shift, shift + edges_bytes_length));
+            shift += edges_bytes_length;
+        } else { return; }
+
+        // index map
+        const index_id = view.getInt32(shift);
+        const index_bytes_length = view.getInt32(shift + 4);
+        if(index_id == SD_TYPE.SD_TYPE_MAP_INT32_INT32) {
+            this.m_index_map = map_i32_i32_from_bytes(bytes.slice(shift, shift + index_bytes_length));
+            shift += index_bytes_length;
+        } else { return; }
+
+        // incident map
+        const incident_id = view.getInt32(shift);
+        const incident_bytes_length = view.getInt32(shift + 4);
+        if(incident_id == SD_TYPE.SD_TYPE_MAP_INT32_STATICARRAY_INT32) {
+            this.m_incident_map = map_i32_staticarray_i32_from_bytes(bytes.slice(shift, shift + incident_bytes_length));
+            shift += incident_bytes_length;
+        } else { return; }
+        
+        // finally recalculate all other class fields
+        // this is the same as on constructor
+        let vertex_count = this.m_vertex_count;
+        this.i_vertices_g = new StaticArray<f32>(vertex_count);
+        this.i_vertices_h = new StaticArray<f32>(vertex_count);
+        this.i_vertices_f = new StaticArray<f32>(vertex_count);
+        this.i_vertices_close  = new StaticArray<bool>(vertex_count);
+        this.i_vertices_parent = new StaticArray<i32>(vertex_count);
+        for (let i = 0; i < vertex_count; i++) {
+            unchecked(this.i_vertices_parent[i] = -1);
+        }
+        this.i_open_list = new StaticArray<i32>(vertex_count);
+        this.i_open_length_length = 0;
+    }
+
+    override bytes_length(): u32 {
+        return 4  // id
+             + 4 // bytes length
+             + staticarray_f32_bytes_length(this.m_positions)
+             + staticarray_i32_bytes_length(this.m_vertex_names)
+             + i32_bytes_length() // m_vertex_count
+             + staticarray_i32_bytes_length(this.m_edges)
+             + map_i32_i32_bytes_length(this.m_index_map)
+             + map_i32_staticarray_i32_bytes_length(this.m_incident_map);
+    }
+
     to_string(): string {
         return "<graph " + this.m_vertex_names.toString() +
                ", edges: " + this._edges_string() +
@@ -271,5 +430,60 @@ export class Graph {
 
     toString(): string {
         return this.to_string();
+    }
+}
+
+export function staticarray_graph_bytes_length(graphs: StaticArray<Graph>): u32 {
+    let to_return = 12;  // id, bytes length, count
+    for(let i = 0, len = graphs.length; i < len; i++) {
+        let graph = graphs[i];
+        to_return += graph.bytes_length();
+    }
+
+    return to_return;
+}
+
+export function staticarray_graph_to_bytes(graphs: StaticArray<Graph>): Uint8Array {
+    const bytes_length = staticarray_graph_bytes_length(graphs);
+    let to_return = new Uint8Array(bytes_length);
+    let view = new DataView(to_return.buffer);
+    view.setInt32(0, SD_TYPE.SD_TYPE_STATICARRAY_GRAPH);
+    view.setInt32(4, bytes_length);
+    view.setInt32(8, graphs.length);
+    let shift = 12;
+    for(let i = 0, len = graphs.length; i < len; i++) {
+        let graph = graphs[i];
+        const graph_bytes_length = graph.bytes_length();
+        to_return.set(graph.to_bytes(), shift);
+        shift += graph_bytes_length;
+    }
+    return to_return;
+}
+
+export function staticarray_graph_from_bytes(bytes: Uint8Array): StaticArray<Graph> {
+    if(bytes.length > 0) {
+        let view = new DataView(bytes.buffer);
+        const id = view.getInt32(0);
+        const bytes_length = view.getInt32(4);
+        if(id == SD_TYPE.SD_TYPE_STATICARRAY_GRAPH) {
+            const count = view.getInt32(8);
+            let shift = 12;
+            let to_return = new StaticArray<Graph>(count);
+            for(let i = 0; i < count; i++) {
+                const gr_bytes_length = view.getInt32(shift + 4);
+                let graph = new Graph();
+                graph.from_bytes(bytes.slice(shift, shift + gr_bytes_length));
+                to_return[i] = graph;
+                shift += gr_bytes_length;
+            }
+
+            return to_return;
+        }
+        else {
+            return new StaticArray<Graph>(0);
+        }
+    }
+    else {
+        return new StaticArray<Graph>(0);
     }
 }
