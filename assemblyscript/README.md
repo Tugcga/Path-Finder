@@ -11,14 +11,14 @@ The module allows to bake navigation mesh polygonal data from input geometry. Al
 
 Elementary modules:
 
-* ```navmesh.wasm``` (31 kb) contains graph and navigation mesh functionality
+* ```navmesh.wasm``` (45 kb) contains graph and navigation mesh functionality
 * ```rvo.wasm``` (28 kb) contains RVO simulation functionality
-* ```baker.wasm``` (82 kb) contains navigation mesh baking functionality
+* ```baker.wasm``` (80 kb) contains navigation mesh baking functionality
 
 Combined modules:
 
-* ```pathfinder.wasm``` (82 kb) combine ```navmesh.wasm```, ```rvo.wasm``` and also contains additional functionality for agent movements and collision avoidance on navigation mesh
-* ```pathfinder_full.wasm``` (160 kb) combine ```pathfinder.wasm``` and ```baker.wasm```
+* ```pathfinder.wasm``` (94 kb) combine ```navmesh.wasm```, ```rvo.wasm``` and also contains additional functionality for agent movements and collision avoidance on navigation mesh
+* ```pathfinder_full.wasm``` (169 kb) combine ```pathfinder.wasm``` and ```baker.wasm```
 
 ### Build commands
 
@@ -143,6 +143,14 @@ Contained in ```navmesh.wasm```, ```pathfinder.wasm``` and ```pathfinder_full.wa
 
 	Find the shortest path between input vertices in the graph by using Dijkstra’s algorithm. Input parameters are names of two vertices, output is array with names of the path's vertices.
 
+* ```graph_to_bytes(graph: Graph): Uint8Array```
+
+	Serialize the graph as plain bytes array.
+
+* ```graph_from_bytes(bytes: Uint8Array): Graph```
+
+	Deserialize the graph from input plain bytes array and return the pointer to the new graph object.
+
 ### ```Navmesh``` API
 
 Contained in ```navmesh.wasm```, ```pathfinder.wasm``` and ```pathfinder_full.wasm```.
@@ -158,6 +166,14 @@ Contained in ```navmesh.wasm```, ```pathfinder.wasm``` and ```pathfinder_full.wa
 * ```navmesh_sample(navmesh: Navmesh, x: f32, y: f32, z: f32): StaticArray<f32>```
 
 	Return the point in the navigation mesh, close to the input point with coordinates ```x, y, z```. Return 4-values array. If the forth value in the array is ```1.0```, then first three vales are coordinates of the closest point. If the forth values is ```0.0```, then there are no close points in the navigation mesh (and the first three values are wrong).
+
+* ```navmesh_to_bytes(navmesh: Navmesh): Uint8Array```
+
+	Serialize the navigation mesh object as plain bytes array.
+
+* ```navmesh_from_bytes(bytes: Uint8Array): Navmesh```
+
+	Deserialize the navigation mesh object from input plain bytes array and return the pointer to the new navmesh object.
 
 There are also some additional global methods for setting parameters, which should be defined before creation the navigation mesh.
 
@@ -456,7 +472,33 @@ Contained in ```baker.wasm``` and ```pathfinder_full.wasm```.
 * ```baker_get_navmesh_sizes(baker: NavmeshBaker): StaticArray<i32>```
 
 	Return plain integer array with sizes of the baked navigation mesh polygons (or empty array if the navigation mesh is not baked).
-	
+
+### Serialization/Deserialization
+
+It is possible to save navigation mesh object into file and load the object from input file. It may be useful when one application bakes the navigation mesh and saves complete object into external file, and then an other application loads this file and use navigation mesh object.
+
+#### How to use
+
+Load the module
+
+```
+import * as navmesh_exports from "./navmesh.js";
+```
+
+Assume that ```navmesh_ptr``` is a pointer to the navigation mesh object in the WASM memory (created, from the polygonal data, for example). Serialize it to bytes
+
+```
+const nm_bytes = navmesh_exports.navmesh_to_bytes(navmesh_ptr);
+```
+
+Next you can save this bytes into file.
+
+Deserialize object from file
+
+```
+const navmesh_ptr = navmesh_exports.navmesh_from_bytes(nm_bytes);
+```
+
 
 ## Performance comparison
 
@@ -474,9 +516,9 @@ Initialization time | 0.05 sec | 0.02 sec
 1024 pairs | 0.10 sec | 0.08 sec
 4096 pairs | 0.38 sec | 0.28 sec
 16 384 pairs | 1.48 sec | 1.24 sec
-38 416 pairs | 3.76 sec | 2.69 sec
-65 536 pairs | 6.21 sec | 4.59 sec
-147 456 pairs | 13.60 sec | 10.20 sec
+38 416 pairs | 3.43 sec | 2.69 sec
+65 536 pairs | 5.82 sec | 4.59 sec
+147 456 pairs | 13.21 sec | 10.20 sec
 
 So, our WASM version is nearly x1.3 times slowly with respect to c++ solution.
 
@@ -491,6 +533,31 @@ Task | as-RVO | em-RVO | c-RVO
 100 000 agents, 1 step | 3.22 sec | 2.19 sec | 0.51 sec
 
 So, Emscripten version is x1.5 times faster, c++ version is x5 times faster.
+
+
+### Deserialization navmesh
+
+We make the following experiment. Generate random navigation mesh polygonal data, and then:
+* Initialize the navigation mesh object from this data
+* Serialize constructed navigation mesh object into bytes
+* Deserialize navigation mesh object from these bytes
+* Compress and decompress bytes by using [pako](https://github.com/nodeca/pako) module with default parameters
+
+In the following table we write performance results of these tasks for different mesh sizes. By ```Polygonal data size```  we mean the size of the raw polygonal data in bytes (in fact the ```number_of_vertices x12 + number_of_polygons x8```). All other sizes are also in bytes.
+
+Polygons | Init time | Serialization time | Deserialization time | Polygonal data size | Serialized file size | Compressed file size | Decompress time 
+--- | --- | --- | --- | --- | --- | --- | ---
+2 077 | 0.028 sec | 0.077 sec | 0.022 sec | 91 800 | 2 170 433 | 288 687 | 0.053 sec
+8 141 | 0.14 sec | 0.36 sec | 0.14 sec | 364 172 | 8 752 069 | 1 174 633 | 0.1 sec
+18 567 | 0.34 sec | 0.99 sec | 0.24 sec | 818 708 | 19 878 401 | 2 745 445 | 0.23 sec
+32 821 | 0.67 sec | 1.85 sec | 0.39 sec | 1 447 508 | 35 103 385 | 4 823 961 | 0.29 sec
+48 753 | 0.96 sec | 2.81 sec | 0.60 sec | 2 149 108 | 52 294 249 | 7 306 457 | 0.39 sec
+
+Conclusions:
+* Deserialiation from the file is faster than initialization from polygonal data, but not too much (```x1.5``` times faster)
+* File with serialized data is much bigger, because it contains not only polygonal data, but also additional structures, required for searching path and triangles samples (the file is ```x25``` bigger)
+* Output file with serialized data can be effectively compressed (```x7.5``` times)
+* Decompression and deserialization is slowly then direct initialization from polygonal data
 
 
 ## Example application
