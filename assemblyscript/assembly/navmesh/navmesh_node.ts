@@ -1,9 +1,9 @@
 import { log_message } from "../common/utilities";
 import { Serializable, SD_TYPE,
-    staticarray_f32_bytes_length, staticarray_f32_to_bytes, staticarray_f32_from_bytes,
-    staticarray_i32_bytes_length, staticarray_i32_to_bytes, staticarray_i32_from_bytes,
+    staticarray_f32_bytes_length, staticarray_f32_to_bytes, staticarray_f32_from_bytes_expr,
+    staticarray_i32_bytes_length, staticarray_i32_to_bytes, staticarray_i32_from_bytes_expr,
     i32_bytes_length, i32_to_bytes, i32_from_bytes,
-    map_i32_staticarray_f32_bytes_length, map_i32_staticarray_f32_to_bytes, map_i32_staticarray_f32_from_bytes } from "../common/binary_io";
+    map_i32_staticarray_f32_bytes_length, map_i32_staticarray_f32_to_bytes, map_i32_staticarray_f32_from_bytes_expr } from "../common/binary_io";
 
 let STATIC_ARRAY_BUFFER_STEP = 8;  // when increase the data values count in static array and overflow it length, then we recreate new bigger array
 
@@ -419,89 +419,88 @@ export class NavmeshNode extends Serializable {
         return to_return;
     }
 
-    override from_bytes(bytes: Uint8Array): void {
-        let view = new DataView(bytes.buffer);
-        const id = view.getInt32(0);
-        const bytes_length = view.getInt32(4);
-        let shift = 0;
+    override from_bytes(view: DataView, start: u32): void {
+        const id = view.getInt32(start + 0);
+        const bytes_length = view.getInt32(start + 4);
+        let shift = start + 0;
         if(id == SD_TYPE.SD_TYPE_NAVMESHNODE) {
-            shift = 8;
+            shift += 8;
         } else { return; }
 
         const vertices_id = view.getInt32(shift);
         if(vertices_id == SD_TYPE.SD_TYPE_STATICARRAY_FLOAT32) {
             const vertices_bytes_length = view.getInt32(shift + 4);
-            this.m_vertices = staticarray_f32_from_bytes(bytes.slice(shift, shift + vertices_bytes_length));
+            this.m_vertices = staticarray_f32_from_bytes_expr(view, shift);
             shift += vertices_bytes_length;
         } else { return; }
 
         const polygon_id = view.getInt32(shift);
         if(polygon_id == SD_TYPE.SD_TYPE_STATICARRAY_INT32) {
             const polygon_bytes_length = view.getInt32(shift + 4);
-            this.m_polygon = staticarray_i32_from_bytes(bytes.slice(shift, shift + polygon_bytes_length));
+            this.m_polygon = staticarray_i32_from_bytes_expr(view, shift);
             shift += polygon_bytes_length;
         } else { return; }
 
         const length_id = view.getInt32(shift);
         if(length_id == SD_TYPE.SD_TYPE_INT32) {
             const length_bytes_length = view.getInt32(shift + 4);
-            this.m_length = i32_from_bytes(bytes.slice(shift, shift + length_bytes_length));
+            this.m_length = view.getInt32(shift + 8);
             shift += length_bytes_length;
         } else { return; }
 
         const index_id = view.getInt32(shift);
         if(index_id == SD_TYPE.SD_TYPE_INT32) {
             const index_bytes_length = view.getInt32(shift + 4);
-            this.m_index = i32_from_bytes(bytes.slice(shift, shift + index_bytes_length));
+            this.m_index = view.getInt32(shift + 8);
             shift += index_bytes_length;
         } else { return; }
 
         const group_id = view.getInt32(shift);
         if(group_id == SD_TYPE.SD_TYPE_INT32) {
             const group_bytes_length = view.getInt32(shift + 4);
-            this.m_group = i32_from_bytes(bytes.slice(shift, shift + group_bytes_length));
+            this.m_group = view.getInt32(shift + 8);
             shift += group_bytes_length;
         } else { return; }
 
         const neighbor_id = view.getInt32(shift);
         if(neighbor_id == SD_TYPE.SD_TYPE_STATICARRAY_INT32) {
             const neighbor_bytes_length = view.getInt32(shift + 4);
-            this.m_neighbor = staticarray_i32_from_bytes(bytes.slice(shift, shift + neighbor_bytes_length));
+            this.m_neighbor = staticarray_i32_from_bytes_expr(view, shift);
             shift += neighbor_bytes_length;
         } else { return; }
 
         const neighbor_count_id = view.getInt32(shift);
         if(neighbor_count_id == SD_TYPE.SD_TYPE_INT32) {
             const neighbor_count_bytes_length = view.getInt32(shift + 4);
-            this.m_neighbor_count = i32_from_bytes(bytes.slice(shift, shift + neighbor_count_bytes_length));
+            this.m_neighbor_count = view.getInt32(shift + 8);
             shift += neighbor_count_bytes_length;
         } else { return; }
 
         const center_id = view.getInt32(shift);
         if(center_id == SD_TYPE.SD_TYPE_STATICARRAY_FLOAT32) {
             const center_bytes_length = view.getInt32(shift + 4);
-            this.m_center = staticarray_f32_from_bytes(bytes.slice(shift, shift + center_bytes_length));
+            this.m_center = staticarray_f32_from_bytes_expr(view, shift);
             shift += center_bytes_length;
         } else { return; }
 
         const normal_id = view.getInt32(shift);
         if(normal_id == SD_TYPE.SD_TYPE_STATICARRAY_FLOAT32) {
             const normal_bytes_length = view.getInt32(shift + 4);
-            this.m_normal = staticarray_f32_from_bytes(bytes.slice(shift, shift + normal_bytes_length));
+            this.m_normal = staticarray_f32_from_bytes_expr(view, shift);
             shift += normal_bytes_length;
         } else { return; }
 
         const v_normals_id = view.getInt32(shift);
         if(v_normals_id == SD_TYPE.SD_TYPE_STATICARRAY_FLOAT32) {
             const v_normals_bytes_length = view.getInt32(shift + 4);
-            this.m_vertex_normals = staticarray_f32_from_bytes(bytes.slice(shift, shift + v_normals_bytes_length));
+            this.m_vertex_normals = staticarray_f32_from_bytes_expr(view, shift);
             shift += v_normals_bytes_length;
         } else { return; }
 
         const portals_id = view.getInt32(shift);
         if(portals_id == SD_TYPE.SD_TYPE_MAP_INT32_STATICARRAY_FLOAT32) {
             const portals_bytes_length = view.getInt32(shift + 4);
-            this.m_portals = map_i32_staticarray_f32_from_bytes(bytes.slice(shift, shift + portals_bytes_length));
+            this.m_portals = map_i32_staticarray_f32_from_bytes_expr(view, shift);
             shift += portals_bytes_length;
         } else { return; }
     }
@@ -594,4 +593,19 @@ export function staticarray_navmeshnode_from_bytes(bytes: Uint8Array): StaticArr
     else {
         return new StaticArray<NavmeshNode>(0);
     }
+}
+
+export function staticarray_navmeshnode_from_bytes_expr(view: DataView, start: u32): StaticArray<NavmeshNode> {
+    const count = view.getInt32(start + 8);
+    let shift = start + 12;
+    let to_return = new StaticArray<NavmeshNode>(count);
+    for(let i = 0; i < count; i++) {
+        const nn_bytes_length = view.getInt32(shift + 4);
+        let node = new NavmeshNode();
+        node.from_bytes(view, shift);
+        to_return[i] = node;
+        shift += nn_bytes_length;
+    }
+
+    return to_return;
 }

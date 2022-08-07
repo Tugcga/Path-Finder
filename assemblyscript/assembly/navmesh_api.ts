@@ -25,7 +25,8 @@ export function graph_to_bytes(graph: Graph): Uint8Array {
 
 export function graph_from_bytes(bytes: Uint8Array): Graph {
     let graph = new Graph();
-    graph.from_bytes(bytes);
+    let view = new DataView(bytes.buffer);
+    graph.from_bytes(view, 0);
     return graph;
 }
 

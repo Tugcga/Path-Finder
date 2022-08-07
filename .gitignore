@@ -24,6 +24,7 @@ python/level_two_zones.txt
 python/navmesh_test.py
 python/rvo_test.py
 assemblyscript/build
+assemblyscript/*.nm
 assemblyscript/build command.txt
 assemblyscript/map_02.txt
 assemblyscript/map_02_reduce.txt

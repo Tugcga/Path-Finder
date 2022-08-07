@@ -1,11 +1,11 @@
 import { distance, log_message } from "../common/utilities";
 import { Serializable, SD_TYPE, 
     i32_bytes_length, i32_to_bytes, i32_from_bytes,
-    staticarray_f32_bytes_length, staticarray_f32_to_bytes, staticarray_f32_from_bytes,
-    staticarray_i32_bytes_length, staticarray_i32_to_bytes, staticarray_i32_from_bytes,
+    staticarray_f32_bytes_length, staticarray_f32_to_bytes, staticarray_f32_from_bytes_expr,
+    staticarray_i32_bytes_length, staticarray_i32_to_bytes, staticarray_i32_from_bytes_expr,
     staticarray_bool_bytes_length, staticarray_bool_to_bytes, staticarray_bool_from_bytes,
-    map_i32_i32_bytes_length, map_i32_i32_to_bytes, map_i32_i32_from_bytes,
-    map_i32_staticarray_i32_bytes_length, map_i32_staticarray_i32_to_bytes, map_i32_staticarray_i32_from_bytes } from "../common/binary_io";
+    map_i32_i32_bytes_length, map_i32_i32_to_bytes, map_i32_i32_from_bytes_expr,
+    map_i32_staticarray_i32_bytes_length, map_i32_staticarray_i32_to_bytes, map_i32_staticarray_i32_from_bytes_expr } from "../common/binary_io";
 
 export class Graph extends Serializable {
     private m_positions: StaticArray<f32>;  // store by triples [x1, y1, z1, x2, y2, z2, ...]
@@ -335,21 +335,21 @@ export class Graph extends Serializable {
         return to_return;
     }
 
-    override from_bytes(bytes: Uint8Array): void {
-        let view = new DataView(bytes.buffer);
-        const id = view.getInt32(0);
-        const bytes_length = view.getInt32(4);
-        let shift = 0;
+    override from_bytes(view: DataView, start: u32): void {
+        const id = view.getInt32(start);
+        const bytes_length = view.getInt32(start + 4);
+        let shift = start;
         // shift is pointer to the start of the bytes section
         if(id == SD_TYPE.SD_TYPE_GRAPH) {
-            shift = 8;
+            shift += 8;
         } else { return; }
 
         // read positions
         const pos_id = view.getInt32(shift);
         if(pos_id == SD_TYPE.SD_TYPE_STATICARRAY_FLOAT32) {
             const pos_bytes_length = view.getInt32(shift + 4);
-            this.m_positions = staticarray_f32_from_bytes(bytes.slice(shift, shift + pos_bytes_length));
+            //this.m_positions = staticarray_f32_from_bytes(bytes.slice(shift, shift + pos_bytes_length));
+            this.m_positions = staticarray_f32_from_bytes_expr(view, shift);
             shift += pos_bytes_length;
         } else { return; }
 
@@ -357,7 +357,8 @@ export class Graph extends Serializable {
         const names_id = view.getInt32(shift);
         const names_bytes_length = view.getInt32(shift + 4);
         if(names_id == SD_TYPE.SD_TYPE_STATICARRAY_INT32) {
-            this.m_vertex_names = staticarray_i32_from_bytes(bytes.slice(shift, shift + names_bytes_length));
+            //this.m_vertex_names = staticarray_i32_from_bytes(bytes.slice(shift, shift + names_bytes_length));
+            this.m_vertex_names = staticarray_i32_from_bytes_expr(view, shift);
             shift += names_bytes_length;
         } else { return; }
 
@@ -365,7 +366,8 @@ export class Graph extends Serializable {
         const count_id = view.getInt32(shift);
         const count_bytes_length = view.getInt32(shift + 4);
         if(count_id == SD_TYPE.SD_TYPE_INT32) {
-            this.m_vertex_count = i32_from_bytes(bytes.slice(shift, shift + count_bytes_length));
+            //this.m_vertex_count = i32_from_bytes(bytes.slice(shift, shift + count_bytes_length));
+            this.m_vertex_count = view.getInt32(shift + 8);
             shift += count_bytes_length;
         } else { return; }
 
@@ -373,7 +375,8 @@ export class Graph extends Serializable {
         const edges_id = view.getInt32(shift);
         const edges_bytes_length = view.getInt32(shift + 4);
         if(edges_id == SD_TYPE.SD_TYPE_STATICARRAY_INT32) {
-            this.m_edges = staticarray_i32_from_bytes(bytes.slice(shift, shift + edges_bytes_length));
+            //this.m_edges = staticarray_i32_from_bytes(bytes.slice(shift, shift + edges_bytes_length));
+            this.m_edges = staticarray_i32_from_bytes_expr(view, shift);
             shift += edges_bytes_length;
         } else { return; }
 
@@ -381,7 +384,8 @@ export class Graph extends Serializable {
         const index_id = view.getInt32(shift);
         const index_bytes_length = view.getInt32(shift + 4);
         if(index_id == SD_TYPE.SD_TYPE_MAP_INT32_INT32) {
-            this.m_index_map = map_i32_i32_from_bytes(bytes.slice(shift, shift + index_bytes_length));
+            //this.m_index_map = map_i32_i32_from_bytes(bytes.slice(shift, shift + index_bytes_length));
+            this.m_index_map = map_i32_i32_from_bytes_expr(view, shift);
             shift += index_bytes_length;
         } else { return; }
 
@@ -389,7 +393,8 @@ export class Graph extends Serializable {
         const incident_id = view.getInt32(shift);
         const incident_bytes_length = view.getInt32(shift + 4);
         if(incident_id == SD_TYPE.SD_TYPE_MAP_INT32_STATICARRAY_INT32) {
-            this.m_incident_map = map_i32_staticarray_i32_from_bytes(bytes.slice(shift, shift + incident_bytes_length));
+            //this.m_incident_map = map_i32_staticarray_i32_from_bytes(bytes.slice(shift, shift + incident_bytes_length));
+            this.m_incident_map = map_i32_staticarray_i32_from_bytes_expr(view, shift);
             shift += incident_bytes_length;
         } else { return; }
         
@@ -486,4 +491,19 @@ export function staticarray_graph_from_bytes(bytes: Uint8Array): StaticArray<Gra
     else {
         return new StaticArray<Graph>(0);
     }
+}
+
+export function staticarray_graph_from_bytes_expr(view: DataView, start: u32): StaticArray<Graph> {
+    const count = view.getInt32(start + 8);
+    let shift = start + 12;
+    let to_return = new StaticArray<Graph>(count);
+    for(let i = 0; i < count; i++) {
+        const gr_bytes_length = view.getInt32(shift + 4);
+        let graph = new Graph();
+        graph.from_bytes(view, shift);
+        to_return[i] = graph;
+        shift += gr_bytes_length;
+    }
+
+    return to_return;
 }

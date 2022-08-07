@@ -2,7 +2,7 @@ import { NavmeshNode } from "./navmesh_node";
 import { clamp, squared_len, log_message } from "../common/utilities";
 import { Serializable, SD_TYPE, 
     bool_bytes_length, bool_to_bytes, bool_from_bytes,
-    staticarray_f32_bytes_length, staticarray_f32_to_bytes, staticarray_f32_from_bytes } from "../common/binary_io";
+    staticarray_f32_bytes_length, staticarray_f32_to_bytes, staticarray_f32_from_bytes, staticarray_f32_from_bytes_expr } from "../common/binary_io";
 
 class AABB extends Serializable {
     x_min: f32;
@@ -40,20 +40,14 @@ class AABB extends Serializable {
         return to_return;
     }
 
-    override from_bytes(bytes: Uint8Array): void {
-        if(bytes.length > 0) {
-            let view = new DataView(bytes.buffer);
-            const id = view.getInt32(0);
-            if(id == SD_TYPE.SD_TYPE_AABB) {
-                this.x_min = view.getFloat32(8);
-                this.y_min = view.getFloat32(12);
-                this.z_min = view.getFloat32(16);
+    override from_bytes(view: DataView, start: u32): void {
+        this.x_min = view.getFloat32(start + 8);
+        this.y_min = view.getFloat32(start + 12);
+        this.z_min = view.getFloat32(start + 16);
 
-                this.x_max = view.getFloat32(20);
-                this.y_max = view.getFloat32(24);
-                this.z_max = view.getFloat32(28);
-            }
-        }
+        this.x_max = view.getFloat32(start + 20);
+        this.y_max = view.getFloat32(start + 24);
+        this.z_max = view.getFloat32(start + 28);
     }
 
     override bytes_length(): u32 {
@@ -61,6 +55,36 @@ class AABB extends Serializable {
              + 4  // bytes length
              + 4 * 6;  // value
     }
+}
+
+function find_node(array: StaticArray<NavmeshNode>, value: i32): NavmeshNode {
+    let left = 0;
+    let right = array.length - 1;
+    while(right - left > 1){
+        const mid = (left + right) / 2
+        const a_idx = array[mid].get_index();
+        if(a_idx == value) {
+            return array[mid];
+        }
+
+        if(a_idx > value) {
+            right = mid;
+        }
+        else {
+            left = mid;
+        }
+    }
+    let a_left = array[left];
+    if(array[left].get_index() == value) {
+        return a_left;
+    }
+    let a_right = array[right];
+    if(a_right.get_index() == value) {
+        return a_right;
+    }
+    // fail to find the node with the index
+    // this is error, but return the first one
+    return array[0];
 }
 
 export class NavmeshBVH {
@@ -257,9 +281,9 @@ export class NavmeshBVH {
                     }
                 }
             } else {  // this is the leaf-node, it contains object
-                let firstNode = unchecked(this.m_nodes[0]);
-                if (firstNode.is_point_inside(x, y, z)) {
-                    return firstNode.get_index();
+                let first_node = unchecked(this.m_nodes[0]);
+                if (first_node.is_point_inside(x, y, z)) {
+                    return first_node.get_index();
                 } else {
                     return -1;
                 }
@@ -272,7 +296,6 @@ export class NavmeshBVH {
     // if we will store it in bytes, then we will save one node several times
     // so, instead we will save only node indices (in array) and keys (in the map)
     // and then in from_bytes() method use already known nodes to fill array and the map
-
     bytes_length(): u32 {
         let to_return = 8;  // id and bytes length
         to_return += this.m_aabb.bytes_length();
@@ -332,83 +355,72 @@ export class NavmeshBVH {
         return to_return;
     }
 
-    from_bytes(bytes: Uint8Array, nodes: StaticArray<NavmeshNode>): void {
-        if(bytes.length > 0) {
-            let view = new DataView(bytes.buffer);
-            const id = view.getInt32(0);
-            let shift = 0;
-            if(id == SD_TYPE.SD_TYPE_NAVMESHBVH) {
-                shift = 8;
-            } else { return; }
+    from_bytes(view: DataView, start: u32, nodes: StaticArray<NavmeshNode>): void {
+        const id = view.getInt32(start + 0);
+        let shift = start + 0;
+        if(id == SD_TYPE.SD_TYPE_NAVMESHBVH) {
+            shift += 8;
+        } else { return; }
 
-            // get aabb
-            const aabb_id = view.getInt32(shift);
-            if(aabb_id == SD_TYPE.SD_TYPE_AABB) {
-                const aabb_bytes_length = view.getInt32(shift + 4);
-                let new_aabb = new AABB();
-                new_aabb.from_bytes(bytes.slice(shift, shift + aabb_bytes_length));
-                this.m_aabb = new_aabb;
-                shift += aabb_bytes_length;
-            } else { return; }
+        // get aabb
+        const aabb_id = view.getInt32(shift);
+        if(aabb_id == SD_TYPE.SD_TYPE_AABB) {
+            const aabb_bytes_length = view.getInt32(shift + 4);
+            let new_aabb = new AABB();
+            new_aabb.from_bytes(view, shift);
+            this.m_aabb = new_aabb;
+            shift += aabb_bytes_length;
+        } else { return; }
 
-            // next two booleans for m_children_exists and m_is_object
-            const ch_exists_id = view.getInt32(shift);
-            if(ch_exists_id == SD_TYPE.SD_TYPE_BOOL) {
-                const ch_exists_bytes_length = view.getInt32(shift + 4);
-                this.m_children_exists = bool_from_bytes(bytes.slice(shift, shift + ch_exists_bytes_length));
-                shift += ch_exists_bytes_length;
-            } else { return; }
-            const is_obj_id = view.getInt32(shift);
-            if(is_obj_id == SD_TYPE.SD_TYPE_BOOL) {
-                const is_obj_bytes_length = view.getInt32(shift + 4);
-                this.m_is_object = bool_from_bytes(bytes.slice(shift, shift + is_obj_bytes_length));
-                shift += is_obj_bytes_length;
-            } else { return; }
+        // next two booleans for m_children_exists and m_is_object
+        const ch_exists_id = view.getInt32(shift);
+        if(ch_exists_id == SD_TYPE.SD_TYPE_BOOL) {
+            const ch_exists_bytes_length = view.getInt32(shift + 4);
+            this.m_children_exists = view.getUint8(shift + 8) == 1;
+            shift += ch_exists_bytes_length;
+        } else { return; }
+        const is_obj_id = view.getInt32(shift);
+        if(is_obj_id == SD_TYPE.SD_TYPE_BOOL) {
+            const is_obj_bytes_length = view.getInt32(shift + 4);
+            this.m_is_object = view.getUint8(shift + 8) == 1;
+            shift += is_obj_bytes_length;
+        } else { return; }
 
-            // next read node indices inside this bvh node
-            // they are stored as simple ints
-            const count = view.getInt32(shift);
+        // next read node indices inside this bvh node
+        // they are stored as simple ints
+        const count = view.getInt32(shift);
+        shift += 4;
+        this.m_nodes = new StaticArray<NavmeshNode>(count);
+        const nodes_length = nodes.length;
+        for(let i = 0; i < count; i++) {
+            const index = view.getInt32(shift);
+            let n = nodes[index];
+            this.m_index_to_node.set(index, n);
+            this.m_nodes[i] = n;
             shift += 4;
-            this.m_nodes = new StaticArray<NavmeshNode>(count);
-            for(let i = 0; i < count; i++) {
-                const index = view.getInt32(shift);
-                // and here we should find the node with this index in the input array
-                // (yes, it spends a lot of time, but our array is not ordered by indexes)
-                for(let j = 0, j_len = nodes.length; j < j_len; j++) {
-                    let n = nodes[j];
-                    const n_index = n.get_index();
-                    if(n_index == index) {
-                        this.m_index_to_node.set(index, n);
-                        this.m_nodes[i] = n;
-                        break;
-                    }
-                }
-                shift += 4;
-            }
+        }
 
-            // next read left and right nodes, if it stored
-            if(this.m_children_exists) {
-                const left_id = view.getInt32(shift);
-                if(left_id == SD_TYPE.SD_TYPE_NAVMESHBVH) {
-                    const left_bytes_length = view.getInt32(shift + 4);
-                    let left = new NavmeshBVH(new StaticArray<NavmeshNode>(0));
-                    // pass already loaded nodes
-                    left.from_bytes(bytes.slice(shift, shift + left_bytes_length), this.m_nodes);
-                    this.m_left_child = left;
-                    shift += left_bytes_length
-                }
-                else { return; }
-                // the same process for the right child
-                const right_id = view.getInt32(shift);
-                if(right_id == SD_TYPE.SD_TYPE_NAVMESHBVH) {
-                    const right_bytes_length = view.getInt32(shift + 4);
-                    let right = new NavmeshBVH(new StaticArray<NavmeshNode>(0));
-                    right.from_bytes(bytes.slice(shift, shift + right_bytes_length), this.m_nodes);
-                    this.m_right_child = right;
-                    shift += right_bytes_length
-                }
-                else { return; }
+        // next read left and right nodes, if it stored
+        if(this.m_children_exists) {
+            const left_id = view.getInt32(shift);
+            if(left_id == SD_TYPE.SD_TYPE_NAVMESHBVH) {
+                const left_bytes_length = view.getInt32(shift + 4);
+                let left = new NavmeshBVH(new StaticArray<NavmeshNode>(0));
+                left.from_bytes(view, shift, nodes);
+                this.m_left_child = left;
+                shift += left_bytes_length
             }
+            else { return; }
+            // the same process for the right child
+            const right_id = view.getInt32(shift);
+            if(right_id == SD_TYPE.SD_TYPE_NAVMESHBVH) {
+                const right_bytes_length = view.getInt32(shift + 4);
+                let right = new NavmeshBVH(new StaticArray<NavmeshNode>(0));
+                right.from_bytes(view, shift, nodes);
+                this.m_right_child = right;
+                shift += right_bytes_length
+            }
+            else { return; }
         }
     }
 
@@ -956,66 +968,63 @@ export class TrianglesBVH extends Serializable {
         return to_return;
     }
 
-    override from_bytes(bytes: Uint8Array): void {
-        if(bytes.length > 0) {
-            let view = new DataView(bytes.buffer);
-            const id = view.getInt32(0);
-            let shift = 0;
-            if(id == SD_TYPE.SD_TYPE_TRIANGLESBVH) {
-                shift = 8;
+    override from_bytes(view: DataView, start: u32): void {
+        const id = view.getInt32(start + 0);
+        let shift = start + 0;
+        if(id == SD_TYPE.SD_TYPE_TRIANGLESBVH) {
+            shift += 8;
+        } else { return; }
+
+        // read triangles data array
+        const data_id = view.getInt32(shift);
+        if(data_id == SD_TYPE.SD_TYPE_STATICARRAY_FLOAT32) {
+            const data_bytes_length = view.getInt32(shift + 4);
+            this.m_triangle_data = staticarray_f32_from_bytes_expr(view, shift);
+            shift += data_bytes_length;
+        } else { return; }
+
+        // next read two bools
+        // m_is_object
+        const is_object_id = view.getInt32(shift);
+        if(is_object_id == SD_TYPE.SD_TYPE_BOOL) {
+            const is_object_bytes_length = view.getInt32(shift + 4);
+            this.m_is_object = view.getUint8(shift + 8) == 1;
+            shift += is_object_bytes_length;
+        } else { return; }
+        // m_children_exists
+        const children_exists_id = view.getInt32(shift);
+        if(children_exists_id == SD_TYPE.SD_TYPE_BOOL) {
+            const children_exists_bytes_length = view.getInt32(shift + 4);
+            this.m_children_exists = view.getUint8(shift + 8) == 1;
+            shift += children_exists_bytes_length;
+        } else { return; }
+
+        // next read aabb
+        const aabb_id = view.getInt32(shift);
+        if(aabb_id == SD_TYPE.SD_TYPE_AABB) {
+            const aabb_bytes_length = view.getInt32(shift + 4);
+            this.m_aabb = new AABB();
+            this.m_aabb.from_bytes(view, shift);
+            shift += aabb_bytes_length;
+        } else { return; }
+
+        // and finally read children
+        if(this.m_children_exists) {
+            const left_id =view.getInt32(shift);
+            if(left_id == SD_TYPE.SD_TYPE_TRIANGLESBVH) {
+                const left_bytes_length = view.getInt32(shift + 4);
+                this.m_left_child = new TrianglesBVH();
+                this.m_left_child.from_bytes(view, shift);
+                shift += left_bytes_length;
             } else { return; }
 
-            // read triangles data array
-            const data_id = view.getInt32(shift);
-            if(data_id == SD_TYPE.SD_TYPE_STATICARRAY_FLOAT32) {
-                const data_bytes_length = view.getInt32(shift + 4);
-                this.m_triangle_data = staticarray_f32_from_bytes(bytes.slice(shift, shift + data_bytes_length));
-                shift += data_bytes_length;
+            const right_id =view.getInt32(shift);
+            if(right_id == SD_TYPE.SD_TYPE_TRIANGLESBVH) {
+                const right_bytes_length = view.getInt32(shift + 4);
+                this.m_right_child = new TrianglesBVH();
+                this.m_right_child.from_bytes(view, shift);
+                shift += right_bytes_length;
             } else { return; }
-
-            // next read two bools
-            // m_is_object
-            const is_object_id = view.getInt32(shift);
-            if(is_object_id == SD_TYPE.SD_TYPE_BOOL) {
-                const is_object_bytes_length = view.getInt32(shift + 4);
-                this.m_is_object = bool_from_bytes(bytes.slice(shift, shift + is_object_bytes_length));
-                shift += is_object_bytes_length;
-            } else { return; }
-            // m_children_exists
-            const children_exists_id = view.getInt32(shift);
-            if(children_exists_id == SD_TYPE.SD_TYPE_BOOL) {
-                const children_exists_bytes_length = view.getInt32(shift + 4);
-                this.m_children_exists = bool_from_bytes(bytes.slice(shift, shift + children_exists_bytes_length));
-                shift += children_exists_bytes_length;
-            } else { return; }
-
-            // next read aabb
-            const aabb_id = view.getInt32(shift);
-            if(aabb_id == SD_TYPE.SD_TYPE_AABB) {
-                const aabb_bytes_length = view.getInt32(shift + 4);
-                this.m_aabb = new AABB();
-                this.m_aabb.from_bytes(bytes.slice(shift, shift + aabb_bytes_length));
-                shift += aabb_bytes_length;
-            } else { return; }
-
-            // and finally read children
-            if(this.m_children_exists) {
-                const left_id =view.getInt32(shift);
-                if(left_id == SD_TYPE.SD_TYPE_TRIANGLESBVH) {
-                    const left_bytes_length = view.getInt32(shift + 4);
-                    this.m_left_child = new TrianglesBVH();
-                    this.m_left_child.from_bytes(bytes.slice(shift, shift + left_bytes_length));
-                    shift += left_bytes_length;
-                } else { return; }
-
-                const right_id =view.getInt32(shift);
-                if(right_id == SD_TYPE.SD_TYPE_TRIANGLESBVH) {
-                    const right_bytes_length = view.getInt32(shift + 4);
-                    this.m_right_child = new TrianglesBVH();
-                    this.m_right_child.from_bytes(bytes.slice(shift, shift + right_bytes_length));
-                    shift += right_bytes_length;
-                } else { return; }
-            }
         }
     }
 

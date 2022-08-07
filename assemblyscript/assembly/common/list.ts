@@ -104,7 +104,7 @@ export class List<T> extends Serializable {
                 view.setInt32(4, bytes_length);
                 view.setInt32(8, this.m_size);
                 for(let i = 0, len = this.m_size; i < len; i++) {
-                    view.setInt32(12 + 4*i, <i32>this.m_array[i]);
+                    view.setInt32(12 + 4*i, unchecked(<i32>this.m_array[i]));
                 }
             }
             else if(type == "f32") {
@@ -112,7 +112,7 @@ export class List<T> extends Serializable {
                 view.setInt32(4, bytes_length);
                 view.setInt32(8, this.m_size);
                 for(let i = 0, len = this.m_size; i < len; i++) {
-                    view.setFloat32(12 + 4*i, <f32>this.m_array[i]);
+                    view.setFloat32(12 + 4*i, unchecked(<f32>this.m_array[i]));
                 }
             }
             else if(type == "bool") {
@@ -120,7 +120,7 @@ export class List<T> extends Serializable {
                 view.setInt32(4, bytes_length);
                 view.setInt32(8, this.m_size);
                 for(let i = 0, len = this.m_size; i < len; i++) {
-                    view.setUint8(12 + i, <bool>this.m_array[i] ? 1 : 0);
+                    view.setUint8(12 + i, unchecked(<bool>this.m_array[i] ? 1 : 0));
                 }
             }
         }
@@ -138,14 +138,14 @@ export class List<T> extends Serializable {
             this.m_max_size = count;
             for(let i = 0; i < count; i++){
                 if(id == SD_TYPE.SD_TYPE_LIST_INT32) {
-                    new_array[i] = <T>view.getInt32(12 + 4*i);
+                    unchecked(new_array[i] = <T>view.getInt32(12 + 4*i));
                 }
                 else if(id == SD_TYPE.SD_TYPE_LIST_FLOAT32) {
-                    new_array[i] = <T>view.getFloat32(12 + 4*i);
+                    unchecked(new_array[i] = <T>view.getFloat32(12 + 4*i));
                 }
                 else if(id == SD_TYPE.SD_TYPE_LIST_BOOL) {
                     const v = view.getUint8(12 + i) == 1 ? true : false;
-                    new_array[i] = <T>v;
+                    unchecked(new_array[i] = <T>v);
                 }
             }
             this.m_array = new_array;

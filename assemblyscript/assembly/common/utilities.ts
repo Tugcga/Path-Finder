@@ -10,7 +10,7 @@ export function log_message(message: string): void{
 export const RVO_EPSILON: f32 = 0.0001;
 export const RVO_INFINITY: f32 = <f32>Number.MAX_VALUE;
 
-export class Pair<T> extends Serializable{
+export class Pair<T> extends Serializable {
     constructor(public m_x: T, public m_y: T) {
         super();
     }
