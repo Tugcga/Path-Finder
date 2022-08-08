@@ -38,20 +38,20 @@ export class Pair<T> extends Serializable {
         let to_return = new Uint8Array(bytes_length);
         if(to_return.length > 0){
             let view = new DataView(to_return.buffer);
-            const type = nameof<T>();
-            if(type == "i32"){
+            let type!: T;
+            if(type instanceof i32){
                 view.setInt32(0, SD_TYPE.SD_TYPE_PAIR_INT32);
                 view.setInt32(4, bytes_length);
                 view.setInt32(8, <i32>this.m_x);
                 view.setInt32(12, <i32>this.m_y);
             }
-            else if(type == "f32"){
+            else if(type instanceof f32){
                 view.setInt32(0, SD_TYPE.SD_TYPE_PAIR_FLOAT32);
                 view.setInt32(4, bytes_length);
                 view.setFloat32(8, <f32>this.m_x);
                 view.setFloat32(12, <f32>this.m_y);
             }
-            else if(type == "f64"){
+            else if(type instanceof f64){
                 view.setInt32(0, SD_TYPE.SD_TYPE_PAIR_FLOAT64);
                 view.setInt32(4, bytes_length);
                 view.setFloat64(8, <f64>this.m_x);
@@ -85,11 +85,11 @@ export class Pair<T> extends Serializable {
     }
 
     override bytes_length(): u32 {
-        const type = nameof<T>();
-        if(type == "i32" || type == "f32") {
+        let type!: T;
+        if (type instanceof i32 || type instanceof f32) {
             return 4 + 4 + 4 + 4;
         }
-        else if(type == "f64") {
+        else if(type instanceof f64) {
             return 4 + 4 + 8 + 8;
         }
         return 0;

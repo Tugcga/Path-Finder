@@ -1,5 +1,6 @@
 import { Serializable, SD_TYPE } from "./binary_io";
 import { log_message } from "./utilities";
+import { Pair } from "./utilities";
 
 export class List<T> extends Serializable {
     m_array: StaticArray<T>;
@@ -98,8 +99,8 @@ export class List<T> extends Serializable {
         let to_return = new Uint8Array(bytes_length);
         if(to_return.length > 0) {
             let view = new DataView(to_return.buffer);
-            const type = nameof<T>();
-            if(type == "i32") {
+            let type!: T;
+            if(type instanceof i32) {
                 view.setInt32(0, SD_TYPE.SD_TYPE_LIST_INT32);
                 view.setInt32(4, bytes_length);
                 view.setInt32(8, this.m_size);
@@ -107,7 +108,7 @@ export class List<T> extends Serializable {
                     view.setInt32(12 + 4*i, unchecked(<i32>this.m_array[i]));
                 }
             }
-            else if(type == "f32") {
+            else if(type instanceof f32) {
                 view.setInt32(0, SD_TYPE.SD_TYPE_LIST_FLOAT32);
                 view.setInt32(4, bytes_length);
                 view.setInt32(8, this.m_size);
@@ -115,7 +116,7 @@ export class List<T> extends Serializable {
                     view.setFloat32(12 + 4*i, unchecked(<f32>this.m_array[i]));
                 }
             }
-            else if(type == "bool") {
+            else if(type instanceof bool) {
                 view.setInt32(0, SD_TYPE.SD_TYPE_LIST_BOOL);
                 view.setInt32(4, bytes_length);
                 view.setInt32(8, this.m_size);
@@ -154,20 +155,20 @@ export class List<T> extends Serializable {
 
     //calculate the byte length of the list for types with fixed size
     override bytes_length(): u32 {
-        const type = nameof<T>();
-        if(type == "i32") {
+        let type!: T;
+        if(type instanceof i32) {
             return 4  // id
                  + 4  // byte length
                  + 4  // length
                  + 4 * this.m_size;  // elements
         }
-        else if(type == "f32") {
+        else if(type instanceof f32) {
             return 4 + 4 + 4 + 4 * this.m_size;
         }
-        else if(type == "bool") {
+        else if(type instanceof bool) {
             return 4 + 4 + 4 + this.m_size;  // store bool as u8 (one byte)
         }
-        else if(type == "Pair<i32>") {
+        else if(type instanceof Pair<i32>) {
             return 4 + 4 + 4 + 16 * this.m_size;  // each i32 pair is (4 + 4 + 4 + 4)
         }
         return 0;
