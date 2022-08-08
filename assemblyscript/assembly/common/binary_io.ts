@@ -60,6 +60,7 @@ export function get_type(buffer: Uint8Array): i32 {
 //--------------------------------------
 
 // Float32Array
+@inline
 export function float32array_bytes_length(array: Float32Array): u32 {
     return 4  // id
          + 4  // bytes length
@@ -83,21 +84,25 @@ export function list_float32array_bytes_length(array: List<Float32Array>): u32 {
 }
 
 // StaticArray<i32>
+@inline
 export function staticarray_i32_bytes_length(array: StaticArray<i32>): u32 {
     return 4 + 4 + 4 + 4 * array.length;  // id + bytes length + elements + data (4 bytes per element)
 }
 
 // StaticArray<f32>
+@inline
 export function staticarray_f32_bytes_length(array: StaticArray<f32>): u32 {
     return 4 + 4 + 4 + 4 * array.length;
 }
 
 // StaticArray<bool>
+@inline
 export function staticarray_bool_bytes_length(array: StaticArray<bool>): u32 {
     return 4 + 4 + 4 + array.length;  // one byte per element
 }
 
 // Map<i32, i32>
+@inline
 export function map_i32_i32_bytes_length(map: Map<i32, i32>): u32 {
     return 4 + 4 + 4 + 8 * map.size;  // id, bytes length, pairs count, 8 bytes for each pair (4 + 4)
 }
@@ -137,21 +142,25 @@ export function staticarray_staticarray_i32_bytes_length(array: StaticArray<Stat
 }
 
 // i32
+@inline
 export function i32_bytes_length(): i32 {
     return 4 + 4 + 4;  // id, bytes length, value
 }
 
 // f32
+@inline
 export function f32_bytes_length(): i32 {
     return 4 + 4 + 4;  // id, bytes length, value
 }
 
 // f64
+@inline
 export function f64_bytes_length(): i32 {
     return 4 + 4 + 8;  // id, bytes length, value
 }
 
 // bool
+@inline
 export function bool_bytes_length(): i32 {
     return 4 + 4 + 1;  // id, bytes length, value
 }
