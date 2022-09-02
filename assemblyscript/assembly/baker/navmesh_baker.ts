@@ -167,13 +167,14 @@ export class NavmeshBaker {
             this.m_output_sizes = new StaticArray<int>(pmesh.npolys);
             for(let p_index = 0, len = pmesh.npolys; p_index < len; ++p_index){
                 let pv: int = p_index * 2 * pmesh.nvp;
-                let vv: int = polys[pv];
-                let p_count = 0;
-                while(vv != 0xffff){
+                let p_count: int = 0;
+                for(let j = 0, j_len = pmesh.nvp; j < j_len; j++) {
+                    let vv: int = polys[pv + j];
+                    if(vv == 0xffff) {
+                        break;
+                    }
                     polygons.push(vv);
                     p_count++;
-                    pv += 1;
-                    vv = polys[pv];
                 }
                 this.m_output_sizes[p_index] = p_count;
             }

@@ -158,11 +158,11 @@ class NavmeshBaker:
             polygon: List[int] = []
             for p_index in range(pmesh.npolys):
                 pv: int = p_index * 2 * pmesh.nvp
-                vv: int = pmesh.polys[pv]
-                while vv != 0xffff:
-                    polygon.append(vv)
-                    pv += 1
-                    vv = pmesh.polys[pv]
+                for j in range(pmesh.nvp):
+                    vv = pmesh.polys[pv + j]
+                    if vv == 0xffff:
+                        break
+                    polygon.append(pmesh.polys[pv + j])
                 self._output_polygons.append(polygon)
                 polygon = []
 
