@@ -68,7 +68,7 @@ pathfinder = pf.PathFinder(vertices, polygons)
 To find the path in the navigation mesh simply call
 
 ```
-path = pathfinder.serach_path(start, finish)
+path = pathfinder.search_path(start, finish)
 ```
 
 ```start``` and ```finish``` are tuples with coordinates. It return the array ```path```, which contains the sequence of corners of it linear segments.
