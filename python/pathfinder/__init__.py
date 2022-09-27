@@ -1,5 +1,7 @@
 from typing import Tuple, List, Optional
-import math, time, struct
+import math
+import time
+import struct
 from pathfinder.navmesh import Navmesh
 import pathfinder.pyrvo as rvo
 
