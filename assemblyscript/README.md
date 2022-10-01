@@ -506,7 +506,7 @@ const navmesh_ptr = navmesh_exports.navmesh_from_bytes(nm_bytes);
 
 For benchmarks we use the following map:
 
-<img src="../images/map_00.png" width="400" />
+<img src="../images/map_00.png" width="750" />
 
 This navigation mesh contains 2 294 polygons. We compare our WASM implementation and Recast Navigation library (which is c++, but we will use Python bindings [PyRecastDetour](https://github.com/Tugcga/PyRecastDetour)). For benchmark we generate some random pair of points and calculate the path between these points. The results in the table:
 
@@ -520,7 +520,9 @@ Initialization time | 0.05 sec | 0.02 sec
 65 536 pairs | 5.82 sec | 4.59 sec
 147 456 pairs | 13.21 sec | 10.20 sec
 
-So, our WASM version is nearly x1.3 times slowly with respect to c++ solution.
+So, our WASM version is nearly x1.3 times slowly with respect to c++ solution. There are several reasons, why our solution is close to the native speed:
+* Our algorithm is different from the Recast Navigation algorithm
+* There are many interactions between environment and the module. May be the overhead for calling WASM function is smaller that overhead for calling c++ function from Python. This interaction can spend the most time with respect to actual path finding time.
 
 
 ### Collision avoidance algorithm
@@ -533,6 +535,39 @@ Task | as-RVO | em-RVO | c-RVO
 100 000 agents, 1 step | 3.22 sec | 2.19 sec | 0.51 sec
 
 So, Emscripten version is x1.5 times faster, c++ version is x5 times faster.
+
+
+### Navmesh baking
+
+For baking benchmark we use two methods. The first method is called ```plane```. We generate a large plane with the center at the origin and bake the navmesh for it. The complexity defined by the plane size. The second method is called ```cubes```. We generate random cubes in the space and bake navmesh for these cubes. The complexity defined by the number of cubes. Also we compare the performance with [PyRecastDetour](https://github.com/Tugcga/PyRecastDetour)), which implements the same baking algorithm.
+
+```plane``` benchmark:
+
+Size | WASM | PyRecastDetour
+--- | --- | ---
+4.0 | 0.0018 sec | 0.0 sec
+16.0 | 0.033 sec | 0.004 sec
+32.0 | 0.15 sec | 0.016 sec
+64.0 | 0.74 sec | 0.069 sec
+96.0 | 1.88 sec | 0.14 sec
+128.0 | 4.39 sec | 0.31 sec
+192.0 | 10.04 sec | 0.78 sec
+
+So, c++ solution x10-x12 times faster.
+
+```cubes``` benchmark:
+
+Count | WASM | PyRecastDetour
+--- | --- | ---
+16 | 0.11 sec | 0.001 sec
+32 | 0.19 sec | 0.013 sec
+64 | 0.35 sec | 0.019 sec
+128 | 0.58 sec | 0.032 sec
+256 | 1.14 sec | 0.047 sec
+512 | 2.18 sec | 0.086 sec
+1024 | 4.39 sec | 0.16 sec
+
+So, c++ solution near x20 times faster.
 
 
 ### Deserialization navmesh
@@ -560,20 +595,35 @@ Conclusions:
 * Decompression and deserialization is slowly then direct initialization from polygonal data
 
 
+## Navmesh Baker web application
+
+[Here](https://tugcga.github.io/web_apps/navmesh_baker/index.html) is a small application, which use ```baker.wasm``` module for building navigation mesh for the input geometry.
+
+<img src="../images/baker_app_01.png" width="750" />
+
+You can use this application in the following way:
+* Click ```Load OBJ``` button and select ```*.obj``` file with level gemoetry
+* Setup bake settings and press ```Bake navmesh``` button
+* Rotate and move the camera by using mouse: LMB - rotate, MMB and Wheel - zoom, RMB - pan
+* When navmesh is generated, click ```Export navmesh``` button to save the polygon description of the mesh into ```*.txt``` file and save it into the local drive
+
+The application use [OGL](https://github.com/oframe/ogl) for 3d-rendering, [obj-file-parser](https://github.com/Deckeraga/obj-file-parser-ts) for loading ```*.obj``` files and [FileSaver.js](https://github.com/eligrey/FileSaver.js/) for save output ```*.txt``` file.
+
+
 ## Example application
 
 [Here](https://playcanv.as/p/MID4JNwZ/) is a simple Playcanvas application, which demonstrates the basic possibilities of the module. This application contains three different scenes.
 
 The first scene demonstrate the path finding algorithm and snapping of the agent to the navigation mesh.
 
-<img src="../images/pc_scene_01.png" width="400" />
+<img src="../images/pc_scene_01.png" width="750" />
 
 The second scene demonstrate the simple case of the using RVO2 algorithm. A number of agents move in the plane to the common destination point and avoid collisions.
 
-<img src="../images/pc_scene_02.png" width="400" />
+<img src="../images/pc_scene_02.png" width="750" />
 
 The third scene demonstrate the complex usage of the path finding and collision avoidance. A number of agents moves on navigation mesh to random destination points.
 
-<img src="../images/pc_scene_03.png" width="400" />
+<img src="../images/pc_scene_03.png" width="750" />
 
 This application use the old version of the module. The functionality is the same, but there are some difference with the module import process. The old version used the AssemblyScript loader, but current version use automatically generated bindings.
