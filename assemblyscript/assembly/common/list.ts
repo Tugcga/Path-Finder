@@ -73,7 +73,7 @@ export class List<T> extends Serializable {
 
     @inline
     sort(): void{
-        this.m_array = StaticArray.slice<T>(this.m_array, 0, this.m_size).sort();
+        this.m_array = this.m_array.slice<StaticArray<T>>(0, this.m_size).sort();
         this.m_size = this.m_array.length;
         this.m_max_size = this.m_size;
     }
@@ -176,7 +176,7 @@ export class List<T> extends Serializable {
 
     @inline
     to_static(): StaticArray<T>{
-        return StaticArray.slice<T>(this.m_array, 0, this.m_size);
+        return this.m_array.slice<StaticArray<T>>(0, this.m_size);
     }
 
     toString(): string{

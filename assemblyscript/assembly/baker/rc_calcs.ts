@@ -186,11 +186,7 @@ export function prev(i: int,
 
 @inline
 export function slice(array: StaticArray<float>, start: int, end: int): StaticArray<float>{
-    let to_return = new StaticArray<float>(end - start);
-    for(let i = 0; i < end - start; i++){
-        to_return[i] = array[start + i];
-    }
-    return to_return;
+    return array.slice<StaticArray<float>>(start, end);
 }
 
 @inline

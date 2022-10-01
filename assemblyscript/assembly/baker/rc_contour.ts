@@ -739,7 +739,7 @@ function merge_region_holes(region: ContourRegion, holes: StaticArray<ContourHol
             holes[region.holes_index + i].leftmost = find_result[2];
         }
     }
-    let sorted_holes: Array<ContourHole> = holes.slice(region.holes_index, region.holes_index+region.nholes);
+    let sorted_holes: StaticArray<ContourHole> = holes.slice<StaticArray<ContourHole>>(region.holes_index, region.holes_index + region.nholes);
     sorted_holes.sort(compare_holes);
 
     for(let i = 0; i < region.nholes; i++){
@@ -783,7 +783,7 @@ function merge_region_holes(region: ContourRegion, holes: StaticArray<ContourHol
                             ndiags += 1;
                         }
                     }
-                    let sorted_diags: Array<PotentialDiagonal> = diags.slice(0, ndiags);
+                    let sorted_diags: StaticArray<PotentialDiagonal> = diags.slice<StaticArray<PotentialDiagonal>>(0, ndiags);
                     sorted_diags.sort(compare_diag_dist);
                     for(let m = 0; m < ndiags; m++){
                         diags[m] = sorted_diags[m];
