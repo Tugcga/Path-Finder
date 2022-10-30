@@ -11,9 +11,9 @@ The module allows to bake navigation mesh polygonal data from input geometry. Al
 
 Elementary modules:
 
-* ```navmesh.wasm``` (45 kb) contains graph and navigation mesh functionality
+* ```navmesh.wasm``` (46 kb) contains graph and navigation mesh functionality
 * ```rvo.wasm``` (28 kb) contains RVO simulation functionality
-* ```baker.wasm``` (80 kb) contains navigation mesh baking functionality
+* ```baker.wasm``` (79 kb) contains navigation mesh baking functionality
 
 Combined modules:
 
@@ -163,6 +163,10 @@ Contained in ```navmesh.wasm```, ```pathfinder.wasm``` and ```pathfinder_full.wa
 
 	Return coordinates of the vertices in the shortest path between input start point (with coordinates ```s_x, s_y, s_z```) and input end point (with coordinates ```e_x, e_y, e_z```). If there are no path between point, then return empty array. If the path is exists, then return array, which contains as the start point, and the finish point. All other coordinates in the output array are coordinates of the middle path points.
 
+* ```navmesh_search_path_batch(navmesh: Navmesh, coordinates: StaticArray<f32>): StaticArray<f32>```
+
+	This function is similar to the previous one ```navmesh_search_path```, but allows to find pathes for several pairs of start-end points. Input ```coordinates``` array should contains coorsinates of input points in the following order: the first three values are coordinates of the first start point, next three values are coordinates of the first end point, next three values for the second start, next for the second end and so on. As a result this function returns one array which contains pathes for all input pairs. It start form the integer (converted to the float) which defines the number of points in the first path. Next it contains coordinates of this first path. Next output array contains the number of points in the second path, next coordinates of this second path and so on.
+
 * ```navmesh_sample(navmesh: Navmesh, x: f32, y: f32, z: f32): StaticArray<f32>```
 
 	Return the point in the navigation mesh, close to the input point with coordinates ```x, y, z```. Return 4-values array. If the forth value in the array is ```1.0```, then first three vales are coordinates of the closest point. If the forth values is ```0.0```, then there are no close points in the navigation mesh (and the first three values are wrong).
@@ -288,7 +292,7 @@ Contained in ```pathfinder.wasm``` and ```pathfinder_full.wasm```.
 
 * ```pathfinder_set_agent_destination(pathfinder: PathFinder, agent_id: i32, position_x: f32, position_y: f32, position_z: f32): bool```
 
-	Set coordinates of the destination point for a give agent. Under the hood it find the shortest path and start move agent along this path. Return ```true``` if all is ok, and ``false``` if something fails (there is no agent with input id, target point outside of the navigation mesh or in another connected component ans so on).
+	Set coordinates of the destination point for a give agent. Under the hood it find the shortest path and start move agent along this path. Return ```true``` if all is ok, and ```false``` if something fails (there is no agent with input id, target point outside of the navigation mesh or in another connected component ans so on).
 
 * ```pathfinder_update(pathfinder: PathFinder, delta_time: f32)```
 
@@ -512,17 +516,15 @@ This navigation mesh contains 2 294 polygons. We compare our WASM implementation
 
 Task | WASM | PyRecastDetour
 --- | --- | ---
-Initialization time | 0.05 sec | 0.02 sec
-1024 pairs | 0.10 sec | 0.08 sec
-4096 pairs | 0.38 sec | 0.28 sec
-16 384 pairs | 1.48 sec | 1.24 sec
-38 416 pairs | 3.43 sec | 2.69 sec
-65 536 pairs | 5.82 sec | 4.59 sec
-147 456 pairs | 13.21 sec | 10.20 sec
+Initialization time | 0.026 sec | 
+1024 pairs | 0.061 sec | 0.055 sec
+4096 pairs | 0.239 sec | 0.186 sec
+16 384 pairs | 0.909 sec | 0.772 sec
+38 416 pairs | 2.077 sec | 1.83 sec
+65 536 pairs | 3.55 sec | 3.16 sec
+147 456 pairs | 7.97 sec | 7.16 sec
 
-So, our WASM version is nearly x1.3 times slowly with respect to c++ solution. There are several reasons, why our solution is close to the native speed:
-* Our algorithm is different from the Recast Navigation algorithm
-* There are many interactions between environment and the module. May be the overhead for calling WASM function is smaller that overhead for calling c++ function from Python. This interaction can spend the most time with respect to actual path finding time.
+So, our WASM version is nearly x1.15 times slowly with respect to c++ solution. It looks like in WASM module more optimal algorithm is used.
 
 
 ### Collision avoidance algorithm

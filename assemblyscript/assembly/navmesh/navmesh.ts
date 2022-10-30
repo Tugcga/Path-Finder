@@ -556,6 +556,30 @@ export class Navmesh extends Serializable {
         return new StaticArray<f32>(0);
     }
 
+    search_path_batch(coordinates: StaticArray<f32>): StaticArray<f32> {
+        // coordinates is array with coordinates of start and end points
+        // the length of the array should be <the number of pairs> x 6, because each pair defined by 6 float values (3 for start, 3 for end)
+        let coordinates_length = coordinates.length;
+        if(coordinates_length % 6 == 0) {
+            let pairs_count: i32 = coordinates_length / 6;
+            let to_return = new List<f32>();
+            for(let step = 0; step < pairs_count; step++) {
+                let step_path = this.search_path(unchecked(coordinates[6*step]), unchecked(coordinates[6*step + 1]), unchecked(coordinates[6*step + 2]),
+                                                 unchecked(coordinates[6*step + 3]), unchecked(coordinates[6*step + 4]), unchecked(coordinates[6*step + 5]));
+                to_return.push((step_path.length / 3) as f32); // add the number of points in the path
+                // next add to the list actual points cooridnates
+                for(let i = 0, len = step_path.length; i < len; i++) {
+                    to_return.push(unchecked(step_path[i]));
+                }
+            }
+
+            return to_return.to_static();
+        } else {
+            // invalid input array
+            return new StaticArray<f32>(0);
+        }
+    }
+
     @inline
     sample(x: f32, y: f32, z: f32): StaticArray<f32> {
         return this.m_triangles_bvh.sample(x, y, z);

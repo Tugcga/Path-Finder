@@ -38,6 +38,10 @@ export function navmesh_search_path(navmesh: Navmesh, s_x: f32, s_y: f32, s_z: f
     return navmesh.search_path(s_x, s_y, s_z, e_x, e_y, e_z);
 }
 
+export function navmesh_search_path_batch(navmesh: Navmesh, coordinates: StaticArray<f32>): StaticArray<f32> {
+    return navmesh.search_path_batch(coordinates);
+}
+
 export function navmesh_sample(navmesh: Navmesh, x: f32, y: f32, z: f32): StaticArray<f32> {
     return navmesh.sample(x, y, z);
 }
