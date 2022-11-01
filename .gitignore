@@ -13,6 +13,7 @@ assemblyscript/grid_graph_test.js
 assemblyscript/bvh_test.js
 *.js
 *.nm
+*.obj
 python/issues
 python/map_benchmark.py
 python/navmeshdata.txt

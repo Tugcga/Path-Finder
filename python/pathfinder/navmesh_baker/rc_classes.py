@@ -66,6 +66,9 @@ class LevelStackEntry:
         self.y = _y
         self.index = _index
 
+    def __repr__(self):
+        return "LS[" + str(self.x) + ", " + str(self.y) + ", " + str(self.index) + "]"
+
 class DirtyEntry:
     def __init__(self, _index: int = 0,
                        _region: int = 0,  # 2 bytes

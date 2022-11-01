@@ -214,10 +214,14 @@ function distance_pt_seg(x: int,
                          pz: int,
                          qx: int,
                          qz: int): float{
-    const pqx: float = <f64>(qx - px);
-    const pqz: float = <f64>(qz - pz);
-    let dx: float = <f64>(x - px);
-    let dz: float = <f64>(z - pz);
+    const pqx_int = qx - px;
+    const pqx: float = <f64>pqx_int;
+    const pqz_int = qz - pz;
+    const pqz: float = <f64>pqz_int;
+    const dx_int = x - px;
+    let dx: float = <f64>dx_int;
+    const dz_int = z - pz;
+    let dz: float = <f64>dz_int;
     const d: float = pqx*pqx + pqz*pqz;
     let t: float = pqx*dx + pqz*dz;
     if(d > 0.0){
@@ -230,8 +234,8 @@ function distance_pt_seg(x: int,
         t = 1.0;
     }
     
-    dx = <f64>(px) + t*pqx - <f64>(x);
-    dz = <f64>(pz) + t*pqz - <f64>(z);
+    dx = <f64>px + t*pqx - <f64>x;
+    dz = <f64>pz + t*pqz - <f64>z;
     
     return dx*dx + dz*dz;
 }
@@ -812,7 +816,7 @@ function merge_region_holes(region: ContourRegion, holes: StaticArray<ContourHol
                     }
                     bestVertex = (bestVertex + 1) % hole.nverts;
                 }
-            
+
                 if(index == -1){
                     let region_outline = region.outline;
                     if(region_outline){

@@ -700,7 +700,7 @@ def merge_region_holes(region: ContourRegion, holes: List[ContourHole]):
                         break
                     # All the potential diagonals for the current vertex were intersecting, try next vertex
                     bestVertex = (bestVertex + 1) % hole.nverts
-            
+
                 if index == -1:
                     print("[Navmesh Baker] merge_holes: Failed to find merge points for " + str(region.outline) + " and " + str(hole) +".")
                     continue

@@ -500,7 +500,7 @@ def expand_regions(max_iter: int,
                         ai: int = c.index + get_con(s, dir)
                         if chf.areas[ai] != area:
                             continue
-                        if (buf[src_reg + ai] > 0) and (buf[src_reg + ai] & RC_BORDER_REG == 0):
+                        if (buf[src_reg + ai] > 0) and ((buf[src_reg + ai] & RC_BORDER_REG) == 0):
                             if buf[src_dist + ai] + 2 < d2:
                                 r = buf[src_reg + ai]
                                 d2 = buf[src_dist + ai] + 2
@@ -510,10 +510,10 @@ def expand_regions(max_iter: int,
             else:
                 failed += 1
         # Copy entries that differ between src and dst to keep them in sync
-        for i in range(len(dirty_entries)):
-            idx: int = dirty_entries[i].index
-            buf[src_reg + idx] = dirty_entries[i].region
-            buf[src_dist + idx] = dirty_entries[i].distance2
+        for i_for in range(len(dirty_entries)):
+            idx: int = dirty_entries[i_for].index
+            buf[src_reg + idx] = dirty_entries[i_for].region
+            buf[src_dist + idx] = dirty_entries[i_for].distance2
 
         if failed == len(stack):
             break

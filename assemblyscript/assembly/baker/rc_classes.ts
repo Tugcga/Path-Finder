@@ -81,6 +81,10 @@ export class LevelStackEntry{
         this.y = _y;
         this.index = _index;
     }
+
+    toString(): string {
+        return "LS[" + this.x.toString() + ", " + this.y.toString() + ", " + this.index.toString() + "]";
+    }
 }
 
 export class DirtyEntry{

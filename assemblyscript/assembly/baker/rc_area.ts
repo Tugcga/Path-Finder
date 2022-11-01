@@ -462,7 +462,7 @@ function box_blur(chf: CompactHeightfield,
                             }
                         }
                     }
-                    dst[i] = (d + 5) // 9
+                    dst[i] = (d + 5) / 9;
                 }
             }
         }
@@ -599,7 +599,7 @@ function expand_regions(max_iter: int,
     let dirty_entries: List<DirtyEntry> = new List<DirtyEntry>();
     let iter: int = 0;
     while(stack.length > 0){
-        let failed: int  = 0;
+        let failed: int = 0;
         dirty_entries.reset();
 
         for(let j = 0; j < stack.length; j++){
@@ -645,10 +645,10 @@ function expand_regions(max_iter: int,
                 failed += 1;
             }
         }
-        for(let i = 0; i < dirty_entries.length; i++){
-            const idx: int = dirty_entries[i].index;
-            buf[src_reg + idx] = dirty_entries[i].region;
-            buf[src_dist + idx] = dirty_entries[i].distance2;
+        for(let i_for = 0; i_for < dirty_entries.length; i_for++){
+            const idx: int = dirty_entries[i_for].index;
+            buf[src_reg + idx] = dirty_entries[i_for].region;
+            buf[src_dist + idx] = dirty_entries[i_for].distance2;
         }
 
         if(failed == stack.length){
@@ -1261,8 +1261,14 @@ export function build_regions(chf: CompactHeightfield,
     let lvl_stacks: StaticArray<List<LevelStackEntry>> = new StaticArray<List<LevelStackEntry>>(NB_STACKS);
     for(let i = 0; i < NB_STACKS; i++){
         lvl_stacks[i] = new List<LevelStackEntry>();
+        for(let j = 0; j < 256; j++) {
+            lvl_stacks[i].push(new LevelStackEntry());
+        }
     }
     let stack: List<LevelStackEntry> = new List<LevelStackEntry>();
+    for(let i = 0; i < 256; i++) {
+        stack.push(new LevelStackEntry());
+    }
 
     let src_reg: int = 0;
     let src_dist: int = chf.span_count;

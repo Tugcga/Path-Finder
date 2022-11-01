@@ -1,4 +1,3 @@
-//import "wasi";
 import { Vector2, abs_sq, dot } from "./vector2";
 import { List } from "./list";
 import { Serializable, SD_TYPE } from "./binary_io";
