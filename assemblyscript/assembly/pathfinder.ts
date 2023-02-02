@@ -495,7 +495,7 @@ export class PathFinder{
                         }
                         else{
                             if(update_path && unchecked(this.m_agents_targets[agent_inner_index]).length > 0){
-                                let current_path = unchecked(this.m_agents_path[agent_index]);
+                                let current_path = unchecked(this.m_agents_path[agent_inner_index]);
                                 const a_path_count = current_path.length / 3;
                                 const target_position_x = current_path[3*(a_path_count - 1)];
                                 const target_position_y = current_path[3*(a_path_count - 1) + 1];
