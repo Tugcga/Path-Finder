@@ -54,21 +54,26 @@ export class PathFinder{
                 snap_agents: bool = true,
                 use_normals: bool = true) {
         this.m_groups_count = 1;
+        let navmesh: Navmesh | null = null;
+
         if(vertices && polygons && sizes){
-            this.m_navmesh = new Navmesh(vertices, polygons, sizes);
+            navmesh = new Navmesh(vertices, polygons, sizes);
         }
+        this.m_navmesh = navmesh;
 
         let navmesh_boundary = new List<List<List<Pair<i32>>>>();  // group - component - edge index - vertex pair
-        let navmesh = this.m_navmesh;
+        let groups_count = 1;
+        
         if(navmesh){
             // is navmesh is planar
             this.m_is_planar = navmesh.get_is_planar();
             this.m_planar_y = navmesh.get_planar_y();
 
             // next we should calculate navmesh boundary
-            this.m_groups_count = navmesh.get_groups_count();
+            groups_count = navmesh.get_groups_count();
+            this.m_groups_count = groups_count;
 
-            for(let g_index = 0, glen = this.m_groups_count; g_index < glen; g_index++){
+            for(let g_index = 0, glen = groups_count; g_index < glen; g_index++){
                 let group_polygons = navmesh.get_group_polygons(g_index);
                 let all_edges = new List<Pair<i32>>();
                 for(let pi = 0, plen = group_polygons.length; pi < plen; pi++){
@@ -145,19 +150,19 @@ export class PathFinder{
         this.m_last_path_find_update = 0.0;
 
         // create rvo simulators
-        this.m_simulators = new StaticArray<RVOSimulator>(this.m_groups_count);
-        for(let g = 0, glen = this.m_groups_count; g < glen; g++){
-            unchecked(this.m_simulators[g] = new RVOSimulator(this.m_neighbor_dist,
-                                                    this.m_max_neighbors,
-                                                    this.m_time_horizon,
-                                                    this.m_time_horizon_obst,
-                                                    this.m_agent_radius,
+        const simulators = new StaticArray<RVOSimulator>(groups_count);
+        for(let g = 0, glen = groups_count; g < glen; g++){
+            unchecked(simulators[g] = new RVOSimulator(neighbor_dist,
+                                                    max_neighbors,
+                                                    time_horizon,
+                                                    time_horizon_obst,
+                                                    agent_radius,
                                                     0.0));  // set default agent max speed = 0.0, because when we add the agent, then we assign it speed
         }
 
         const shift_value: f32 = 1.0 * agent_radius;
         if(vertices && navmesh_boundary.length > 0){
-            for(let group_index = 0, glen = this.m_groups_count; group_index < glen; group_index++){
+            for(let group_index = 0, glen = groups_count; group_index < glen; group_index++){
                 let boundary = navmesh_boundary[group_index];
                 for(let ch_index = 0, chlen = boundary.length; ch_index < chlen; ch_index++){
                     let chain = boundary[ch_index];
@@ -194,11 +199,13 @@ export class PathFinder{
                         }
                     }
 
-                    unchecked(this.m_simulators[group_index]).add_obstacle(shifted_chain);
+                    unchecked(simulators[group_index]).add_obstacle(shifted_chain);
                 }
-                unchecked(this.m_simulators[group_index]).process_obstacles();
+                unchecked(simulators[group_index]).process_obstacles();
             }
         }
+
+        this.m_simulators = simulators;
 
         this.m_agent_id = 0;
         this.m_agents_positions = new List<f32>();
@@ -209,10 +216,11 @@ export class PathFinder{
         this.m_agents_target_index = new List<i32>();
         this.m_agents_target_direction = new List<f32>();  // store pairs for each agent
         this.m_agents_group = new List<i32>();
-        this.m_agents_group_id = new List<List<i32>>();
-        for(let g = 0; g < this.m_groups_count; g++){
-            this.m_agents_group_id.push(new List<i32>());
+        const agents_group_id = new List<List<i32>>();
+        for(let g = 0; g < groups_count; g++){
+            agents_group_id.push(new List<i32>());
         }
+        this.m_agents_group_id = agents_group_id;
         this.m_agents_id = new List<i32>();
         this.m_agents_to_delete = new List<i32>();
         this.m_last_update_time = 0.0;

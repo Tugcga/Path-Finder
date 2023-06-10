@@ -1,5 +1,8 @@
 import { Graph } from "./navmesh/navmesh_graph";
 import { Navmesh, set_bvh_delta, get_bvh_delta } from "./navmesh/navmesh";
+import { RTree } from "./navmesh/rtree/rtree";
+import { Polygon, Point, Edge } from "./navmesh/rtree/polygon";
+import { Rectangle } from "./navmesh/rtree/rectangle";
 
 /*
 Create graph.
@@ -46,6 +49,11 @@ export function navmesh_sample(navmesh: Navmesh, x: f32, y: f32, z: f32): Static
     return navmesh.sample(x, y, z);
 }
 
+export function navmesh_intersect_boundary(navmesh: Navmesh, start_x: f32, start_y: f32, finish_x: f32, finish_y: f32): StaticArray<f32> {
+    const t = navmesh.intersect_boundary(start_x, start_y, finish_x, finish_y);
+    return StaticArray.fromArray<f32>([start_x + t * (finish_x - start_x), start_y + t * (finish_y - start_y)]);
+}
+
 export function navmesh_set_bvh_delta(delta: f32): void {
     set_bvh_delta(delta);
 }
@@ -60,7 +68,75 @@ export function navmesh_to_bytes(navmesh: Navmesh): Uint8Array {
 
 export function navmesh_from_bytes(bytes: Uint8Array): Navmesh {
     let nm = new Navmesh();
-    nm.from_bytes(bytes);
+    nm.from_bytes_array(bytes);
 
     return nm;
+}
+
+// used for export rtree search
+// the name of the class does not matter
+// because the object without constructor copied in js-side
+export class PolygonsSequence {
+    count: u32;
+    coordinates: StaticArray<StaticArray<f32>>;
+}
+
+export function create_rtree(max_nodes: u32): RTree {
+    return new RTree(max_nodes >= 3 ? max_nodes : 3);
+}
+
+export function rtree_insert_polygon(tree: RTree, coordinates: Array<f32>): void {
+    tree.insert(new Polygon(StaticArray.fromArray<f32>(coordinates)));
+}
+
+export function rtree_insert_point(tree: RTree, x: f32, y: f32): void {
+    tree.insert(new Point(x, y));
+}
+
+export function rtree_insert_edge(tree: RTree, s_x: f32, s_y: f32, e_x: f32, e_y: f32): void {
+    tree.insert(new Edge(s_x, s_y, e_x, e_y));
+}
+
+export function rtree_search(tree: RTree, corner_x: f32, corner_y: f32, other_x: f32, other_y: f32): PolygonsSequence {
+    const rect = new Rectangle(
+        Mathf.min(corner_x, other_x),
+        Mathf.max(corner_y, other_y),
+        Mathf.max(corner_x,other_x),
+        Mathf.min(corner_y, other_y));
+
+    const result = tree.range_search(rect);
+    const to_return = new StaticArray<StaticArray<f32>>(result.length);
+    for (let i = 0, len = result.length; i < len; i++) {
+        const polygon = result[i];
+        to_return[i] = polygon.coordinates();
+    }
+
+    return { 
+        count: result.length,
+        coordinates: to_return 
+    };
+}
+
+export function rtree_insert_edges(tree: RTree, coordinates: Float32Array): void {
+    const count = coordinates.length / 4;
+    for (let i = 0; i < count; i++) {
+        tree.insert(new Edge(coordinates[4*i], coordinates[4*i + 1],
+            coordinates[4*i + 2], coordinates[4*i + 3]));
+    }
+}
+
+export function rtree_find_intersection(tree: RTree, start_x: f32, start_y: f32, finish_x: f32, fisnih_y: f32): StaticArray<f32> {
+    const edge = new Edge(start_x, start_y, finish_x, fisnih_y);
+    return tree.find_intersection(edge);
+}
+
+export function rtree_to_bytes(tree: RTree): Uint8Array {
+    return tree.to_bytes();
+}
+
+export function rtree_from_bytes(bytes: Uint8Array): RTree {
+    const tree = new RTree();
+    tree.from_bytes_array(bytes);
+
+    return tree;
 }

@@ -438,7 +438,7 @@ class Agent:
                 self._orcaLines.append((line[0], line[1], line[2], line[3]))
                 continue
             elif (t > 1.0 and tRight < 0.0):
-                # Project on right cut-off circle. */
+                # Project on right cut-off circle.
                 unitW = normalize(vector_difference(self._velocity, rightCutoff))
                 line[2] = unitW[1]
                 line[3] = -unitW[0]
@@ -499,7 +499,7 @@ class Agent:
             relativeVelocity = vector_difference(self._velocity, other.get_velocity())
             distSq: float = abs_sq(relativePosition)
             combinedRadius: float = self._radius + other.get_radius()
-            combinedRadiusSq:float = combinedRadius**2
+            combinedRadiusSq: float = combinedRadius**2
 
             line = [0.0, 0.0, 0.0, 0.0]
             u = (0.0, 0.0)

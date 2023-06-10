@@ -5,13 +5,13 @@ import { Serializable, SD_TYPE,
     staticarray_f32_bytes_length, staticarray_f32_to_bytes, staticarray_f32_from_bytes, staticarray_f32_from_bytes_expr } from "../common/binary_io";
 
 class AABB extends Serializable {
-    x_min: f32;
-    y_min: f32;
-    z_min: f32;
+    x_min: f32 = 0.0;
+    y_min: f32 = 0.0;
+    z_min: f32 = 0.0;
 
-    x_max: f32;
-    y_max: f32;
-    z_max: f32;
+    x_max: f32 = 0.0;
+    y_max: f32 = 0.0;
+    z_max: f32 = 0.0;
 
     toString(): string {
         return (
@@ -107,7 +107,7 @@ export class NavmeshBVH {
         //build map from node index to node
         this.m_index_to_node = new Map<i32, NavmeshNode>();
         for (let i = 0, len = nodes.length; i < len; i++) {
-            let node = unchecked(nodes[i]);
+            let node = nodes[i];
             let index = node.get_index();
             this.m_index_to_node.set(index, node);
         }
@@ -128,15 +128,15 @@ export class NavmeshBVH {
             this.m_is_object = true;
 
             //get aabb
-            let vertices = unchecked(this.m_nodes[0]).get_vertex_coordinates();
+            let vertices = this.m_nodes[0].get_vertex_coordinates();
             let verts_count = vertices.length / 3;
             for (let i = 0; i < verts_count; i++) {
-                if (unchecked(vertices[3 * i + 0]) < x_min) { x_min = unchecked(vertices[3 * i + 0]); }
-                if (unchecked(vertices[3 * i + 0]) > x_max) { x_max = unchecked(vertices[3 * i + 0]); }
-                if (unchecked(vertices[3 * i + 1]) < y_min) { y_min = unchecked(vertices[3 * i + 1]); }
-                if (unchecked(vertices[3 * i + 1]) > y_max) { y_max = unchecked(vertices[3 * i + 1]); }
-                if (unchecked(vertices[3 * i + 2]) < z_min) { z_min = unchecked(vertices[3 * i + 2]); }
-                if (unchecked(vertices[3 * i + 2]) > z_max) { z_max = unchecked(vertices[3 * i + 2]); }
+                if (vertices[3 * i + 0] < x_min) { x_min = vertices[3 * i + 0]; }
+                if (vertices[3 * i + 0] > x_max) { x_max = vertices[3 * i + 0]; }
+                if (vertices[3 * i + 1] < y_min) { y_min = vertices[3 * i + 1]; }
+                if (vertices[3 * i + 1] > y_max) { y_max = vertices[3 * i + 1]; }
+                if (vertices[3 * i + 2] < z_min) { z_min = vertices[3 * i + 2]; }
+                if (vertices[3 * i + 2] > z_max) { z_max = vertices[3 * i + 2]; }
             }
             //set aabb
             let aabb = this.m_aabb;
@@ -154,10 +154,10 @@ export class NavmeshBVH {
             let nodes_len = nodes.length;
 
             for (let i = 0; i < nodes_len; i++) {
-                let node = unchecked(nodes[i]);
+                let node = nodes[i];
                 let c = node.get_center();
-                let c0 = unchecked(c[0]);
-                let c2 = unchecked(c[2]);
+                let c0 = c[0];
+                let c2 = c[2];
                 x_median += c0;
                 z_median += c2;
                 if (c0 < x_min) { x_min = c0; }
@@ -175,22 +175,22 @@ export class NavmeshBVH {
             let right_count = 0;
 
             for (let i = 0; i < nodes_len; i++) {
-                let node = unchecked(nodes[i]);
+                let node = nodes[i];
                 let c = node.get_center();
                 if (split_axis == 0) {
-                    if (unchecked(c[0]) < median) {
-                        unchecked(left[left_count] = node);
+                    if (c[0] < median) {
+                        left[left_count] = node;
                         left_count++;
                     } else {
-                        unchecked(right[right_count] = node);
+                        right[right_count] = node;
                         right_count++;
                     }
                 } else {
-                    if (unchecked(c[2]) < median) {
-                        unchecked(left[left_count] = node);
+                    if (c[2] < median) {
+                        left[left_count] = node;
                         left_count++;
                     } else {
-                        unchecked(right[right_count] = node);
+                        right[right_count] = node;
                         right_count++;
                     }
                 }
@@ -198,11 +198,11 @@ export class NavmeshBVH {
 
             //check that both arrays left and right are non-empty
             if (left_count == 0) {
-                unchecked(left[left_count] = right[right_count - 1]);
+                left[left_count] = right[right_count - 1];
                 ++left_count;
                 --right_count;
             } else if (right_count == 0) {
-                unchecked(right[right_count] = left[left_count - 1]);
+                right[right_count] = left[left_count - 1];
                 ++right_count;
                 --left_count;
             }
@@ -211,10 +211,10 @@ export class NavmeshBVH {
             let left_nodes  = new StaticArray<NavmeshNode>(left_count);
             let right_nodes = new StaticArray<NavmeshNode>(right_count);
             for (let i = 0; i < left_count; i++) {
-                unchecked(left_nodes[i] = left[i]);
+                left_nodes[i] = left[i];
             }
             for (let i = 0; i < right_count; i++) {
-                unchecked(right_nodes[i] = right[i]);
+                right_nodes[i] = right[i];
             }
 
             this.m_left_child  = new NavmeshBVH(left_nodes, BVH_AABB_DELTA);
@@ -265,23 +265,23 @@ export class NavmeshBVH {
                         let l_c = left_node.get_center();
                         let l_n = left_node.get_normal();
                         let l_dist = Mathf.abs(
-                            (x - unchecked(l_c[0])) * unchecked(l_n[0]) +
-                            (y - unchecked(l_c[1])) * unchecked(l_n[1]) +
-                            (z - unchecked(l_c[2])) * unchecked(l_n[2])
+                            (x - l_c[0]) * l_n[0] +
+                            (y - l_c[1]) * l_n[1] +
+                            (z - l_c[2]) * l_n[2]
                         );
                         let right_node = this.m_index_to_node.get(right_sample);
                         let r_c = right_node.get_center();
                         let r_n = right_node.get_normal();
                         let r_dist = Mathf.abs(
-                            (x - unchecked(r_c[0])) * unchecked(r_n[0]) +
-                            (y - unchecked(r_c[1])) * unchecked(r_n[1]) +
-                            (z - unchecked(r_c[2])) * unchecked(r_n[2])
+                            (x - r_c[0]) * r_n[0] +
+                            (y - r_c[1]) * r_n[1] +
+                            (z - r_c[2]) * r_n[2]
                         );
                         return l_dist < r_dist ? left_sample : right_sample;
                     }
                 }
             } else {  // this is the leaf-node, it contains object
-                let first_node = unchecked(this.m_nodes[0]);
+                let first_node = this.m_nodes[0];
                 if (first_node.is_point_inside(x, y, z)) {
                     return first_node.get_index();
                 } else {
@@ -478,74 +478,74 @@ export class TrianglesBVH extends Serializable {
 
                 let triangle_data = this.m_triangle_data;
 
-                unchecked(triangle_data[0] = triangles_vertices[0]);
-                unchecked(triangle_data[1] = triangles_vertices[1]);
-                unchecked(triangle_data[2] = triangles_vertices[2]);
+                triangle_data[0] = triangles_vertices[0];
+                triangle_data[1] = triangles_vertices[1];
+                triangle_data[2] = triangles_vertices[2];
                 //edge e1 = v0->v1
-                unchecked(triangle_data[3] = triangles_vertices[3] - triangles_vertices[0]);
-                unchecked(triangle_data[4] = triangles_vertices[4] - triangles_vertices[1]);
-                unchecked(triangle_data[5] = triangles_vertices[5] - triangles_vertices[2]);
+                triangle_data[3] = triangles_vertices[3] - triangles_vertices[0];
+                triangle_data[4] = triangles_vertices[4] - triangles_vertices[1];
+                triangle_data[5] = triangles_vertices[5] - triangles_vertices[2];
                 //edge e2 = v0->v2
-                unchecked(triangle_data[6] = triangles_vertices[6] - triangles_vertices[0]);
-                unchecked(triangle_data[7] = triangles_vertices[7] - triangles_vertices[1]);
-                unchecked(triangle_data[8] = triangles_vertices[8] - triangles_vertices[2]);
+                triangle_data[6] = triangles_vertices[6] - triangles_vertices[0];
+                triangle_data[7] = triangles_vertices[7] - triangles_vertices[1];
+                triangle_data[8] = triangles_vertices[8] - triangles_vertices[2];
                 //a = (e1, e1)
-                unchecked(triangle_data[9] = squared_len(
-                    unchecked(triangle_data[3]),
-                    unchecked(triangle_data[4]),
-                    unchecked(triangle_data[5])
-                ));
+                triangle_data[9] = squared_len(
+                    triangle_data[3],
+                    triangle_data[4],
+                    triangle_data[5]
+                );
                 //b = (e1, e2)
-                unchecked(triangle_data[10] = (
-                    unchecked(triangle_data[3] * triangle_data[6]) +
-                    unchecked(triangle_data[4] * triangle_data[7]) +
-                    unchecked(triangle_data[5] * triangle_data[8])
-                ));
+                triangle_data[10] = (
+                    triangle_data[3] * triangle_data[6] +
+                    triangle_data[4] * triangle_data[7] +
+                    triangle_data[5] * triangle_data[8]
+                );
                 //c = (e2, e2)
-                unchecked(triangle_data[11] = squared_len(
-                    unchecked(triangle_data[6]),
-                    unchecked(triangle_data[7]),
-                    unchecked(triangle_data[8])
-                ));
+                triangle_data[11] = squared_len(
+                    triangle_data[6],
+                    triangle_data[7],
+                    triangle_data[8]
+                );
                 //determinant [[a b], [b c]]
-                unchecked(triangle_data[12] = (
-                    unchecked(triangle_data[9]  * triangle_data[11]) -
-                    unchecked(triangle_data[10] * triangle_data[10])
-                ));
+                triangle_data[12] = (
+                    triangle_data[9]  * triangle_data[11] -
+                    triangle_data[10] * triangle_data[10]
+                );
 
                 this.m_is_object = true;
 
                 //calculate aabb of the triangle
                 let aabb = this.m_aabb;
                 aabb.x_min = this._min3(
-                    unchecked(triangles_vertices[0]),
-                    unchecked(triangles_vertices[3]),
-                    unchecked(triangles_vertices[6])
+                    triangles_vertices[0],
+                    triangles_vertices[3],
+                    triangles_vertices[6]
                 );
                 aabb.y_min = this._min3(
-                    unchecked(triangles_vertices[1]),
-                    unchecked(triangles_vertices[4]),
-                    unchecked(triangles_vertices[7])
+                    triangles_vertices[1],
+                    triangles_vertices[4],
+                    triangles_vertices[7]
                 );
                 aabb.z_min = this._min3(
-                    unchecked(triangles_vertices[2]),
-                    unchecked(triangles_vertices[5]),
-                    unchecked(triangles_vertices[8])
+                    triangles_vertices[2],
+                    triangles_vertices[5],
+                    triangles_vertices[8]
                 );
                 aabb.x_max = this._max3(
-                    unchecked(triangles_vertices[0]),
-                    unchecked(triangles_vertices[3]),
-                    unchecked(triangles_vertices[6])
+                    triangles_vertices[0],
+                    triangles_vertices[3],
+                    triangles_vertices[6]
                 );
                 aabb.y_max = this._max3(
-                    unchecked(triangles_vertices[1]),
-                    unchecked(triangles_vertices[4]),
-                    unchecked(triangles_vertices[7])
+                    triangles_vertices[1],
+                    triangles_vertices[4],
+                    triangles_vertices[7]
                 );
                 aabb.z_max = this._max3(
-                    unchecked(triangles_vertices[2]),
-                    unchecked(triangles_vertices[5]),
-                    unchecked(triangles_vertices[8])
+                    triangles_vertices[2],
+                    triangles_vertices[5],
+                    triangles_vertices[8]
                 );
 
                 this._extend_aabb_by_delta(BVH_AABB_DELTA);
@@ -564,49 +564,49 @@ export class TrianglesBVH extends Serializable {
                 for (let i = 0; i < objects_count; i++) {
                     min_x = this._min4(
                         min_x,
-                        unchecked(triangles_vertices[9 * i + 0]),
-                        unchecked(triangles_vertices[9 * i + 3]),
-                        unchecked(triangles_vertices[9 * i + 6])
+                        triangles_vertices[9 * i + 0],
+                        triangles_vertices[9 * i + 3],
+                        triangles_vertices[9 * i + 6]
                     );
                     min_y = this._min4(
                         min_y,
-                        unchecked(triangles_vertices[9 * i + 1]),
-                        unchecked(triangles_vertices[9 * i + 4]),
-                        unchecked(triangles_vertices[9 * i + 7])
+                        triangles_vertices[9 * i + 1],
+                        triangles_vertices[9 * i + 4],
+                        triangles_vertices[9 * i + 7]
                     );
                     min_z = this._min4(
                         min_z,
-                        unchecked(triangles_vertices[9 * i + 2]),
-                        unchecked(triangles_vertices[9 * i + 5]),
-                        unchecked(triangles_vertices[9 * i + 8])
+                        triangles_vertices[9 * i + 2],
+                        triangles_vertices[9 * i + 5],
+                        triangles_vertices[9 * i + 8]
                     );
 
                     max_x = this._max4(
                         max_x,
-                        unchecked(triangles_vertices[9 * i + 0]),
-                        unchecked(triangles_vertices[9 * i + 3]),
-                        unchecked(triangles_vertices[9 * i + 6])
+                        triangles_vertices[9 * i + 0],
+                        triangles_vertices[9 * i + 3],
+                        triangles_vertices[9 * i + 6]
                     );
                     max_y = this._max4(
                         max_y,
-                        unchecked(triangles_vertices[9 * i + 1]),
-                        unchecked(triangles_vertices[9 * i + 4]),
-                        unchecked(triangles_vertices[9 * i + 7])
+                        triangles_vertices[9 * i + 1],
+                        triangles_vertices[9 * i + 4],
+                        triangles_vertices[9 * i + 7]
                     );
                     max_z = this._max4(
                         max_z,
-                        unchecked(triangles_vertices[9 * i + 2]),
-                        unchecked(triangles_vertices[9 * i + 5]),
-                        unchecked(triangles_vertices[9 * i + 8])
+                        triangles_vertices[9 * i + 2],
+                        triangles_vertices[9 * i + 5],
+                        triangles_vertices[9 * i + 8]
                     );
 
-                    median_x += unchecked(triangles_vertices[9 * i + 0]);
-                    median_x += unchecked(triangles_vertices[9 * i + 3]);
-                    median_x += unchecked(triangles_vertices[9 * i + 6]);
+                    median_x += triangles_vertices[9 * i + 0];
+                    median_x += triangles_vertices[9 * i + 3];
+                    median_x += triangles_vertices[9 * i + 6];
 
-                    median_z += unchecked(triangles_vertices[9 * i + 2]);
-                    median_z += unchecked(triangles_vertices[9 * i + 5]);
-                    median_z += unchecked(triangles_vertices[9 * i + 8]);
+                    median_z += triangles_vertices[9 * i + 2];
+                    median_z += triangles_vertices[9 * i + 5];
+                    median_z += triangles_vertices[9 * i + 8];
                 }
 
                 let aabb = this.m_aabb;
@@ -635,43 +635,43 @@ export class TrianglesBVH extends Serializable {
                 for (let i = 0; i < objects_count; i++) {
                     //get the center of the triangle
                     let c_x: f32 = (
-                        unchecked(triangles_vertices[9 * i + 0]) +
-                        unchecked(triangles_vertices[9 * i + 3]) +
-                        unchecked(triangles_vertices[9 * i + 6])
+                        triangles_vertices[9 * i + 0] +
+                        triangles_vertices[9 * i + 3] +
+                        triangles_vertices[9 * i + 6]
                     ) / 3.0;
 
                     let c_z: f32 = (
-                        unchecked(triangles_vertices[9 * i + 2]) +
-                        unchecked(triangles_vertices[9 * i + 5]) +
-                        unchecked(triangles_vertices[9 * i + 8])
+                        triangles_vertices[9 * i + 2] +
+                        triangles_vertices[9 * i + 5] +
+                        triangles_vertices[9 * i + 8]
                     ) / 3.0;
 
                     if ((axis == 0 && c_x < median_x) || (axis == 2 && c_z < median_z)) { //add to the left
-                        unchecked(left_objects[9 * left_count + 0] = triangles_vertices[9 * i + 0]);
-                        unchecked(left_objects[9 * left_count + 1] = triangles_vertices[9 * i + 1]);
-                        unchecked(left_objects[9 * left_count + 2] = triangles_vertices[9 * i + 2]);
+                        left_objects[9 * left_count + 0] = triangles_vertices[9 * i + 0];
+                        left_objects[9 * left_count + 1] = triangles_vertices[9 * i + 1];
+                        left_objects[9 * left_count + 2] = triangles_vertices[9 * i + 2];
 
-                        unchecked(left_objects[9 * left_count + 3] = triangles_vertices[9 * i + 3]);
-                        unchecked(left_objects[9 * left_count + 4] = triangles_vertices[9 * i + 4]);
-                        unchecked(left_objects[9 * left_count + 5] = triangles_vertices[9 * i + 5]);
+                        left_objects[9 * left_count + 3] = triangles_vertices[9 * i + 3];
+                        left_objects[9 * left_count + 4] = triangles_vertices[9 * i + 4];
+                        left_objects[9 * left_count + 5] = triangles_vertices[9 * i + 5];
 
-                        unchecked(left_objects[9 * left_count + 6] = triangles_vertices[9 * i + 6]);
-                        unchecked(left_objects[9 * left_count + 7] = triangles_vertices[9 * i + 7]);
-                        unchecked(left_objects[9 * left_count + 8] = triangles_vertices[9 * i + 8]);
+                        left_objects[9 * left_count + 6] = triangles_vertices[9 * i + 6];
+                        left_objects[9 * left_count + 7] = triangles_vertices[9 * i + 7];
+                        left_objects[9 * left_count + 8] = triangles_vertices[9 * i + 8];
 
                         left_count++;
                     } else {//add to the right
-                        unchecked(right_objects[9 * right_count + 0] = triangles_vertices[9 * i + 0]);
-                        unchecked(right_objects[9 * right_count + 1] = triangles_vertices[9 * i + 1]);
-                        unchecked(right_objects[9 * right_count + 2] = triangles_vertices[9 * i + 2]);
+                        right_objects[9 * right_count + 0] = triangles_vertices[9 * i + 0];
+                        right_objects[9 * right_count + 1] = triangles_vertices[9 * i + 1];
+                        right_objects[9 * right_count + 2] = triangles_vertices[9 * i + 2];
 
-                        unchecked(right_objects[9 * right_count + 3] = triangles_vertices[9 * i + 3]);
-                        unchecked(right_objects[9 * right_count + 4] = triangles_vertices[9 * i + 4]);
-                        unchecked(right_objects[9 * right_count + 5] = triangles_vertices[9 * i + 5]);
+                        right_objects[9 * right_count + 3] = triangles_vertices[9 * i + 3];
+                        right_objects[9 * right_count + 4] = triangles_vertices[9 * i + 4];
+                        right_objects[9 * right_count + 5] = triangles_vertices[9 * i + 5];
 
-                        unchecked(right_objects[9 * right_count + 6] = triangles_vertices[9 * i + 6]);
-                        unchecked(right_objects[9 * right_count + 7] = triangles_vertices[9 * i + 7]);
-                        unchecked(right_objects[9 * right_count + 8] = triangles_vertices[9 * i + 8]);
+                        right_objects[9 * right_count + 6] = triangles_vertices[9 * i + 6];
+                        right_objects[9 * right_count + 7] = triangles_vertices[9 * i + 7];
+                        right_objects[9 * right_count + 8] = triangles_vertices[9 * i + 8];
 
                         right_count++;
                     }
@@ -679,33 +679,33 @@ export class TrianglesBVH extends Serializable {
 
                 //check non-infinite recursion
                 if (left_count > 0 && right_count == 0) {  // move last left object to the right
-                    unchecked(right_objects[0] = left_objects[(left_count - 1) * 9 + 0]);
-                    unchecked(right_objects[1] = left_objects[(left_count - 1) * 9 + 1]);
-                    unchecked(right_objects[2] = left_objects[(left_count - 1) * 9 + 2]);
+                    right_objects[0] = left_objects[(left_count - 1) * 9 + 0];
+                    right_objects[1] = left_objects[(left_count - 1) * 9 + 1];
+                    right_objects[2] = left_objects[(left_count - 1) * 9 + 2];
 
-                    unchecked(right_objects[3] = left_objects[(left_count - 1) * 9 + 3]);
-                    unchecked(right_objects[4] = left_objects[(left_count - 1) * 9 + 4]);
-                    unchecked(right_objects[5] = left_objects[(left_count - 1) * 9 + 5]);
+                    right_objects[3] = left_objects[(left_count - 1) * 9 + 3];
+                    right_objects[4] = left_objects[(left_count - 1) * 9 + 4];
+                    right_objects[5] = left_objects[(left_count - 1) * 9 + 5];
 
-                    unchecked(right_objects[6] = left_objects[(left_count - 1) * 9 + 6]);
-                    unchecked(right_objects[7] = left_objects[(left_count - 1) * 9 + 7]);
-                    unchecked(right_objects[8] = left_objects[(left_count - 1) * 9 + 8]);
+                    right_objects[6] = left_objects[(left_count - 1) * 9 + 6];
+                    right_objects[7] = left_objects[(left_count - 1) * 9 + 7];
+                    right_objects[8] = left_objects[(left_count - 1) * 9 + 8];
 
                     right_count++;
                     left_count--;
                 } else if (left_count == 0 && right_count > 0) {  // move last right object to the left
 
-                    unchecked(left_objects[0] = right_objects[(right_count - 1) * 9 + 0]);
-                    unchecked(left_objects[1] = right_objects[(right_count - 1) * 9 + 1]);
-                    unchecked(left_objects[2] = right_objects[(right_count - 1) * 9 + 2]);
+                    left_objects[0] = right_objects[(right_count - 1) * 9 + 0];
+                    left_objects[1] = right_objects[(right_count - 1) * 9 + 1];
+                    left_objects[2] = right_objects[(right_count - 1) * 9 + 2];
 
-                    unchecked(left_objects[3] = right_objects[(right_count - 1) * 9 + 3]);
-                    unchecked(left_objects[4] = right_objects[(right_count - 1) * 9 + 4]);
-                    unchecked(left_objects[5] = right_objects[(right_count - 1) * 9 + 5]);
+                    left_objects[3] = right_objects[(right_count - 1) * 9 + 3];
+                    left_objects[4] = right_objects[(right_count - 1) * 9 + 4];
+                    left_objects[5] = right_objects[(right_count - 1) * 9 + 5];
 
-                    unchecked(left_objects[6] = right_objects[(right_count - 1) * 9 + 6]);
-                    unchecked(left_objects[7] = right_objects[(right_count - 1) * 9 + 7]);
-                    unchecked(left_objects[8] = right_objects[(right_count - 1) * 9 + 8]);
+                    left_objects[6] = right_objects[(right_count - 1) * 9 + 6];
+                    left_objects[7] = right_objects[(right_count - 1) * 9 + 7];
+                    left_objects[8] = right_objects[(right_count - 1) * 9 + 8];
 
                     left_count++;
                     right_count--;
@@ -717,11 +717,11 @@ export class TrianglesBVH extends Serializable {
                 var right_array = new StaticArray<f32>(right_count * 9);
 
                 for (let j = 0, len = left_count * 9; j < len; j++) {
-                    unchecked(left_array[j] = left_objects[j]);
+                    left_array[j] = left_objects[j];
                 }
 
                 for (let j = 0, len = right_count * 9; j < len; j++) {
-                    unchecked(right_array[j] = right_objects[j]);
+                    right_array[j] = right_objects[j];
                 }
 
                 this.m_left_child  = new TrianglesBVH(left_array, BVH_AABB_DELTA);
@@ -808,96 +808,96 @@ export class TrianglesBVH extends Serializable {
         if (this._is_inside_aabb(x, y, z)) {  // point inside aabb, so, check the node
             if (this.m_is_object) {  // this node contains object, so, return actual closest position in the triangle
                 //here we should find actual closest point
-                let v0_x = unchecked(triangle_data[0]) - x;
-                let v0_y = unchecked(triangle_data[1]) - y;
-                let v0_z = unchecked(triangle_data[2]) - z;
+                let v0_x = triangle_data[0] - x;
+                let v0_y = triangle_data[1] - y;
+                let v0_z = triangle_data[2] - z;
 
                 //d = (e1, v0)
                 let d = (
-                    unchecked(triangle_data[3]) * v0_x +
-                    unchecked(triangle_data[4]) * v0_y +
-                    unchecked(triangle_data[5]) * v0_z
+                    triangle_data[3] * v0_x +
+                    triangle_data[4] * v0_y +
+                    triangle_data[5] * v0_z
                 );
                 //e = (e2, v0)
                 let e = (
-                    unchecked(triangle_data[6]) * v0_x +
-                    unchecked(triangle_data[7]) * v0_y +
-                    unchecked(triangle_data[8]) * v0_z
+                    triangle_data[6] * v0_x +
+                    triangle_data[7] * v0_y +
+                    triangle_data[8] * v0_z
                 );
 
                 //s = b*e - c*d
                 //t = b*d - a*e
                 let s = (
-                    unchecked(triangle_data[10]) * e -
-                    unchecked(triangle_data[11]) * d
+                    triangle_data[10] * e -
+                    triangle_data[11] * d
                 );
                 let t = (
-                    unchecked(triangle_data[10]) * d -
-                    unchecked(triangle_data[9])  * e
+                    triangle_data[10] * d -
+                    triangle_data[9]  * e
                 );
 
                 //det = this.triangle_data[12]
                 //a = this.triangle_data[9]
                 //b = this.triangle_data[10]
                 //c = this.triangle_data[11]
-                if (s + t < unchecked(triangle_data[12])) {
+                if (s + t < triangle_data[12]) {
                     if (s < 0) {
                         if (t < 0) {
                             if (d < 0) {
-                                s = clamp(-d / unchecked(triangle_data[9]));
+                                s = clamp(-d / triangle_data[9]);
                                 t = 0;
                             } else {
                                 s = 0;
-                                t = clamp(-e / unchecked(triangle_data[11]));
+                                t = clamp(-e / triangle_data[11]);
                             }
                         } else {
                             s = 0;
-                            t = clamp(-e / unchecked(triangle_data[11]));
+                            t = clamp(-e / triangle_data[11]);
                         }
                     } else if (t < 0) {
-                        s = clamp(-d / unchecked(triangle_data[9]));
+                        s = clamp(-d / triangle_data[9]);
                         t = 0.0;
                     } else {
-                        let invDet: f32 = 1.0 / unchecked(triangle_data[12]);
+                        let invDet: f32 = 1.0 / triangle_data[12];
                         s *= invDet;
                         t *= invDet;
                     }
                 } else {
                     if (s < 0) {
-                        let tmp0 = unchecked(triangle_data[10]) + d;
-                        let tmp1 = unchecked(triangle_data[11]) + e;
+                        let tmp0 = triangle_data[10] + d;
+                        let tmp1 = triangle_data[11] + e;
                         if (tmp1 > tmp0) {
                             let numer = tmp1 - tmp0;
-                            let denom = unchecked(triangle_data[9] - 2 * triangle_data[10] + triangle_data[11]);
+                            let denom = triangle_data[9] - 2 * triangle_data[10] + triangle_data[11];
                             s = clamp(numer / denom);
                             t = 1.0 - s;
                         } else {
-                            t = clamp(-e / unchecked(triangle_data[11]));
+                            t = clamp(-e / triangle_data[11]);
                             s = 0;
                         }
                     } else if (t < 0) {
-                        if (unchecked(this.m_triangle_data[9]) + d > unchecked(this.m_triangle_data[10]) + e) {
-                            let numer = unchecked(triangle_data[11] + e - triangle_data[10] - d);
-                            let denom = unchecked(triangle_data[9]  - 2 * triangle_data[10] + triangle_data[11]);
+                        if (this.m_triangle_data[9] + d > this.m_triangle_data[10] + e) {
+                            let numer = triangle_data[11] + e - triangle_data[10] - d;
+                            let denom = triangle_data[9]  - 2 * triangle_data[10] + triangle_data[11];
                             s = clamp(numer / denom);
                             t = 1.0 -  s;
                         } else {
-                            s = clamp(-d / unchecked(triangle_data[9]));
+                            s = clamp(-d / triangle_data[9]);
                             t = 0;
                         }
                     } else {
-                        let numer = unchecked(triangle_data[11] + e - triangle_data[10] - d);
-                        let denom = unchecked(triangle_data[9]  - 2 * triangle_data[10] + triangle_data[11]);
+                        let numer = triangle_data[11] + e - triangle_data[10] - d;
+                        let denom = triangle_data[9]  - 2 * triangle_data[10] + triangle_data[11];
                         s = clamp(numer / denom);
                         t = 1.0 - s;
                     }
                 }
 
                 let return_buffer = this.m_return_buffer;
-                unchecked(return_buffer[0] = triangle_data[0] + s * triangle_data[3] + t * triangle_data[6]);
-                unchecked(return_buffer[1] = triangle_data[1] + s * triangle_data[4] + t * triangle_data[7]);
-                unchecked(return_buffer[2] = triangle_data[2] + s * triangle_data[5] + t * triangle_data[8]);
-                unchecked(return_buffer[3] = 1.0);
+                return_buffer[0] = triangle_data[0] + s * triangle_data[3] + t * triangle_data[6];
+                return_buffer[1] = triangle_data[1] + s * triangle_data[4] + t * triangle_data[7];
+                return_buffer[2] = triangle_data[2] + s * triangle_data[5] + t * triangle_data[8];
+                return_buffer[3] = 1.0;
 
                 return return_buffer;
             } else {  // node contains children, check it
@@ -905,29 +905,29 @@ export class TrianglesBVH extends Serializable {
                 let left_sample  = this.m_left_child.sample(x, y, z);
                 let right_sample = this.m_right_child.sample(x, y, z);
 
-                if (unchecked(left_sample[3]) < 0.5) {
+                if (left_sample[3] < 0.5) {
                     return right_sample;
                 } else {
-                    if (unchecked(right_sample[3]) < 0.5) {
+                    if (right_sample[3] < 0.5) {
                         return left_sample;
                     } else {
                         //both left and right sample is correct, so, return the closest to the initial point
                         let d_l = squared_len(
-                            x - unchecked(left_sample[0]),
-                            y - unchecked(left_sample[1]),
-                            z - unchecked(left_sample[2])
+                            x - left_sample[0],
+                            y - left_sample[1],
+                            z - left_sample[2]
                         );
                         let d_r = squared_len(
-                            x - unchecked(right_sample[0]),
-                            y - unchecked(right_sample[1]),
-                            z - unchecked(right_sample[2])
+                            x - right_sample[0],
+                            y - right_sample[1],
+                            z - right_sample[2]
                         );
                         return d_l < d_r ? left_sample : right_sample;
                     }
                 }
             }
         } else {  // point outside the aabb, so, skip next traversing, return false answer
-            unchecked(this.m_return_buffer[3] = 0.0);
+            this.m_return_buffer[3] = 0.0;
             return this.m_return_buffer;
         }
     }

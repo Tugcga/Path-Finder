@@ -1,4 +1,4 @@
-import { log_message } from "../common/utilities";
+import { log_message, distance_sq } from "../common/utilities";
 import { Serializable, SD_TYPE,
     staticarray_f32_bytes_length, staticarray_f32_to_bytes, staticarray_f32_from_bytes_expr,
     staticarray_i32_bytes_length, staticarray_i32_to_bytes, staticarray_i32_from_bytes_expr,
@@ -25,9 +25,9 @@ function _cross_z(a_x: f32, a_y: f32, b_x: f32, b_y: f32): f32 {
 @inline
 function _cross(a_x: f32, a_y: f32, a_z: f32, b_x: f32, b_y: f32, b_z: f32): StaticArray<f32> {
     let to_return = new StaticArray<f32>(3);
-    unchecked(to_return[0] = a_y * b_z - a_z * b_y);
-    unchecked(to_return[1] = a_z * b_x - a_x * b_z);
-    unchecked(to_return[2] = a_x * b_y - a_y * b_x);
+    to_return[0] = a_y * b_z - a_z * b_y;
+    to_return[1] = a_z * b_x - a_x * b_z;
+    to_return[2] = a_x * b_y - a_y * b_x;
     return to_return;
 }
 
@@ -72,9 +72,9 @@ export class NavmeshNode extends Serializable {
             this.m_vertices = vertices;
 
             for (let i = 0; i < indexes_len; i++) {
-                let k = unchecked(polygon_indexes[i]);
+                let k = polygon_indexes[i];
                 for (let j = 0; j < 3; j++) {
-                    unchecked(vertices[3 * i + j] = all_vertices[3 * k + j]);
+                    vertices[3 * i + j] = all_vertices[3 * k + j];
                 }
             }
 
@@ -84,19 +84,19 @@ export class NavmeshNode extends Serializable {
             this.m_neighbor_count = 0;
 
             //calculate polygon center
-            this.m_center = new StaticArray<f32>(3);
-            this.m_normal = new StaticArray<f32>(3);
-            this.m_vertex_normals = new StaticArray<f32>(3 * indexes_len);
+            let center = new StaticArray<f32>(3);
+            let normal = new StaticArray<f32>(3);
+            let vertex_normals = new StaticArray<f32>(3 * indexes_len);
             this.m_portals = new Map<i32, StaticArray<f32>>();
 
-            let cx = unchecked(this.m_center[0]);
-            let cy = unchecked(this.m_center[1]);
-            let cz = unchecked(this.m_center[2]);
+            let cx = center[0];
+            let cy = center[1];
+            let cz = center[2];
 
             for (let i = 0; i < indexes_len; i++) {
-                cx += unchecked(vertices[3 * i + 0]);
-                cy += unchecked(vertices[3 * i + 1]);
-                cz += unchecked(vertices[3 * i + 2]);
+                cx += vertices[3 * i + 0];
+                cy += vertices[3 * i + 1];
+                cz += vertices[3 * i + 2];
             }
             if (indexes_len > 0) {
                 let invLen: f32 = 1.0 / <f32>indexes_len;
@@ -105,9 +105,11 @@ export class NavmeshNode extends Serializable {
                 cz *= invLen;
             }
 
-            unchecked(this.m_center[0] = cx);
-            unchecked(this.m_center[1] = cy);
-            unchecked(this.m_center[2] = cz);
+            center[0] = cx;
+            center[1] = cy;
+            center[2] = cz;
+
+            this.m_center = center;
 
             //after center we can calculate average normal of the polygon
             for (let i = 0; i < indexes_len; i++) {
@@ -116,43 +118,42 @@ export class NavmeshNode extends Serializable {
                     j = 0;
                 }
                 let c_x = _cross_x(
-                    unchecked(vertices[3 * i + 1]) - cy,
-                    unchecked(vertices[3 * i + 2]) - cz,
-                    unchecked(vertices[3 * j + 1]) - cy,
-                    unchecked(vertices[3 * j + 2]) - cz
+                    vertices[3 * i + 1] - cy,
+                    vertices[3 * i + 2] - cz,
+                    vertices[3 * j + 1] - cy,
+                    vertices[3 * j + 2] - cz
                 );
                 let c_y = _cross_y(
-                    unchecked(vertices[3 * i + 0]) - cx,
-                    unchecked(vertices[3 * i + 2]) - cz,
-                    unchecked(vertices[3 * j + 0]) - cx,
-                    unchecked(vertices[3 * j + 2]) - cz
+                    vertices[3 * i + 0] - cx,
+                    vertices[3 * i + 2] - cz,
+                    vertices[3 * j + 0] - cx,
+                    vertices[3 * j + 2] - cz
                 );
                 let c_z = _cross_z(
-                    unchecked(vertices[3 * i + 0]) - cx,
-                    unchecked(vertices[3 * i + 1]) - cy,
-                    unchecked(vertices[3 * j + 0]) - cx,
-                    unchecked(vertices[3 * j + 1]) - cy
+                    vertices[3 * i + 0] - cx,
+                    vertices[3 * i + 1] - cy,
+                    vertices[3 * j + 0] - cx,
+                    vertices[3 * j + 1] - cy
                 );
-                unchecked(this.m_normal[0] += c_x);
-                unchecked(this.m_normal[1] += c_y);
-                unchecked(this.m_normal[2] += c_z);
+                normal[0] += c_x;
+                normal[1] += c_y;
+                normal[2] += c_z;
             }
             //normalize the normal
             if (indexes_len > 0) {
-                let nx = unchecked(this.m_normal[0]);
-                let ny = unchecked(this.m_normal[1]);
-                let nz = unchecked(this.m_normal[2]);
+                let nx = normal[0];
+                let ny = normal[1];
+                let nz = normal[2];
                 let inv_len: f32 = 1.0 / Mathf.sqrt(nx * nx + ny * ny + nz * nz);
-                unchecked(this.m_normal[0] = nx * inv_len);
-                unchecked(this.m_normal[1] = ny * inv_len);
-                unchecked(this.m_normal[2] = nz * inv_len);
+                normal[0] = nx * inv_len;
+                normal[1] = ny * inv_len;
+                normal[2] = nz * inv_len;
             }
-
-            let vertex_normals = this.m_vertex_normals;
+            this.m_normal = normal;
 
             //vertex normals
             for (let i = 0, len = 3 * indexes_len; i < len; i++) {
-                unchecked(vertex_normals[i] = 0.0);
+                vertex_normals[i] = 0.0;
             }
 
             for (let i = 0; i < indexes_len; i++) {
@@ -165,41 +166,43 @@ export class NavmeshNode extends Serializable {
                     k = 0;
                 }
                 let v_x = _cross_x(
-                    unchecked(vertices[3 * j + 1] - vertices[3 * i + 1]),
-                    unchecked(vertices[3 * j + 2] - vertices[3 * i + 2]),
-                    unchecked(vertices[3 * k + 1] - vertices[3 * i + 1]),
-                    unchecked(vertices[3 * k + 2] - vertices[3 * i + 2])
+                    vertices[3 * j + 1] - vertices[3 * i + 1],
+                    vertices[3 * j + 2] - vertices[3 * i + 2],
+                    vertices[3 * k + 1] - vertices[3 * i + 1],
+                    vertices[3 * k + 2] - vertices[3 * i + 2]
                 );
                 let v_y = _cross_y(
-                    unchecked(vertices[3 * j + 0] - vertices[3 * i + 0]),
-                    unchecked(vertices[3 * j + 2] - vertices[3 * i + 2]),
-                    unchecked(vertices[3 * k + 0] - vertices[3 * i + 0]),
-                    unchecked(vertices[3 * k + 2] - vertices[3 * i + 2])
+                    vertices[3 * j + 0] - vertices[3 * i + 0],
+                    vertices[3 * j + 2] - vertices[3 * i + 2],
+                    vertices[3 * k + 0] - vertices[3 * i + 0],
+                    vertices[3 * k + 2] - vertices[3 * i + 2]
                 );
                 let v_z = _cross_z(
-                    unchecked(vertices[3 * j + 0] - vertices[3 * i + 0]),
-                    unchecked(vertices[3 * j + 1] - vertices[3 * i + 1]),
-                    unchecked(vertices[3 * k + 0] - vertices[3 * i + 0]),
-                    unchecked(vertices[3 * k + 1] - vertices[3 * i + 1])
+                    vertices[3 * j + 0] - vertices[3 * i + 0],
+                    vertices[3 * j + 1] - vertices[3 * i + 1],
+                    vertices[3 * k + 0] - vertices[3 * i + 0],
+                    vertices[3 * k + 1] - vertices[3 * i + 1]
                 );
 
                 let inv_d: f32 = 1.0 / Mathf.sqrt(v_x * v_x + v_y * v_y + v_z * v_z);
-                unchecked(vertex_normals[3 * i + 0] = v_x * inv_d);
-                unchecked(vertex_normals[3 * i + 1] = v_y * inv_d);
-                unchecked(vertex_normals[3 * i + 2] = v_z * inv_d);
+                vertex_normals[3 * i + 0] = v_x * inv_d;
+                vertex_normals[3 * i + 1] = v_y * inv_d;
+                vertex_normals[3 * i + 2] = v_z * inv_d;
             }
+
+            this.m_vertex_normals = vertex_normals;
         }
     }
 
     add_neighbor(node_index: i32, v0_x: f32, v0_y: f32, v0_z: f32, v1_x: f32, v1_y: f32, v1_z: f32): void {
         if (!this.m_portals.has(node_index)) {
             var new_portal = new StaticArray<f32>(6);
-            unchecked(new_portal[0] = v0_x);
-            unchecked(new_portal[1] = v0_y);
-            unchecked(new_portal[2] = v0_z);
-            unchecked(new_portal[3] = v1_x);
-            unchecked(new_portal[4] = v1_y);
-            unchecked(new_portal[5] = v1_z);
+            new_portal[0] = v0_x;
+            new_portal[1] = v0_y;
+            new_portal[2] = v0_z;
+            new_portal[3] = v1_x;
+            new_portal[4] = v1_y;
+            new_portal[5] = v1_z;
 
             this.m_portals.set(node_index, new_portal);
 
@@ -210,7 +213,7 @@ export class NavmeshNode extends Serializable {
                 var new_neighbor = new StaticArray<i32>(neighbor_len + STATIC_ARRAY_BUFFER_STEP);
                 //copy values to them
                 for (let i = 0; i < neighbor_len; i++) {
-                    unchecked(new_neighbor[i] = neighbor[i]);
+                    new_neighbor[i] = neighbor[i];
                 }
                 //rewrite neigboor link
                 this.m_neighbor = new_neighbor;
@@ -218,7 +221,7 @@ export class NavmeshNode extends Serializable {
             }
 
             this.m_neighbor_count++;
-            unchecked(neighbor[this.m_neighbor_count - 1] = node_index);
+            neighbor[this.m_neighbor_count - 1] = node_index;
         }
     }
 
@@ -249,7 +252,7 @@ export class NavmeshNode extends Serializable {
         let neighbor_count = this.m_neighbor_count;
         let to_return = new StaticArray<i32>(neighbor_count);
         for (let i = 0; i < neighbor_count; i++) {
-            unchecked(to_return[i] = neighbor[i]);
+            to_return[i] = neighbor[i];
         }
         return to_return;
     }
@@ -290,9 +293,36 @@ export class NavmeshNode extends Serializable {
             let neighbor = this.m_neighbor;
             group_array.push(this.m_index);  // <-- recreate array here
             for (let i = 0, len = this.m_neighbor_count; i < len; i++) {
-                unchecked(all_nodes[neighbor[i]]).set_group(group_index, group_array, all_nodes);
+                all_nodes[neighbor[i]].set_group(group_index, group_array, all_nodes);
             }
         }
+    }
+
+    // return true if iput edge is an edge from portal of the node
+    is_edge_portal(start_x: f32, start_y: f32, start_z: f32,
+                   finish_x: f32, finish_y: f32, finish_z: f32): bool {
+        const portals = this.m_portals;
+        const keys = portals.keys();
+        for (let i = 0, len = keys.length; i < len; i++) {
+            const key = keys[i];
+            const verts = portals.get(key);
+            const verts_count = verts.length;
+            if (verts_count == 6) {
+                // calc distance from vertices triples to start and finish
+                const p_x = verts[0];
+                const p_y = verts[1];
+                const p_z = verts[2];
+                const q_x = verts[3];
+                const q_y = verts[4];
+                const q_z = verts[5];
+                if ((distance_sq(start_x, start_y, start_z, p_x, p_y, p_z) < 0.001 && distance_sq(finish_x, finish_y, finish_z, q_x, q_y, q_z) < 0.001) || 
+                    (distance_sq(start_x, start_y, start_z, q_x, q_y, q_z) < 0.001 && distance_sq(finish_x, finish_y, finish_z, p_x, p_y, p_z) < 0.001)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     is_point_inside(p_x: f32, p_y: f32, p_z: f32): bool {
@@ -304,27 +334,27 @@ export class NavmeshNode extends Serializable {
                 j = 0;
             }
             let v_x = _cross_x(
-                unchecked(vertices[3 * j + 1] - vertices[3 * i + 1]),
-                unchecked(vertices[3 * j + 2] - vertices[3 * i + 2]),
-                p_y - unchecked(vertices[3 * i + 1]),
-                p_z - unchecked(vertices[3 * i + 2])
+                vertices[3 * j + 1] - vertices[3 * i + 1],
+                vertices[3 * j + 2] - vertices[3 * i + 2],
+                p_y - vertices[3 * i + 1],
+                p_z - vertices[3 * i + 2]
             );
             let v_y = _cross_y(
-                unchecked(vertices[3 * j + 0] - vertices[3 * i + 0]),
-                unchecked(vertices[3 * j + 2] - vertices[3 * i + 2]),
-                p_x - unchecked(vertices[3 * i + 0]),
-                p_z - unchecked(vertices[3 * i + 2])
+                vertices[3 * j + 0] - vertices[3 * i + 0],
+                vertices[3 * j + 2] - vertices[3 * i + 2],
+                p_x - vertices[3 * i + 0],
+                p_z - vertices[3 * i + 2]
             );
             let v_z = _cross_z(
-                unchecked(vertices[3 * j + 0] - vertices[3 * i + 0]),
-                unchecked(vertices[3 * j + 1] - vertices[3 * i + 1]),
-                p_x - unchecked(vertices[3 * i + 0]),
-                p_y - unchecked(vertices[3 * i + 1])
+                vertices[3 * j + 0] - vertices[3 * i + 0],
+                vertices[3 * j + 1] - vertices[3 * i + 1],
+                p_x - vertices[3 * i + 0],
+                p_y - vertices[3 * i + 1]
             );
             let d = (
-                v_x * unchecked(normals[3 * i + 0]) +
-                v_y * unchecked(normals[3 * i + 1]) +
-                v_z * unchecked(normals[3 * i + 2])
+                v_x * normals[3 * i + 0] +
+                v_y * normals[3 * i + 1] +
+                v_z * normals[3 * i + 2]
             );
 
             if (d < -0.00001) {
@@ -338,7 +368,7 @@ export class NavmeshNode extends Serializable {
         var to_return = "{";
         let keys = this.m_portals.keys();
         for (let i = 0, len = keys.length; i < len; i++) {
-            let key = unchecked(keys[i]);
+            let key = keys[i];
             to_return += (
                 key.toString() + ": " +
                 this.m_portals.get(key).toString()

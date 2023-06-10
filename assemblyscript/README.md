@@ -34,7 +34,7 @@ Current version of modules designed for AssemblyScript version 0.20.x. This vers
 
 ```pathfinder_full.wasm```: ```asc assembly/pathfinder_api.ts assembly/navmesh_api.ts assembly/rvo_api.ts assembly/baker_api.ts --outFile build/pathfinder_full.wasm --bindings esm --exportRuntime```
 
-Of course, you can add additional compile keys for optimizations, something like ```--optimizeLevel 3 --converge --noAssert -Ospeed```
+Of course, you can add additional compile keys for optimizations, something like ```--uncheckedBehavior always --optimizeLevel 3 --converge --noAssert -Ospeed```
 
 ### How to use
 
@@ -129,6 +129,12 @@ const path = navmesh_exports.navmesh_search_path(navmesh_ptr, 0.5, 0.0, 0.5, -0.
 	* ```vertices```: unique identifications of vertices (it names)
 	* ```edges```: plain array with pairs of vertices names. The first two value define the first edge of the graph, the third and froth values - the second edge and so on
 
+* ```function create_rtree(max_nodes: u32): RTree```
+	Contained in ```navmesh.wasm```, ```pathfinder.wasm``` and ```pathfinder_full.wasm```.
+
+	Create ```RTree``` object.
+	* ```max_nodes```: the maximum number of polygon items, which can be stored in one node in this tree.
+
 * ```create_baker(): NavmeshBaker```
 
 	Contained in ```baker.wasm``` and ```pathfinder_full.wasm```.
@@ -151,6 +157,42 @@ Contained in ```navmesh.wasm```, ```pathfinder.wasm``` and ```pathfinder_full.wa
 
 	Deserialize the graph from input plain bytes array and return the pointer to the new graph object.
 
+### ```RTree``` API
+
+Contained in ```navmesh.wasm```, ```pathfinder.wasm``` and ```pathfinder_full.wasm```.
+
+* ```function rtree_insert_polygon(tree: RTree, coordinates: Array<f32>): void```
+
+	Insert a polygon item into the tree. ```coordinates``` is a plane array of polygon corner coordinates: the first two values are coordinates of the first polygon corner, then it contains coordinates of the second corner and so on. Each polygon is 2-dimensional.
+
+* ```function rtree_insert_point(tree: RTree, x: f32, y: f32): void```
+
+	Insert a point (one-corner specific version of the polygon) into the tree.
+
+* ```function rtree_insert_edge(tree: RTree, s_x: f32, s_y: f32, e_x: f32, e_y: f32): void```
+
+	Insert the edge (two-corners polygon) into the tree. ```s_x``` and ```s_y``` are coordinates of the start edge point. ```e_x``` and ```e_y``` are coordinates of the end edge point.
+
+* ```function rtree_insert_edges(tree: RTree, coordinates: Float32Array): void```
+
+	Insert several edges into the tree. Input array is array of edges coordinates. The first four values are coordinates of the first edge and so on.
+
+* ```function rtree_search(tree: RTree, corner_x: f32, corner_y: f32, other_x: f32, other_y: f32): PolygonsSequence```
+
+	Search all polygons inside the tree, which intersects with input rectangle. ```corner_x``` and ```corner_y``` are coordinates of one corner of the rectangle, and ```other_x``` and ```other_y``` are coordinates of the opposite one. This function return the structure (which is copied into JS-side) with two fields: ```count``` the number of polygons in the intersection, ```coordinates``` is an array of arrays with polygon corner coordinates.
+
+* ```function rtree_find_intersection(tree: RTree, start_x: f32, start_y: f32, finish_x: f32, fisnih_y: f32): StaticArray<f32>```
+
+	Find intersection of the input edge and polygon edges inside the tree. Return the pair of two floats - coordinates of the intersection point. If there are no intersections, then the output coordinates are end-point of the input edge.
+
+* ```function rtree_to_bytes(tree: RTree): Uint8Array```
+
+	Serialize the tree into plain bytes array.
+	
+* ```function rtree_from_bytes(bytes: Uint8Array): RTree```
+
+	Deserialize the tree from bytes array and return the pointer of this object.
+
 ### ```Navmesh``` API
 
 Contained in ```navmesh.wasm```, ```pathfinder.wasm``` and ```pathfinder_full.wasm```.
@@ -170,6 +212,10 @@ Contained in ```navmesh.wasm```, ```pathfinder.wasm``` and ```pathfinder_full.wa
 * ```navmesh_sample(navmesh: Navmesh, x: f32, y: f32, z: f32): StaticArray<f32>```
 
 	Return the point in the navigation mesh, close to the input point with coordinates ```x, y, z```. Return 4-values array. If the forth value in the array is ```1.0```, then first three vales are coordinates of the closest point. If the forth values is ```0.0```, then there are no close points in the navigation mesh (and the first three values are wrong).
+
+* ```function navmesh_intersect_boundary(navmesh: Navmesh, start_x: f32, start_y: f32, finish_x: f32, finish_y: f32): StaticArray<f32>```
+
+	Find the intersection point of the input edge and boundary of the navigation mesh. Return the pair of coordinates of the intersection point. Input points are 2d-points (with ignored y-coordinate). If there are no intersections, then return coordinates of the inpu edge.
 
 * ```navmesh_to_bytes(navmesh: Navmesh): Uint8Array```
 

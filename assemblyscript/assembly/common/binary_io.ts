@@ -6,7 +6,7 @@ export abstract class Serializable {
     abstract to_bytes(): Uint8Array;
 
     // fill class fields from the data in the input bytes array
-    abstract from_bytes(bytes: Uint8Array): void;
+    abstract from_bytes(view: DataView, start: u32): void;
 
     // return the number of bytes, required to store the class
     abstract bytes_length(): u32;
@@ -43,7 +43,13 @@ export enum SD_TYPE {
     SD_TYPE_AABB,
     SD_TYPE_NAVMESHBVH,
     SD_TYPE_TRIANGLESBVH,
-    SD_TYPE_NAVMESH
+    SD_TYPE_NAVMESH,
+    SD_TYPE_RTREE_MBRECTANGLE,
+    SD_TYPE_RTREE_POLYGON,
+    SD_TYPE_RTREE_POINT,
+    SD_TYPE_RTREE_EDGE,
+    SD_TYPE_RTREE_NODE,
+    SD_TYPE_RTREE
 }
 
 export function get_type(buffer: Uint8Array): i32 {
@@ -73,7 +79,7 @@ export function list_float32array_bytes_length(array: List<Float32Array>): u32 {
     //the signature: id + elements + array_0 + ... + array_{n-1}
     let size = 0;
     for(let i = 0, len = array.length; i < len; i++){
-        let a = unchecked(array[i]);
+        let a = array[i];
         size += float32array_bytes_length(a);
     }
 
@@ -112,7 +118,7 @@ export function map_i32_staticarray_i32_bytes_length(map: Map<i32, StaticArray<i
     let to_return = 12; // id, bytes length and elements count
     let values = map.values();
     for(let i = 0, len = values.length; i < len; i++) {
-        let array = unchecked(values[i]);
+        let array = values[i];
         to_return += 4 + staticarray_i32_bytes_length(array);  // 4 for the key, other for the array
     }
 
@@ -124,7 +130,7 @@ export function map_i32_staticarray_f32_bytes_length(map: Map<i32, StaticArray<f
     let to_return = 12; // id, bytes length and elements count
     let values = map.values();
     for(let i = 0, len = values.length; i < len; i++) {
-        let array = unchecked(values[i]);
+        let array = values[i];
         to_return += 4 + staticarray_f32_bytes_length(array);  // 4 for the key, other for the array
     }
 
@@ -135,7 +141,7 @@ export function map_i32_staticarray_f32_bytes_length(map: Map<i32, StaticArray<f
 export function staticarray_staticarray_i32_bytes_length(array: StaticArray<StaticArray<i32>>): u32 {
     let to_return = 12;  // id, bytes length, count
     for(let i = 0, len = array.length; i < len; i++) {
-        let a = unchecked(array[i]);
+        let a = array[i];
         to_return += staticarray_i32_bytes_length(a);
     }
     return to_return;
@@ -177,7 +183,7 @@ export function float32array_to_bytes(array: Float32Array): Uint8Array {
     view.setInt32(4, bytes_length);
     view.setInt32(8, array.length);
     for(let i = 0, len = array.length; i < len; i++){
-        view.setFloat32(12 + 4 * i, unchecked(array[i]));
+        view.setFloat32(12 + 4 * i, array[i]);
     }
     return to_return;
 }
@@ -230,7 +236,7 @@ export function staticarray_i32_to_bytes(array: StaticArray<i32>): Uint8Array {
     view.setInt32(4, bytes_length);
     view.setInt32(8, array.length);
     for(let i = 0, len = array.length; i < len; i++){
-        view.setInt32(12 + 4*i, unchecked(array[i]));
+        view.setInt32(12 + 4*i, array[i]);
     }
     return to_return;
 }
@@ -244,7 +250,7 @@ export function staticarray_f32_to_bytes(array: StaticArray<f32>): Uint8Array {
     view.setInt32(4, bytes_length);
     view.setInt32(8, array.length);
     for(let i = 0, len = array.length; i < len; i++){
-        view.setFloat32(12 + 4*i, unchecked(array[i]));
+        view.setFloat32(12 + 4*i, array[i]);
     }
     return to_return;
 }
@@ -258,7 +264,7 @@ export function staticarray_bool_to_bytes(array: StaticArray<bool>): Uint8Array 
     view.setInt32(4, bytes_length);
     view.setInt32(8, array.length);
     for(let i = 0, len = array.length; i < len; i++){
-        view.setUint8(12 + i, unchecked(array[i]) ? 1 : 0);
+        view.setUint8(12 + i, array[i]) ? 1 : 0;
     }
     return to_return;
 }
@@ -275,8 +281,8 @@ export function map_i32_i32_to_bytes(map: Map<i32, i32>): Uint8Array {
     let values = map.values();
     for(let i = 0, len = keys.length; i < len; i++){
         //store key and then value
-        view.setInt32(12 + 8*i, unchecked(keys[i]));
-        view.setInt32(12 + 8*i + 4, unchecked(values[i]));
+        view.setInt32(12 + 8*i, keys[i]);
+        view.setInt32(12 + 8*i + 4, values[i]);
     }
     return to_return;
 }
@@ -294,9 +300,9 @@ export function map_i32_staticarray_i32_to_bytes(map: Map<i32, StaticArray<i32>>
     let shift = 12;
     for(let i = 0, len = keys.length; i < len; i++){
         //at first write the key
-        view.setInt32(shift, unchecked(keys[i]));
+        view.setInt32(shift, keys[i]);
         //next write the whole array bytes
-        let array = unchecked(values[i]);
+        let array = values[i];
         let a_bytes = staticarray_i32_to_bytes(array);
         to_return.set(a_bytes, shift + 4);
 
@@ -318,9 +324,9 @@ export function map_i32_staticarray_f32_to_bytes(map: Map<i32, StaticArray<f32>>
     let shift = 12;
     for(let i = 0, len = keys.length; i < len; i++){
         //at first write the key
-        view.setInt32(shift, unchecked(keys[i]));
+        view.setInt32(shift, keys[i]);
         //next write the whole array bytes
-        let array = unchecked(values[i]);
+        let array = values[i];
         let a_bytes = staticarray_f32_to_bytes(array);
         to_return.set(a_bytes, shift + 4);
 
@@ -339,7 +345,7 @@ export function staticarray_staticarray_i32_to_bytes(array: StaticArray<StaticAr
     view.setInt32(8, array.length);
     let shift = 12;
     for(let i = 0, len = array.length; i < len; i++){
-        let a = unchecked(array[i]);
+        let a = array[i];
         let a_bytes = staticarray_i32_to_bytes(a);
         const a_bytes_length = staticarray_i32_bytes_length(a);
         to_return.set(a_bytes, shift);
@@ -407,7 +413,7 @@ export function float32array_from_bytes(bytes: Uint8Array): Float32Array {
             //read elements
             for(let i = 0; i < count; i++) {
                 let v = view.getFloat32(12 + 4*i);
-                unchecked(to_return[i] = v);
+                to_return[i] = v;
             }
 
             return to_return;
@@ -489,7 +495,7 @@ export function staticarray_i32_from_bytes(bytes: Uint8Array): StaticArray<i32> 
             let count = view.getInt32(8);
             let to_return = new StaticArray<i32>(count);
             for(let i = 0; i < count; i++) {
-                unchecked(to_return[i] = view.getInt32(12 + 4*i));
+                to_return[i] = view.getInt32(12 + 4*i);
             }
             return to_return;
         }
@@ -506,7 +512,7 @@ export function staticarray_i32_from_bytes_expr(view: DataView, start: u32): Sta
     const count = view.getInt32(start + 8);
     let to_return = new StaticArray<i32>(count);
     for(let i = 0; i < count; i++) {
-        unchecked(to_return[i] = view.getInt32(start + 12 + 4*i));
+        to_return[i] = view.getInt32(start + 12 + 4*i);
     }
     return to_return;
 }
@@ -520,7 +526,7 @@ export function staticarray_f32_from_bytes(bytes: Uint8Array): StaticArray<f32> 
             let count = view.getInt32(8);
             let to_return = new StaticArray<f32>(count);
             for(let i = 0; i < count; i++) {
-                unchecked(to_return[i] = view.getFloat32(12 + 4*i));
+                to_return[i] = view.getFloat32(12 + 4*i);
             }
             return to_return;
         }
@@ -537,7 +543,7 @@ export function staticarray_f32_from_bytes_expr(view: DataView, start: u32): Sta
     const count = view.getInt32(start + 8);
     let to_return = new StaticArray<f32>(count);
     for(let i = 0; i < count; i++) {
-        unchecked(to_return[i] = view.getFloat32(start + 12 + 4*i));
+        to_return[i] = view.getFloat32(start + 12 + 4*i);
     }
     return to_return;
 }
@@ -551,7 +557,7 @@ export function staticarray_bool_from_bytes(bytes: Uint8Array): StaticArray<bool
             let count = view.getInt32(8);
             let to_return = new StaticArray<bool>(count);
             for(let i = 0; i < count; i++) {
-                unchecked(to_return[i] = view.getUint8(12 + i) == 1);
+                to_return[i] = view.getUint8(12 + i) == 1;
             }
             return to_return;
         }
@@ -709,7 +715,7 @@ export function staticarray_staticarray_i32_from_bytes(bytes: Uint8Array): Stati
             for(let i = 0; i < count; i++) {
                 const a_bytes_length = view.getInt32(shift + 4);
                 let a = staticarray_i32_from_bytes(bytes.slice(shift, shift + a_bytes_length));
-                unchecked(to_return[i] = a);
+                to_return[i] = a;
                 shift += a_bytes_length;
             }
             return to_return;
@@ -730,7 +736,7 @@ export function staticarray_staticarray_i32_from_bytes_expr(view: DataView, star
     for(let i = 0; i < count; i++) {
         const a_bytes_length = view.getInt32(shift + 4);
         let a = staticarray_i32_from_bytes_expr(view, shift);
-        unchecked(to_return[i] = a);
+        to_return[i] = a;
         shift += a_bytes_length;
     }
     return to_return;

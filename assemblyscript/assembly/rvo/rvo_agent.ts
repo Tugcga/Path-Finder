@@ -210,8 +210,8 @@ export class Agent{
         this.m_time_horizon_obst = time_horizon_obst;
         this.m_radius = radius;
 
-        this.m_agent_neighbors_values = new StaticArray<f32>(this.m_max_neighbors);
-        this.m_agent_neighbors_agents = new StaticArray<Agent>(this.m_max_neighbors);
+        this.m_agent_neighbors_values = new StaticArray<f32>(max_neighbors);
+        this.m_agent_neighbors_agents = new StaticArray<Agent>(max_neighbors);
         this.m_agent_neighbors_count = 0;
 
         this.m_obstacle_neighbors_values = new List<f32>();

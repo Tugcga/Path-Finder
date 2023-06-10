@@ -39,6 +39,10 @@ export class Line{
     get_direction(): Vector2{
         return this.m_direction;
     }
+
+    toString(): string {
+        return "[" + this.m_point.toString() + ", " + this.m_direction.toString() + "]";
+    }
 }
 
 export class Vector2 extends Serializable{
