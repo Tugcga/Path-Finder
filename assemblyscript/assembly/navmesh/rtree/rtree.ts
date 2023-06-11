@@ -382,6 +382,7 @@ export class RTree extends Serializable {
     find_intersection_t(start_x: f32, start_y: f32, finish_x: f32, finish_y: f32): f32 {
         const edge_rect = new Rectangle(Mathf.min(start_x, finish_x), Mathf.max(start_y, finish_y),
                                         Mathf.max(start_x, finish_x), Mathf.min(start_y, finish_y));
+
         const polygons = this.range_search(edge_rect);
         const poly_count = polygons.length;
         var closed_t: f32 = 1.0;
@@ -409,17 +410,24 @@ export class RTree extends Serializable {
 
                     if (Mathf.abs(denum) >= Mathf.abs(num)) {
                         const t = num / denum;
-                        // calc t for the polygon edge
-                        const line_num = start_y - line_start_y + t * (finish_y - start_y);
-                        const line_denum = line_end_y - line_start_y;
-                        if (Mathf.abs(line_denum) >= Mathf.abs(line_num)) {
-                            const line_t = line_num / line_denum;
 
-                            if (line_t > 0.0 && line_t < 1.0) {
-                                // both t and line_t are inside (0, 1), so, valid intersection
-                                if (t > 0.0 && t < closed_t) {
-                                    closed_t = t;
-                                }
+                        // calc the point in the edge
+                        const p_x = start_x + t * (finish_x - start_x);
+                        const p_y = start_y + t * (finish_y - start_y);
+
+                        // calculate two vectors from in_edge endpoints to this point
+                        const line_start_to_point_x = p_x - line_start_x;
+                        const line_start_to_point_y = p_y - line_start_y;
+
+                        const line_end_to_point_x = p_x - line_end_x;
+                        const line_end_to_point_y = p_y - line_end_y;
+
+                        // calculate dot product of these two vectors
+                        const d = line_start_to_point_x * line_end_to_point_x + line_start_to_point_y * line_end_to_point_y;
+                        if (d < 0.0) {
+                            // point inside the interval
+                            if (t >= 0.0 && t < closed_t) {
+                                closed_t = t;
                             }
                         }
                     }
@@ -460,17 +468,24 @@ export class RTree extends Serializable {
 
                     if (Mathf.abs(denum) >= Mathf.abs(num)) {
                         const t = num / denum;
-                        // calc t for the polygon edge
-                        const line_num = edge.start_y() - line_start_y + t * edge.to_y();
-                        const line_denum = line_end_y - line_start_y;
-                        if (Mathf.abs(line_denum) >= Mathf.abs(line_num)) {
-                            const line_t = line_num / line_denum;
 
-                            if (line_t > 0.0 && line_t < 1.0) {
-                                // both t and line_t are inside (0, 1), so, valid intersection
-                                if (t > 0.0 && t < closed_t) {
-                                    closed_t = t;
-                                }
+                        // calc the point in the edge
+                        const p_x = start_x + t * (finish_x - start_x);
+                        const p_y = start_y + t * (finish_y - start_y);
+
+                        // calculate two vectors from in_edge endpoints to this point
+                        const line_start_to_point_x = p_x - line_start_x;
+                        const line_start_to_point_y = p_y - line_start_y;
+
+                        const line_end_to_point_x = p_x - line_end_x;
+                        const line_end_to_point_y = p_y - line_end_y;
+
+                        // calculate dot product of these two vectors
+                        const d = line_start_to_point_x * line_end_to_point_x + line_start_to_point_y * line_end_to_point_y;
+                        if (d < 0.0) {
+                            // point inside the interval
+                            if (t >= 0.0 && t < closed_t) {
+                                closed_t = t;
                             }
                         }
                     }
