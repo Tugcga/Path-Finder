@@ -7,6 +7,8 @@ import { Serializable, SD_TYPE,
          bool_bytes_length,
          bool_to_bytes } from "../../common/binary_io";
 
+const EPSILON: f32 = 0.0001;
+
 export class RTree extends Serializable {
     private m_max_keys_per_node: u32 = 0;
     private m_min_keys_per_node: u32 = 0;
@@ -379,7 +381,7 @@ export class RTree extends Serializable {
     }
 
     // return t-parameter of the point in the input edge, where it intersects with polygons in the tree
-    find_intersection_t(start_x: f32, start_y: f32, finish_x: f32, finish_y: f32): f32 {
+    find_intersection_t(start_x: f32, start_y: f32, finish_x: f32, finish_y: f32, ignore_back_side: bool = false): f32 {
         const edge_rect = new Rectangle(Mathf.min(start_x, finish_x), Mathf.max(start_y, finish_y),
                                         Mathf.max(start_x, finish_x), Mathf.min(start_y, finish_y));
 
@@ -402,32 +404,50 @@ export class RTree extends Serializable {
                     const in_edge_x = line_end_x - line_start_x;
                     const in_edge_y = line_end_y - line_start_y;
 
-                    const denum = (finish_x - start_x) * in_edge_y - (finish_y - start_y) * in_edge_x;
+                    var is_process = true;
+                    if (ignore_back_side) {
+                        // check is input edge goes from negative side of the polygon line
+                        // if so, ignore this line
+                        const in_edge_length = Mathf.sqrt(in_edge_x * in_edge_x + in_edge_y * in_edge_y);
+                        if (in_edge_length > EPSILON) {
+                            const in_edge_normal_x = in_edge_y / in_edge_length;
+                            const in_edge_normal_y = -1.0 * in_edge_x / in_edge_length;
 
-                    const to_start_x = line_start_x - start_x;
-                    const to_start_y = line_start_y - start_y;
-                    const num = in_edge_y * to_start_x - in_edge_x * to_start_y;
+                            const dot_with_normal = (finish_x - start_x) * in_edge_normal_x + (finish_y - start_y) * in_edge_normal_y;
+                            if (dot_with_normal > 0.0) {
+                                is_process = false;
+                            }
+                        }
+                    }
 
-                    if (Mathf.abs(denum) >= Mathf.abs(num)) {
-                        const t = num / denum;
+                    if (is_process) {
+                        const denum = (finish_x - start_x) * in_edge_y - (finish_y - start_y) * in_edge_x;
 
-                        // calc the point in the edge
-                        const p_x = start_x + t * (finish_x - start_x);
-                        const p_y = start_y + t * (finish_y - start_y);
+                        const to_start_x = line_start_x - start_x;
+                        const to_start_y = line_start_y - start_y;
+                        const num = in_edge_y * to_start_x - in_edge_x * to_start_y;
 
-                        // calculate two vectors from in_edge endpoints to this point
-                        const line_start_to_point_x = p_x - line_start_x;
-                        const line_start_to_point_y = p_y - line_start_y;
+                        if (Mathf.abs(denum) >= Mathf.abs(num)) {
+                            const t = num / denum;
 
-                        const line_end_to_point_x = p_x - line_end_x;
-                        const line_end_to_point_y = p_y - line_end_y;
+                            // calc the point in the edge
+                            const p_x = start_x + t * (finish_x - start_x);
+                            const p_y = start_y + t * (finish_y - start_y);
 
-                        // calculate dot product of these two vectors
-                        const d = line_start_to_point_x * line_end_to_point_x + line_start_to_point_y * line_end_to_point_y;
-                        if (d < 0.0) {
-                            // point inside the interval
-                            if (t >= 0.0 && t < closed_t) {
-                                closed_t = t;
+                            // calculate two vectors from in_edge endpoints to this point
+                            const line_start_to_point_x = p_x - line_start_x;
+                            const line_start_to_point_y = p_y - line_start_y;
+
+                            const line_end_to_point_x = p_x - line_end_x;
+                            const line_end_to_point_y = p_y - line_end_y;
+
+                            // calculate dot product of these two vectors
+                            const d = line_start_to_point_x * line_end_to_point_x + line_start_to_point_y * line_end_to_point_y;
+                            if (d < 0.0) {
+                                // point inside the interval
+                                if (t >= 0.0 && t < closed_t) {
+                                    closed_t = t;
+                                }
                             }
                         }
                     }
@@ -440,60 +460,13 @@ export class RTree extends Serializable {
 
     // if there are no intersections, return the end point of the edge
     find_intersection(edge: Edge): StaticArray<f32> {
-        // find polygons within edge rectangle
-        const polygons = this.range_search(edge.get_containing_rectangle(false));
-        const poly_count = polygons.length;
-        var closed_t: f32 = 1.0;
-        for (let i = 0; i < poly_count; i++) {
-            const polygon = polygons[i];
-            const corners = polygon.corners();
-            if (corners > 1) {  // ignore points
-                const lines_count = corners == 2 ? 1 : corners;
-                const polygon_coordinates = polygon.coordinates();
-                const coordinates_count = polygon_coordinates.length;
-                for (let line_index = 0; line_index < lines_count; line_index++) {
-                    const line_start_x = polygon_coordinates[2*line_index];
-                    const line_start_y = polygon_coordinates[2*line_index + 1];
-                    const line_end_x = polygon_coordinates[(2*line_index + 2) % coordinates_count];
-                    const line_end_y = polygon_coordinates[(2*line_index + 3) % coordinates_count];
+        const start_x = edge.start_x();
+        const start_y = edge.start_y();
+        const finish_x = edge.finish_x();
+        const finish_y = edge.finish_y();
 
-                    const in_edge_x = line_end_x - line_start_x;
-                    const in_edge_y = line_end_y - line_start_y;
-
-                    const denum = edge.to_x() * in_edge_y - edge.to_y() * in_edge_x;
-
-                    const to_start_x = line_start_x - edge.start_x();
-                    const to_start_y = line_start_y - edge.start_y();
-                    const num = in_edge_y * to_start_x - in_edge_x * to_start_y;
-
-                    if (Mathf.abs(denum) >= Mathf.abs(num)) {
-                        const t = num / denum;
-
-                        // calc the point in the edge
-                        const p_x = start_x + t * (finish_x - start_x);
-                        const p_y = start_y + t * (finish_y - start_y);
-
-                        // calculate two vectors from in_edge endpoints to this point
-                        const line_start_to_point_x = p_x - line_start_x;
-                        const line_start_to_point_y = p_y - line_start_y;
-
-                        const line_end_to_point_x = p_x - line_end_x;
-                        const line_end_to_point_y = p_y - line_end_y;
-
-                        // calculate dot product of these two vectors
-                        const d = line_start_to_point_x * line_end_to_point_x + line_start_to_point_y * line_end_to_point_y;
-                        if (d < 0.0) {
-                            // point inside the interval
-                            if (t >= 0.0 && t < closed_t) {
-                                closed_t = t;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        return StaticArray.fromArray<f32>([edge.x(closed_t), edge.y(closed_t)]);
+        const t = find_intersection_t(start_x, start_y, finish_x, finish_y);
+        return StaticArray.fromArray<f32>([edge.x(t), edge.y(t)]);
     }
 
     to_bytes(): Uint8Array {
