@@ -7,6 +7,7 @@ BVH_AABB_DELTA = 0.5
 class NavmeshBVH:
     '''Class for the node int bvh-tree
     '''
+
     def __init__(self, nodes: List[NavmeshNode]):
         '''Create one node (and call recursive building all children nodes) from array of NavmeshNodes
 
@@ -110,7 +111,7 @@ class NavmeshBVH:
 
         Input:
             point - 3-triple (x, y, z)
-        
+
         Output:
             NavmeshNode or None
         '''

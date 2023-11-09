@@ -85,7 +85,7 @@ class NavmeshNode:
             # if dot-product with normal in the vertex < 0, then point outside the polygon
             vector: Tuple[float, float, float] = self._cross(v[0] - u[0], v[1] - u[1], v[2] - u[2], point[0] - u[0], point[1] - u[1], point[2] - u[2])
             d: float = vector[0] * self._vertex_normals[i][0] + vector[1] * self._vertex_normals[i][1] + vector[2] * self._vertex_normals[i][2]
-            if d < 0.0:
+            if d < -0.00001:
                 return False
         return True
 

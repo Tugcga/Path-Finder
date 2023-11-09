@@ -1,8 +1,8 @@
 from typing import List, Tuple, Optional
-import math
 from pathfinder.navmesh.navmesh_graph import NavmeshGraph
 from pathfinder.navmesh.navmesh_node import NavmeshNode
 from pathfinder.navmesh.navmesh_bvh import NavmeshBVH
+from pathfinder.navmesh.navmesh_triangle import TrianglesBVH, polygons_to_triangles
 
 
 class Navmesh:
@@ -47,7 +47,7 @@ class Navmesh:
         # define groups
         for node in self._nodes:
             g: int = node.get_group()
-            if g  == -1:
+            if g == -1:
                 # if we get the first polygon with undefined group
                 new_group: List[int] = []  # start new group array
                 new_index: int = len(self._groups)  # generate the next group index
@@ -77,6 +77,10 @@ class Navmesh:
         # build bvh
         self._bvh: NavmeshBVH = NavmeshBVH(self._nodes)
 
+        # build triangles bvh
+        triangles = polygons_to_triangles(vertices, polygons)
+        self._triangles_bvh: TrianglesBVH = TrianglesBVH(triangles)
+
     def get_groups_count(self) -> int:
         '''Return the number of polygon groups (connected components) in the navigation mesh
         '''
@@ -98,6 +102,20 @@ class Navmesh:
         '''return node, close to the given point, or None, if it outside of the navmesh
         '''
         return self._bvh.sample(position)
+
+    def sample(self, point: Tuple[float, float, float], is_slow: bool = False) -> Optional[Tuple[float, float, float]]:
+        '''return coordinates of the point inside navmesh, closest to the input one
+        if it fails to find the closest point, return None
+
+        Input:
+            point - coordinates of the input point
+            is_slow - set True to find closest point in all triangles of the navmesh,
+                      set False to use BVH and skip triangles in bounding boxes far away from the input point
+
+        Output:
+            coordinates of the closest point or None
+        '''
+        return self._triangles_bvh.sample(point, is_slow)
 
     def search_path(self, start: Tuple[float, float, float], finish: Tuple[float, float, float]) -> List[Tuple[float, float, float]]:
         # find nodes indexes for start and end point

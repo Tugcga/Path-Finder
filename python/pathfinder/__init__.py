@@ -76,7 +76,7 @@ def read_from_binary(file_path: str) -> Tuple[List[Tuple[float, float, float]], 
             if value_float == float("inf"):
                 is_finish_sizes = True
             else:
-                polygons.append(polygons_indexes[index:index+value])
+                polygons.append(polygons_indexes[index:index + value])
                 index += value
 
     return (vertices, polygons)
@@ -96,7 +96,7 @@ def read_from_text(file_path: str) -> Tuple[List[Tuple[float, float, float]], Li
             verts_count = len(vertices_raw) // 3
             vertices = []
             for i in range(verts_count):
-                vertices.append((vertices_raw[3*i], vertices_raw[3*i + 1], vertices_raw[3*i + 2]))
+                vertices.append((vertices_raw[3 * i], vertices_raw[3 * i + 1], vertices_raw[3 * i + 2]))
 
             i = 0
             polygons = []
@@ -113,8 +113,9 @@ def read_from_text(file_path: str) -> Tuple[List[Tuple[float, float, float]], Li
 class PathFinder(object):
     '''Main class for pathfinding process
     '''
-    def __init__(self, 
-                 vertices: Optional[List[Tuple[float, float, float]]] = None, 
+
+    def __init__(self,
+                 vertices: Optional[List[Tuple[float, float, float]]] = None,
                  polygons: Optional[List[List[int]]] = None,
                  neighbor_dist: float = 1.5,
                  max_neighbors: int = 5,
@@ -124,7 +125,8 @@ class PathFinder(object):
                  agent_radius: float = 0.2,
                  update_path_find: float = 1.0,
                  continuous_moving: bool = False,
-                 move_agents: bool = True):
+                 move_agents: bool = True,
+                 snap_to_navmesh: bool = False):
         '''Init pathfinder object by setting vertices and polygons of the navmesh
         If vertices or polygons are not defined, then navigation mesh is not created. In this case you can only simulate RVO on infinite plane without obstacles
 
@@ -138,6 +140,7 @@ class PathFinder(object):
             update_path_find - how often refind shortest path in navmesh for active agents (mesured in seconds)
             continuous_moving - if True then agents always move to destination point
             move_agents - if True then move agents in RVO algorithm, if False then only calulate velocities
+            snap_to_navmesh - if True then calculate closest position on the navmesh for each agent and move it to this position
 
         Example of the simple square grid with two 4-sided polygons
             vertices = [(1.0, 0.0, 1.0), (-1.0, 0.0, 1.0), (-1.0, 0.0, -1.0), (1.0, 0.0, -1.0), (0.0, 0.0, 1.0), (0.0, 0.0, -1.0)]
@@ -207,6 +210,7 @@ class PathFinder(object):
         self._update_path_find: float = update_path_find
         self._continuous_moving: bool = continuous_moving
         self._move_agents: bool = move_agents
+        self._snap_to_navmesh: bool = snap_to_navmesh
         self._last_path_find_update: float = time.time()
         # create separate simulator for each group
         self._simulators = []
@@ -472,6 +476,33 @@ class PathFinder(object):
         # simulate in each group
         for sim in self._simulators:
             rvo.simulate(sim, delta_time, self._move_agents)
+
+        if self._snap_to_navmesh and self._navmesh:
+            for agent_index, agent_id in enumerate(self._agents_id):
+                group_index = self._agents_group[agent_index]
+                sim = self._simulators[group_index]
+                agent_in_group_index = self._get_agent_group_index(agent_id, self._agents_group_id[group_index])
+                agent_position = rvo.get_agent_position(sim, agent_in_group_index)  # return 2d-position
+                # sample navmesh
+                # before we should find proper y-coordinate of the agent
+                # from rvo we obtain only 2d-position
+
+                # TODO: may be we should store the proportion of the path segment for each agent
+                # and then find the proper height by linear interpolation between height of the path segment endpoints
+
+                # use height of the end point of the current segment in the path
+                agent_heights = self._agents_height[agent_index]
+                agent_target = self._agents_target_index[agent_index]
+                if agent_target < len(agent_heights):
+                    y_height = agent_heights[agent_target]
+                else:
+                    y_height = 0.0
+                sample_position = self._navmesh.sample((agent_position[0], y_height, agent_position[1]))
+                if sample_position:
+                    # sample is not None
+                    # set agent position
+                    rvo.set_agent_position(sim, agent_in_group_index, (sample_position[0], sample_position[2]))
+
         self._last_update_time = t
 
     def get_all_agents_positions(self) -> List[Tuple[float, float]]:
@@ -556,3 +587,20 @@ class PathFinder(object):
             return [start, finish]
         else:
             return self._navmesh.search_path(start, finish)
+
+    def sample(self, point: Tuple[float, float, float], is_slow: bool = False) -> Optional[Tuple[float, float, float]]:
+        '''return coordinates of the point inside navmesh (if it presented), closest to the input one
+        if it fails to find the closest point or the navmesh is not initialized, return None
+
+        Input:
+            point - coordinates of the input point
+            is_slow - set True to find closest point in all triangles of the navmesh,
+                      set False to use BVH and skip triangles in bounding boxes far away from the input point
+
+        Output:
+            coordinates of the closest point or None
+        '''
+        if self._navmesh:
+            return self._navmesh.sample(point, is_slow)
+        else:
+            return None
