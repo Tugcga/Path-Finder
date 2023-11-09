@@ -39,9 +39,10 @@ class SelectColorsWidget(QtWidgets.QWidget):
                         "back_light_lines": (161, 158, 156, 255),
                         "poly_border": (0, 125, 0, 64),
                         "poly_int": (102, 198, 102, 120),
-                        "obst" : (220, 16, 16, 120),
+                        "obst": (220, 16, 16, 120),
                         "path": (247, 220, 112, 255),
-                        "agents": (65, 65, 128, 125)}
+                        "agents": (65, 65, 128, 125),
+                        "cursor": (214, 68, 15, 255)}
         self._sizes = {"point_size": 3, "path_size": 2, "dark_grid_size": 80, "light_grid_size": 20}
 
         self._layout.addRow(QtWidgets.QLabel("Background"), ColorWidget(self._colors["background"], self.m_update_background))
@@ -52,6 +53,7 @@ class SelectColorsWidget(QtWidgets.QWidget):
         self._layout.addRow(QtWidgets.QLabel("Obstacle Line"), ColorWidget(self._colors["obst"], self.m_update_obst))
         self._layout.addRow(QtWidgets.QLabel("Points and Path"), ColorWidget(self._colors["path"], self.m_update_path))
         self._layout.addRow(QtWidgets.QLabel("Agents"), ColorWidget(self._colors["agents"], self.m_update_agents))
+        self._layout.addRow(QtWidgets.QLabel("Cursor"), ColorWidget(self._colors["cursor"], self.m_update_cursor))
 
         self.update_colors()
 
@@ -64,6 +66,7 @@ class SelectColorsWidget(QtWidgets.QWidget):
                           obst=self._colors["obst"],
                           path=self._colors["path"],
                           agents=self._colors["agents"],
+                          cursor=self._colors["cursor"],
                           point_size=self._sizes["point_size"],
                           path_size=self._sizes["path_size"],
                           dark_grid_size=self._sizes["dark_grid_size"],
@@ -99,4 +102,8 @@ class SelectColorsWidget(QtWidgets.QWidget):
 
     def m_update_agents(self, color):
         self._colors["agents"] = color
+        self.update_colors()
+
+    def m_update_cursor(self, color):
+        self._colors["cursor"] = color
         self.update_colors()

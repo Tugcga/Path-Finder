@@ -1,8 +1,6 @@
 from PySide6 import QtCore
-import time, math
-from typing import Tuple, List
-import pathfinder.pyrvo as rvo
-from explorer_app.utilities import get_unit_vector
+import time
+
 
 class SimulateThread(QtCore.QThread):
     def __init__(self, pathfinder, host_widget, delta_time: float = 0.1):
@@ -11,7 +9,6 @@ class SimulateThread(QtCore.QThread):
         self._is_active = False
         self._delta_time = delta_time
         super(SimulateThread, self).__init__()
-
 
     def run(self):
         while True:

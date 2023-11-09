@@ -8,6 +8,7 @@ from pathfinder import PathFinder
 class NavmeshExplorerMain(QtWidgets.QWidget):
     def __init__(self):
         super(NavmeshExplorerMain, self).__init__()
+        self.setMouseTracking(True)
         self._is_active = False
         self._simulate_thread = None
         self._left_point = None
@@ -23,6 +24,7 @@ class NavmeshExplorerMain(QtWidgets.QWidget):
         self._thread_manager = QtCore.QThreadPool()
         self._agent_positions = []
         self._agent_paths = []
+        self._mouse_pointer = None
 
     def set_navmesh_text_data(self, file_path):
         self._left_point = None
@@ -32,7 +34,13 @@ class NavmeshExplorerMain(QtWidgets.QWidget):
 
         self._navmesh_vertices, self._navmesh_polygons = read_level_data(file_path)
         # init navmesh by this data
-        self._path_finder = PathFinder(self._navmesh_vertices, self._navmesh_polygons, time_horizon=0.5, time_horizon_obst=0.025, continuous_moving=False, move_agents=True)
+        self._path_finder = PathFinder(self._navmesh_vertices,
+                                       self._navmesh_polygons,
+                                       time_horizon=0.5,
+                                       time_horizon_obst=0.025,
+                                       continuous_moving=False,
+                                       move_agents=True,
+                                       snap_to_navmesh=True)
         self._path_finder_obstacles = self._path_finder.get_obstacles_points()
         if len(self._navmesh_polygons) > 0:
             # find center of the points and it bounding box
@@ -86,7 +94,7 @@ class NavmeshExplorerMain(QtWidgets.QWidget):
             self._simulate_thread.terminate()
             self._simulate_thread.wait()
 
-    def set_colors(self, background, back_dark_lines, back_light_lines, poly_border, poly_int, obst, path, agents, point_size, path_size, dark_grid_size, light_grid_size):
+    def set_colors(self, background, back_dark_lines, back_light_lines, poly_border, poly_int, obst, path, agents, cursor, point_size, path_size, dark_grid_size, light_grid_size):
         # all colors are 4-tuples
         self._background = QtGui.QColor(*background)
         self._back_dark_lines = QtGui.QColor(*back_dark_lines)
@@ -96,6 +104,7 @@ class NavmeshExplorerMain(QtWidgets.QWidget):
         self._obst_color = QtGui.QColor(*obst)
         self._path_color = QtGui.QColor(*path)
         self._agents_color = QtGui.QColor(*agents)
+        self._cursor_color = QtGui.QColor(*cursor)
         agents_center = [v for v in agents]
         agents_center[3] = 255
         self._agents_center_color = QtGui.QColor(*agents_center)
@@ -105,6 +114,9 @@ class NavmeshExplorerMain(QtWidgets.QWidget):
         self._light_grid_size = light_grid_size
 
         self.repaint()
+
+    def mouseMoveEvent(self, event):
+        self._mouse_pointer = event.position()
 
     def mousePressEvent(self, event):
         if self._is_active and self._tfm is not None:
@@ -239,3 +251,16 @@ class NavmeshExplorerMain(QtWidgets.QWidget):
             painter.setBrush(QtGui.QBrush(self._agents_center_color))
             for a_position in self._agent_positions:
                 painter.drawEllipse(QtCore.QPoint(*self._tfm.transform(a_position)), 3, 3)
+
+            # draw cursor point
+            if self._mouse_pointer and self._tfm and self._path_finder:
+                # convert pointer to the world space
+                world_pointer = self._tfm.transform_inverse((self._mouse_pointer.x(), self._mouse_pointer.y()))
+                # find closest position on navmesh
+                s = self._path_finder.sample((world_pointer[0], 0.0, world_pointer[1]))
+                if s is not None:
+                    # conver sample back to canvas position
+                    s_canvas = QtCore.QPoint(*self._tfm.transform((s[0], s[2])))
+                    painter.setPen(QtGui.QPen(self._cursor_color))
+                    painter.setBrush(QtGui.QBrush(self._cursor_color))
+                    painter.drawEllipse(s_canvas, 3, 3)
