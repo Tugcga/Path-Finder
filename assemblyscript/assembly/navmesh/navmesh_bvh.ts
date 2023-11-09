@@ -876,7 +876,7 @@ export class TrianglesBVH extends Serializable {
                             s = 0;
                         }
                     } else if (t < 0) {
-                        if (this.m_triangle_data[9] + d > this.m_triangle_data[10] + e) {
+                        if (triangle_data[9] + d > triangle_data[10] + e) {
                             let numer = triangle_data[11] + e - triangle_data[10] - d;
                             let denom = triangle_data[9]  - 2 * triangle_data[10] + triangle_data[11];
                             s = clamp(numer / denom);
@@ -887,7 +887,7 @@ export class TrianglesBVH extends Serializable {
                         }
                     } else {
                         let numer = triangle_data[11] + e - triangle_data[10] - d;
-                        let denom = triangle_data[9]  - 2 * triangle_data[10] + triangle_data[11];
+                        let denom = triangle_data[9] - 2 * triangle_data[10] + triangle_data[11];
                         s = clamp(numer / denom);
                         t = 1.0 - s;
                     }
