@@ -82,6 +82,7 @@ For using agents collision avoidance it needs more detail setup. When creating `
 * ```update_path_find``` - how often (the interval in seconds) the system recalculate path for agents
 * ```continuous_moving``` - should agents move after they achieve the target point or not
 * ```move_agents``` - if ```True``` then the system move agent by internal algorithm, in other case it only calculate velocities
+* ```snap_to_navmesh``` - if ```True``` then snap agents to the navigation mesh during the simulation
 
 How the agents collision avoidance works:
 * If ```vertices``` or ```polygons``` arrays are ```None``` then the system skip building navigation mesh and in this case it allows to simulate agents in infinite 2d-plane
@@ -186,10 +187,11 @@ pathfinder = PathFinder(vertices: Optional[List[Tuple[float, float, float]]] = N
 						agent_radius: float = 0.2,
 						update_path_find: float = 1.0,
 						continuous_moving: bool = False,
-						move_agents: bool = True)
+						move_agents: bool = True,
+						snap_to_navmesh: bool = False)
 ```
 
-Create a new pathfinder object. ```vertices``` and ```polygons``` used for navigation mesh and obstacles in RVO. Other parameters used for RVO. If ```continuous_moving``` is ```True``` then all agents always try to go to the destination points. Even the are already achieve it. If ```move_agents``` is ```False``` then each ```update()``` method call does not change agents positions, but only recalculate an optimal velocities.
+Create a new pathfinder object. ```vertices``` and ```polygons``` used for navigation mesh and obstacles in RVO. Other parameters used for RVO. If ```continuous_moving``` is ```True``` then all agents always try to go to the destination points. Even the are already achieve it. If ```move_agents``` is ```False``` then each ```update()``` method call does not change agents positions, but only recalculate an optimal velocities. If ```snap_to_navmesh``` is ```True``` then after each simulation step it check is agents placed on the navigation mesh. If someone is pushed from the navigation mesh, then it change it position to the closest point on the mesh.
 
 ```
 pathfinder.add_agent(position: Tuple[float, float, float], radius: float, speed: float)
@@ -281,3 +283,9 @@ pathfinder.search_path(start: Tuple[float, float, float], finish: Tuple[float, f
 ```
 
 Return shortest path between start and finish point in the navigation mesh. If navigation mesh is not defined, then return the straight segment between start and finish positions.
+
+```
+pathfinder.sample(point: Tuple[float, float, float], is_slow: bool = False)
+```
+
+Return the point on the navigation mesh, closest to the input point. if ```is_slow = True``` then check each triangles in the mesh and always return the answer. If ```is_slow = False``` then use more optimal approach and search closed triangles of the mesh in BVH. Return ```None``` if navmesh is not initialized or it fails to find the closest point.
