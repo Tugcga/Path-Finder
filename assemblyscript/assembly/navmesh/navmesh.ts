@@ -632,6 +632,10 @@ export class Navmesh extends Serializable {
         return this.m_triangles_bvh.sample(x, y, z);
     }
 
+    raycast(origin: StaticArray<f32>, direction: StaticArray<f32>): StaticArray<f32> {
+        return this.m_triangles_bvh.raycast(origin, direction);
+    }
+
     // input are cooridinates of the edge in 2d
     // output is a float from [0, 1], which define the intersection point in the edge
     // if there are no instersections with navmesh boundary, then return 1.0

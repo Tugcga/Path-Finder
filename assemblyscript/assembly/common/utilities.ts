@@ -6,7 +6,7 @@ export const RVO_EPSILON: f32 = 0.0001;
 export const RVO_INFINITY: f32 = <f32>Number.MAX_VALUE;
 
 export function log_message(message: string): void {
-
+    
 }
 
 export class Pair<T> extends Serializable {
@@ -229,4 +229,18 @@ export function arrays_eq(a: StaticArray<f32>, b: StaticArray<f32>): bool {
     }
 
     return true;
+}
+
+@inline
+export function cross(a_x: f32, a_y: f32, a_z: f32, 
+                      b_x: f32, b_y: f32, b_z: f32): StaticArray<f32> {
+    return [a_y * b_z - a_z * b_y,
+            a_z * b_x - a_x * b_z,
+            a_x * b_y - a_y * b_x];
+}
+
+@inline
+export function dot3(a_x: f32, a_y: f32, a_z: f32, 
+                     b_x: f32, b_y: f32, b_z: f32): f32 {
+    return a_x * b_x + a_y * b_y + a_z * b_z;
 }

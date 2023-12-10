@@ -26,6 +26,7 @@ python/level_two_zones.txt
 python/navmesh_test.py
 python/rvo_test.py
 python/baker_test.py
+python/test_write_text_to_binray.py
 assemblyscript/build
 assemblyscript/*.nm
 assemblyscript/build command.txt

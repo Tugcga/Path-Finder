@@ -117,6 +117,19 @@ class Navmesh:
         '''
         return self._triangles_bvh.sample(point, is_slow)
 
+    def raycast(self, origin: Tuple[float, float, float], direction: Tuple[float, float, float]) -> Optional[Tuple[float, float, float]]:
+        '''return coordinates of the intersection of the navigation mesh and the ray with a given origina and direction
+        if navmesh is not defined then return None
+
+        Input:
+            origin - coordinates of the point in the ray
+            direction - coordinates of the ray direction
+
+        Output:
+            coordinates of the intersection point or None, if the ray does not intersect the navigation mesh
+        '''
+        return self._triangles_bvh.raycast(origin, direction)
+
     def search_path(self, start: Tuple[float, float, float], finish: Tuple[float, float, float]) -> List[Tuple[float, float, float]]:
         # find nodes indexes for start and end point
         start_node: Optional[NavmeshNode] = self._bvh.sample(start)

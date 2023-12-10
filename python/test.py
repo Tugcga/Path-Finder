@@ -1,6 +1,6 @@
 import unittest
 
-from pathfinder.navmesh.navmesh_triangle import Triangle, TrianglesBVH, polygons_to_triangles
+from pathfinder.navmesh.navmesh_triangle import Triangle, TrianglesBVH, polygons_to_triangles, cross, dot
 from pathfinder.navmesh import Navmesh
 
 
@@ -66,6 +66,88 @@ class TestSampleNavmesh(unittest.TestCase):
 
         p1 = navmesh.sample((0.0, 0.0, 0.0))
         self.assertEqual(p1, None)
+
+
+class TestCross(unittest.TestCase):
+    def test_cross_01(self):
+        a = (1.0, 0.0, 0.0)
+        b = (0.0, 1.0, 0.0)
+        c = (0.0, 0.0, 1.0)
+        self.assertEqual(cross(a, b), c)
+
+    def test_cross_02(self):
+        a = (1.0, 2.0, 3.0)
+        b = (-1.0, 1.0, 2.0)
+        c = (1.0, -5.0, 3.0)
+        self.assertEqual(cross(a, b), c)
+
+
+class TestDot(unittest.TestCase):
+    def test_dot_01(self):
+        a = (1.0, 0.0, 0.0)
+        b = (0.0, 1.0, 0.0)
+        self.assertEqual(dot(a, b), 0.0)
+
+    def test_dot_02(self):
+        a = (1.0, 1.0, 2.0)
+        b = (2.0, 3.0, -1.0)
+        self.assertEqual(dot(a, b), 3.0)
+
+
+class TestTriangleRaycast(unittest.TestCase):
+    def test_raycast_01(self):
+        t = Triangle([(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)])
+        direction = (0.0, 0.0, -1.0)
+        origin = (0.0, 0.0, 1.0)
+        self.assertEqual(t.raycast(origin, direction), (0.0, 0.0, 0.0))
+
+    def test_raycast_02(self):
+        t = Triangle([(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)])
+        direction = (0.0, 0.0, -1.0)
+        origin = (1.0, 1.0, 1.0)
+        self.assertEqual(t.raycast(origin, direction), None)
+
+    def test_raycast_03(self):
+        t = Triangle([(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)])
+        direction = (0.0, 0.0, 1.0)
+        origin = (0.25, 0.25, -1.0)
+        self.assertEqual(t.raycast(origin, direction), (0.25, 0.25, 0.0))
+
+    def test_raycast_04(self):
+        t = Triangle([(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0)])
+        direction = (0.0, 0.0, 1.0)
+        origin = (0.25, 0.25, 1.0)
+        self.assertEqual(t.raycast(origin, direction), None)
+
+    def test_raycast_05(self):
+        t = Triangle([(2.0, 0.0, 0.0), (0.0, 2.0, 0.0), (1.0, 1.0, 4.0)])
+        direction = (1.0, 1.0, 0.0)
+        origin = (-1.0, -1.0, 1.0)
+        self.assertEqual(t.raycast(origin, direction), (1.0, 1.0, 1.0))
+
+    def test_raycast_06(self):
+        t = Triangle([(2.0, 0.0, 0.0), (0.0, 2.0, 0.0), (1.0, 1.0, 4.0)])
+        direction = (1.0, 5.0, 0.0)
+        origin = (-1.0, -1.0, 1.0)
+        self.assertEqual(t.raycast(origin, direction), None)
+
+
+class TestTrianglesBVHRaycast(unittest.TestCase):
+    def test_triangles_bvh_01(self):
+        triangles = [Triangle([(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 0.0, 1.0)]),
+                     Triangle([(1.0, 0.0, 0.0), (1.0, 0.0, 1.0), (0.0, 0.0, 1.0)])]
+        tree = TrianglesBVH(triangles)
+        origin = (0.5, 1.0, 0.5)
+        direction = (0.0, -1.0, 0.0)
+        self.assertEqual(tree.raycast(origin, direction), (0.5, 0.0, 0.5))
+
+    def test_triangles_bvh_02(self):
+        triangles = [Triangle([(0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 0.0, 1.0)]),
+                     Triangle([(1.0, 0.0, 0.0), (1.0, 0.0, 1.0), (0.0, 0.0, 1.0)])]
+        tree = TrianglesBVH(triangles)
+        origin = (-0.5, 1.0, 0.5)
+        direction = (0.0, -1.0, 0.0)
+        self.assertEqual(tree.raycast(origin, direction), None)
 
 
 if __name__ == "__main__":

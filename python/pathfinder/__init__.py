@@ -604,3 +604,19 @@ class PathFinder(object):
             return self._navmesh.sample(point, is_slow)
         else:
             return None
+
+    def raycast(self, origin: Tuple[float, float, float], direction: Tuple[float, float, float]) -> Optional[Tuple[float, float, float]]:
+        '''return coordinates of the intersection of the navigation mesh and the ray with a given origina and direction
+        if navmesh is not defined then return None
+
+        Input:
+            origin - coordinates of the point in the ray
+            direction - coordinates of the ray direction
+
+        Output:
+            coordinates of the intersection point or None, if the ray does not intersect the navigation mesh
+        '''
+        if self._navmesh:
+            return self._navmesh.raycast(origin, direction)
+        else:
+            return None

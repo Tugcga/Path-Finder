@@ -10,6 +10,36 @@ def clamp(a: float, min: float = 0.0, max: float = 1.0) -> float:
         return a
 
 
+def cross(a: Tuple[float, float, float], b: Tuple[float, float, float]) -> Tuple[float, float, float]:
+    return (a[1] * b[2] - a[2] * b[1],
+            a[2] * b[0] - a[0] * b[2],
+            a[0] * b[1] - a[1] * b[0])
+
+
+def dot(a: Tuple[float, float, float], b: Tuple[float, float, float]) -> Tuple[float, float, float]:
+    return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
+
+
+def is_intersect_aabb(origin: Tuple[float, float, float],
+                      direction: Tuple[float, float, float],
+                      aabb: Tuple[float, float, float, float, float, float]) -> bool:
+    for a in range(3):
+        min_a = aabb[a]
+        max_a = aabb[a + 3]
+        r_a = origin[a]
+        dir_a = direction[a]
+        if abs(dir_a) > 0.0001:
+            t0 = min((min_a - r_a) / dir_a,
+                     (max_a - r_a) / dir_a)
+            t1 = max((min_a - r_a) / dir_a,
+                     (max_a - r_a) / dir_a)
+            t_min = max(t0, 0.0)
+            t_max = t1
+            if t_max <= t_min:
+                return False
+    return True
+
+
 class Triangle:
     def __init__(self, vertices: List[Tuple[float, float, float]]):
         self._v0: Tuple[float, float, float] = vertices[0]
@@ -47,6 +77,36 @@ class Triangle:
         '''Return coordinates of the triangle center
         '''
         return self._center
+
+    def raycast(self, origin: Tuple[float, float, float], direction: Tuple[float, float, float]) -> Optional[Tuple[float, float, float]]:
+        '''Check is the ray intersects with the triangles
+
+        return None if there is no intersection
+        return (x, y, z) - coordinates of the intersection, if it non-empty
+        '''
+        p_vec = cross(self._e2, direction)
+        det = dot(p_vec, self._e1)
+        if abs(det) < 0.001:
+            return None
+
+        inv_det = 1.0 / det
+        t_vec = (origin[0] - self._v0[0], origin[1] - self._v0[1], origin[2] - self._v0[2])
+        u = dot(t_vec, p_vec) * inv_det
+        if u < 0 or u > 1:
+            return None
+
+        q_vec = cross(self._e1, t_vec)
+        v = dot(direction, q_vec) * inv_det
+        if v < 0 or u + v > 1:
+            return None
+
+        t = dot(self._e2, q_vec) * inv_det
+        if t < 0.0:
+            return None
+
+        return (origin[0] + t * direction[0],
+                origin[1] + t * direction[1],
+                origin[2] + t * direction[2])
 
     def get_closest_point(self, point: Tuple[float, float, float]) -> Tuple[float, float, float]:
         '''Return coordinates of the point inside triangle, closest to the input one
@@ -203,6 +263,39 @@ class TrianglesBVH:
                      b2: Tuple[float, float, float, float, float, float]) -> Tuple[float, float, float, float, float, float]:
         return (min(b1[0], b2[0]), min(b1[1], b2[1]), min(b1[2], b2[2]),
                 max(b1[3], b2[3]), max(b1[4], b2[4]), max(b1[5], b2[5]))
+
+    def raycast(self, origin: Tuple[float, float, float], direction: Tuple[float, float, float]) -> Optional[Tuple[float, float, float]]:
+        if is_intersect_aabb(origin, direction, self._aabb):
+            if self._triangle is not None:
+                return self._triangle.raycast(origin, direction)
+            else:
+                if self._left is not None and self._right is not None:
+                    left_raycast: Optional[Tuple[float, float, float]] = self._left.raycast(origin, direction)
+                    right_raycast: Optional[Tuple[float, float, float]] = self._right.raycast(origin, direction)
+                    if left_raycast is None:
+                        return right_raycast
+                    else:
+                        if right_raycast is None:
+                            return left_raycast
+                        else:
+                            # get distance from left and right points to the ray line
+                            left_dist_cross = cross((origin[0] - left_raycast[0], origin[1] - left_raycast[1], origin[2] - left_raycast[2]), direction)
+                            left_dist_sq = (left_dist_cross[0] * left_dist_cross[0] + left_dist_cross[1] * left_dist_cross[1] + left_dist_cross[2] * left_dist_cross[2]) / (direction[0] * direction[0] + direction[1] * direction[1] + direction[2] * direction[2])
+
+                            right_dist_cross = cross((origin[0] - right_raycast[0], origin[1] - right_raycast[1], origin[2] - right_raycast[2]), direction)
+                            right_dist_sq = (right_dist_cross[0] * right_dist_cross[0] + right_dist_cross[1] * right_dist_cross[1] + right_dist_cross[2] * right_dist_cross[2]) / (direction[0] * direction[0] + direction[1] * direction[1] + direction[2] * direction[2])
+
+                            if left_dist_sq < right_dist_sq:
+                                return left_raycast
+                            else:
+                                return right_raycast
+                else:
+                    if self._right is None:
+                        return self._left.raycast(origin, direction)
+                    else:
+                        return self._right.raycast(origin, direction)
+        else:
+            return None
 
     def sample(self, point: Tuple[float, float, float], is_slow=False) -> Optional[Tuple[float, float, float]]:
         '''Return coordinates of the point, closest to the input one

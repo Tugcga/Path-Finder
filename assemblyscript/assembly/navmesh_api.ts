@@ -49,6 +49,12 @@ export function navmesh_sample(navmesh: Navmesh, x: f32, y: f32, z: f32): Static
     return navmesh.sample(x, y, z);
 }
 
+export function navmesh_raycast(navmesh: Navmesh,
+                                origin_x: f32, origin_y: f32, origin_z: f32,
+                                direction_x: f32, direction_y: f32, direction_z: f32): StaticArray<f32> {
+    return navmesh.raycast([origin_x, origin_y, origin_z], [direction_x, direction_y, direction_z]);
+}
+
 export function navmesh_intersect_boundary(navmesh: Navmesh, start_x: f32, start_y: f32, finish_x: f32, finish_y: f32): StaticArray<f32> {
     const t = navmesh.intersect_boundary(start_x, start_y, finish_x, finish_y);
     return StaticArray.fromArray<f32>([start_x + t * (finish_x - start_x), start_y + t * (finish_y - start_y)]);

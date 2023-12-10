@@ -465,7 +465,7 @@ export class RTree extends Serializable {
         const finish_x = edge.finish_x();
         const finish_y = edge.finish_y();
 
-        const t = find_intersection_t(start_x, start_y, finish_x, finish_y);
+        const t = this.find_intersection_t(start_x, start_y, finish_x, finish_y);
         return StaticArray.fromArray<f32>([edge.x(t), edge.y(t)]);
     }
 

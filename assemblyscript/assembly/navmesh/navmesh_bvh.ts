@@ -1,5 +1,5 @@
 import { NavmeshNode } from "./navmesh_node";
-import { clamp, squared_len, log_message } from "../common/utilities";
+import { clamp, cross, dot3, squared_len, log_message } from "../common/utilities";
 import { Serializable, SD_TYPE, 
     bool_bytes_length, bool_to_bytes, bool_from_bytes,
     staticarray_f32_bytes_length, staticarray_f32_to_bytes, staticarray_f32_from_bytes, staticarray_f32_from_bytes_expr } from "../common/binary_io";
@@ -12,6 +12,29 @@ class AABB extends Serializable {
     x_max: f32 = 0.0;
     y_max: f32 = 0.0;
     z_max: f32 = 0.0;
+
+    raycast(origin: StaticArray<f32>, direction: StaticArray<f32>, t_min: f32 = 0.0, t_max: f32 = <f32>Number.MAX_VALUE): bool {
+        // inputs are arrays with three elements
+        // retun true if the ray intersects with aabb, in other case return false
+        for (let a = 0; a < 3; a++) {
+            const min_a = (a == 0 ? this.x_min : (a == 1 ? this.y_min : this.z_min));
+            const max_a = (a == 0 ? this.x_max : (a == 1 ? this.y_max : this.z_max));
+            const r_a = origin[a];
+            const dir_a = direction[a];
+            if (Mathf.abs(dir_a) > 0.0001) {
+                const t0 = Mathf.min((min_a - r_a) / dir_a,
+                                    (max_a - r_a) / dir_a);
+                const t1 = Mathf.max((min_a - r_a) / dir_a,
+                                    (max_a - r_a) / dir_a);
+                t_min = Mathf.max(t0, t_min);
+                t_max = Mathf.min(t1, t_max);
+                if (t_max <= t_min)
+                    return false;
+            }
+            
+        }
+        return true;
+    }
 
     toString(): string {
         return (
@@ -800,6 +823,90 @@ export class TrianglesBVH extends Serializable {
             y > aabb.y_min && y < aabb.y_max &&
             z > aabb.z_min && z < aabb.z_max
         );
+    }
+
+    raycast(origin: StaticArray<f32>, direction: StaticArray<f32>): StaticArray<f32> {
+        // return array with four values [x, y, z, w]
+        // w = 0 if the answer is invalid, no intersections
+        // w = 1 if there is an intersection
+        const local_aabb = this.m_aabb;
+        // prepare return buffer
+        const return_buffer = this.m_return_buffer;
+        return_buffer[0] = 0.0; return_buffer[1] = 0.0; return_buffer[2] = 0.0; return_buffer[3] = 0.0;
+        if (local_aabb.raycast(origin, direction)) {
+            if (this.m_is_object) {
+                // calculate intersection with triangle
+                let triangle_data = this.m_triangle_data;
+                const p_vec = cross(triangle_data[6], triangle_data[7], triangle_data[8],  // v0->v2
+                                    direction[0], direction[1], direction[2]);
+                const det = dot3(p_vec[0], p_vec[1], p_vec[2],
+                                 triangle_data[3], triangle_data[4], triangle_data[5]);  // v0->v1
+                if (Mathf.abs(det) < 0.001){
+                    return_buffer[3] = 0.0;
+                    return return_buffer;
+                }
+
+                const inv_det: f32 = 1.0 / det;
+                const t_vec_x = origin[0] - triangle_data[0];  // v0
+                const t_vec_y = origin[1] - triangle_data[1];
+                const t_vec_z = origin[2] - triangle_data[2];
+                const u = dot3(t_vec_x, t_vec_y, t_vec_z,
+                              p_vec[0], p_vec[1], p_vec[2]) * inv_det;
+                if (u < 0.0 || u > 1.0){
+                    return_buffer[3] = 0.0;
+                    return return_buffer;
+                }
+
+                const q_vec = cross(triangle_data[3], triangle_data[4], triangle_data[5],
+                                    t_vec_x, t_vec_y, t_vec_z);
+                const v = dot3(direction[0], direction[1], direction[2], 
+                               q_vec[0], q_vec[1], q_vec[2]) * inv_det;
+                if (v < 0.0 || u + v > 1.0){
+                    return_buffer[3] = 0.0;
+                    return return_buffer;
+                }
+
+                const t = dot3(triangle_data[6], triangle_data[7], triangle_data[8],
+                               q_vec[0], q_vec[1], q_vec[2]) * inv_det;
+                if (t < 0.0) {
+                    return_buffer[3] = 0.0;
+                    return return_buffer;
+                }
+
+                return_buffer[0] = origin[0] + t * direction[0];
+                return_buffer[1] = origin[1] + t * direction[1];
+                return_buffer[2] = origin[2] + t * direction[2];
+                return_buffer[3] = 1.0;
+                return return_buffer;
+            } else {
+                let left_raycast = this.m_left_child.raycast(origin, direction);
+                let right_raycast = this.m_right_child.raycast(origin, direction);
+
+                if (left_raycast[3] < 0.5) {
+                    return right_raycast;
+                } else {
+                    if (right_raycast[3] < 0.5) {
+                        return left_raycast;
+                    } else {
+                        const left_dist_cross = cross(origin[0] - left_raycast[0], origin[1] - left_raycast[1], origin[2] - left_raycast[2], 
+                                                      direction[0], direction[1], direction[2]);
+                        const left_dist_sq = (left_dist_cross[0] * left_dist_cross[0] + left_dist_cross[1] * left_dist_cross[1] + left_dist_cross[2] * left_dist_cross[2]) / (direction[0] * direction[0] + direction[1] * direction[1] + direction[2] * direction[2]);
+
+                        const right_dist_cross = cross(origin[0] - right_raycast[0], origin[1] - right_raycast[1], origin[2] - right_raycast[2], 
+                                                       direction[0], direction[1], direction[2]);
+                        const right_dist_sq = (right_dist_cross[0] * right_dist_cross[0] + right_dist_cross[1] * right_dist_cross[1] + right_dist_cross[2] * right_dist_cross[2]) / (direction[0] * direction[0] + direction[1] * direction[1] + direction[2] * direction[2]);
+
+                        if (left_dist_sq < right_dist_sq) {
+                            return left_raycast;
+                        } else {
+                            return right_raycast;
+                        }
+                    }
+                }
+            }
+        } else {
+            return return_buffer;
+        }
     }
 
     sample(x: f32, y: f32, z: f32): StaticArray<f32> {
