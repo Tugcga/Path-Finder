@@ -213,6 +213,10 @@ Contained in ```navmesh.wasm```, ```pathfinder.wasm``` and ```pathfinder_full.wa
 
 	Return the point in the navigation mesh, close to the input point with coordinates ```x, y, z```. Return 4-values array. If the forth value in the array is ```1.0```, then first three vales are coordinates of the closest point. If the forth values is ```0.0```, then there are no close points in the navigation mesh (and the first three values are wrong).
 
+* ```navmesh_raycast(navmesh: Navmesh, origin_x: f32, origin_y: f32, origin_z: f32, direction_x: f32, direction_y: f32, direction_z: f32): StaticArray<f32>```
+
+	Find the intersection of the polygons of the navmesh and the ray with input origin and direction. As previously, return 4-valued array, where the last value (with index ```3```) indicate correctness. If there are no intersection, return array with last value equal to ```0.0```.
+
 * ```navmesh_intersect_boundary(navmesh: Navmesh, start_x: f32, start_y: f32, finish_x: f32, finish_y: f32): StaticArray<f32>```
 
 	Find the intersection point of the input edge and boundary of the navigation mesh. Return the pair of coordinates of the intersection point. Input points are 2d-points (with ignored y-coordinate). If there are no intersections, then return coordinates of the inpu edge.
