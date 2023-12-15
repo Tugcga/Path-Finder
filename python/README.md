@@ -279,10 +279,10 @@ pathfinder.update()
 Update RVO simulation. If ```move_agents = True``` then also change agent positions. The actual move shift values depends on agent speeds, calculated velocities and time between current call and previous ```update()``` or ```update_time()``` methods.
 
 ```
-pathfinder.search_path(start: Tuple[float, float, float], finish: Tuple[float, float, float])
+pathfinder.search_path(start: Tuple[float, float, float], finish: Tuple[float, float, float], length_limit_coefficient: Optional[float] = None)
 ```
 
-Return shortest path between start and finish point in the navigation mesh. If navigation mesh is not defined, then return the straight segment between start and finish positions.
+Return shortest path between start and finish point in the navigation mesh. If navigation mesh is not defined, then return the straight segment between start and finish positions. Parameter ```length_limit_coefficient``` should be used to more accurate result of the shortest path. In some cases the shortest path in the graph does not lead to the shortest path in the navmesh (because different sizes of polygons). In this case it's possible to define ```length_limit_coefficient``` parameter. In this case the algorithm will search all paths between input points with length in the interval from minimal length to multiplied length. This parameter should be used very carefully because in large navmeshes in can leads to the combinatorial explosion.
 
 ```
 pathfinder.sample(point: Tuple[float, float, float], is_slow: bool = False)

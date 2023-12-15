@@ -5,6 +5,7 @@ from typing import List, Tuple, Dict
 class NavmeshGraph:
     '''Graph with specific data, needed for A* algorithm
     '''
+
     def __init__(self, vertex_positions: List[Tuple[float, float, float]], vertices: List[int], edges: List[Tuple[int, int]]):
         '''Inicialize the graph from it vertices and edges
 
@@ -29,9 +30,9 @@ class NavmeshGraph:
             for i in range(2):
                 v = self._index_map[e[i]]
                 if v in self._incident_map:
-                    self._incident_map[v].append(self._index_map[e[i-1]])
+                    self._incident_map[v].append(self._index_map[e[i - 1]])
                 else:
-                    self._incident_map[v] = [self._index_map[e[i-1]]]
+                    self._incident_map[v] = [self._index_map[e[i - 1]]]
 
     def _pre_start(self, target: int):
         self._vertices_g: List[float] = [0.0] * self._vertex_count
@@ -115,7 +116,7 @@ class NavmeshGraph:
                 for child_index in self._incident_map[min_vertex]:
                     if self._vertices_close[child_index] is False:
                         v_g: float = self._get_distance(self._positions[min_vertex], self._positions[child_index]) + self._vertices_g[min_vertex]
-                        if self._vertices_parent[child_index]  == -1:
+                        if self._vertices_parent[child_index] == -1:
                             # we come to this vertex at first time, so, set parent and g-value
                             self._vertices_parent[child_index] = min_vertex
                             self._vertices_g[child_index] = v_g
@@ -130,8 +131,81 @@ class NavmeshGraph:
                                 self._vertices_parent[child_index] = min_vertex
                                 self._vertices_g[child_index] = v_g
                                 self._vertices_f[child_index] = v_g + self._vertices_h[child_index]
-        # empty array mean, that there are no path between vertices in the graph
+        # empty array means, that there are no path between vertices in the graph
         return []
+
+    def collect_pathes(self, original_path: List[int], multiplier: float = 1.0) -> List[List[int]]:
+        '''Find all pathes in the graph which starts and ends at the same vertices as original path
+        the length of the result should be between the length of the original path and multipled to the coefficient
+        consider only pathese without reverse at edges (i.e. without [... a, b, a, ...])
+        triangle cycles in the path are allowed
+
+        Input:
+            original_path - path in the graph
+            multiplier - multiplier for the length of the path
+
+        Output:
+            array of pathes (each path is array of graph vertex names) with the length between original length and multiplied
+            returned array contain names of vertices
+        '''
+        start_name: int = original_path[0]
+        start_index: int = self._index_map[start_name]
+        end_name: int = original_path[-1]
+        end_index: int = self._index_map[end_name]
+        last_position: Tuple[float, float, float] = self._positions[start_index]
+        min_distance: float = 0.0
+        for i in range(1, len(original_path)):
+            v = original_path[i]  # vertex name
+            v_index = self._index_map[v]  # index in positions array
+            min_distance += self._get_distance(last_position, self._positions[v_index])
+            last_position = self._positions[v_index]
+        max_distance: float = min_distance * multiplier
+
+        current_pathes = [[start_index]]  # array contains pathes (each path is array)
+        current_lengths = [0.0]  # this array contains lenghtd of pathes
+        memory_pathes = []
+        memory_lengths = []
+        is_finish = False
+        step = 0
+        while not is_finish and step < 1000:
+            new_pathes = []
+            new_length = []
+            should_update = False
+            min_length = float("inf")
+            for i in range(len(current_pathes)):
+                path = current_pathes[i]
+                length = current_lengths[i]
+                if length >= min_distance:
+                    memory_pathes.append(path)
+                    memory_lengths.append(length)
+                if length < max_distance:
+                    last_vertex_index = path[-1]
+                    incident_to_last = self._incident_map[last_vertex_index]
+                    for incident_index in incident_to_last:
+                        if incident_index not in path:
+                            add_length = self._get_distance(self._positions[last_vertex_index], self._positions[incident_index])
+                            combo_length = length + add_length
+                            if combo_length <= max_distance:
+                                new_pathes.append(path + [incident_index])
+                                new_length.append(combo_length)
+                                should_update = True
+                                if combo_length < min_length:
+                                    min_length = combo_length
+                else:
+                    new_pathes.append(path)
+                    new_length.append(length)
+            current_pathes = new_pathes
+            current_lengths = new_length
+            step += 1
+
+            is_finish = not should_update
+        to_return = []
+        for i in range(len(memory_pathes)):
+            length = memory_lengths[i]
+            path = memory_pathes[i]
+            if length >= min_distance and length <= max_distance and path[0] == start_index and path[-1] == end_index:
+                to_return.append([self._vertex_names[v] for v in path])
+        return to_return
 
     def __repr__(self):
         return "<graph " + str(self._vertex_names) + ", edges: " + str(self._edges) + ", map: " + str(self._index_map) + ", positions: " + str(self._positions) + ">"

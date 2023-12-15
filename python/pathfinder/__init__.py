@@ -570,23 +570,31 @@ class PathFinder(object):
     def get_default_agent_radius(self) -> float:
         return self._agent_radius
 
-    def search_path(self, start: Tuple[float, float, float], finish: Tuple[float, float, float]) -> List[Tuple[float, float, float]]:
+    def search_path(self,
+                    start: Tuple[float, float, float],
+                    finish: Tuple[float, float, float],
+                    length_limit_coefficient: Optional[float] = None) -> List[Tuple[float, float, float]]:
         '''Search the path between start and finish points in the navigation mesh
 
         Input:
             start - 3-tuple (x, y, z) of the start point
             finish - 3-tuple (x, y, z) of the finish point
+            length_limit_coefficient - float or None (by default), shoulw be >= 1.0
 
         Return:
             array in the form [(x1, y1, z1), (x2, y2, z2), ...] with coordinates of points, which form the output path
             start and finish points include as the first and the last entries in the array
             if there is no path between input points, then return empty array []
             if navmesh is not created, then return [start, finish]
+            if parameter length_limit_coefficient is not None, then search all pathes between start and end point
+            with length between shortest value and value, obtained by multiplication to the parameter
+            in some cases this allows to find more short path (it may corresponds not shortest path in the graph)
+            use parameter length_limit_coefficient carefully, because it can leads to the combinatorial explosion
         '''
         if self._navmesh is None:
             return [start, finish]
         else:
-            return self._navmesh.search_path(start, finish)
+            return self._navmesh.search_path(start, finish, length_limit_coefficient)
 
     def sample(self, point: Tuple[float, float, float], is_slow: bool = False) -> Optional[Tuple[float, float, float]]:
         '''return coordinates of the point inside navmesh (if it presented), closest to the input one

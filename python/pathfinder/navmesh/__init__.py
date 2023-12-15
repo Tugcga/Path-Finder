@@ -1,3 +1,4 @@
+import math
 from typing import List, Tuple, Optional
 from pathfinder.navmesh.navmesh_graph import NavmeshGraph
 from pathfinder.navmesh.navmesh_node import NavmeshNode
@@ -31,18 +32,18 @@ class Navmesh:
                 v: int = node_vertices[v_num + 1 if v_num < len(node_vertices) - 1 else 0]
                 intersection: List[int] = self._get_intersection(vertex_map[u], vertex_map[v])
                 if len(intersection) == 0:
-                    print("[Someting wrong] Intersection of polygons, incident to vertices " + str(u) + " and " + str(v) + " are empty")
+                    print("[Something wrong] Intersection of polygons, incident to vertices " + str(u) + " and " + str(v) + " are empty")
                 elif len(intersection) == 2:
                     # in principle, other cases are impossible
                     node_index: int = node.get_index()
                     if node_index not in intersection:
-                        print("[Something wrong] Polygon " + str(node_index) + " does not contains in the neighborhood of tow incident vertices")
+                        print("[Something wrong] Polygon " + str(node_index) + " does not contained in the neighborhood of two incident vertices")
                     else:
                         for i in intersection:
                             if i != node_index:
                                 node.add_neighbor(i, self._vertices[u], self._vertices[v])
                 elif len(intersection) > 2:
-                    print("[Someting wrong] Intersection of polygons, incident to vertices " + str(u) + " and " + str(v) + " contains " + str(len(intersection)) + " items " + str(intersection))
+                    print("[Something wrong] Intersection of polygons, incident to vertices " + str(u) + " and " + str(v) + " contains " + str(len(intersection)) + " items " + str(intersection))
 
         # define groups
         for node in self._nodes:
@@ -130,7 +131,26 @@ class Navmesh:
         '''
         return self._triangles_bvh.raycast(origin, direction)
 
-    def search_path(self, start: Tuple[float, float, float], finish: Tuple[float, float, float]) -> List[Tuple[float, float, float]]:
+    def search_path(self,
+                    start: Tuple[float, float, float],
+                    finish: Tuple[float, float, float],
+                    length_limit_coefficient: Optional[float] = None) -> List[Tuple[float, float, float]]:
+        '''Search the path between start and finish points in the navigation mesh
+
+        Input:
+            start - 3-tuple (x, y, z) of the start point
+            finish - 3-tuple (x, y, z) of the finish point
+            length_limit_coefficient - float or None (by default), shoulw be >= 1.0
+
+        Return:
+            array in the form [(x1, y1, z1), (x2, y2, z2), ...] with coordinates of points, which form the output path
+            start and finish points include as the first and the last entries in the array
+            if there is no path between input points, then return empty array []
+            if parameter length_limit_coefficient is not None, then search all pathes between start and end point
+            with length between shortest value and value, obtained by multiplication to the parameter
+            in some cases this allows to find more short path (it may corresponds not shortest path in the graph)
+            use parameter length_limit_coefficient carefully, because it can leads to the combinatorial explosion
+        '''
         # find nodes indexes for start and end point
         start_node: Optional[NavmeshNode] = self._bvh.sample(start)
         finish_node: Optional[NavmeshNode] = self._bvh.sample(finish)
@@ -142,63 +162,49 @@ class Navmesh:
             if group_index > -1:
                 graph: NavmeshGraph = self._graphs[group_index]
                 # find path between nodes in the graph
-                graph_path: List[int] = graph.search(start_index, finish_index)
+                graph_min_path: List[int] = graph.search(start_index, finish_index)
 
-                # next create non-optimal path throw portals
-                raw_path: List[Tuple[float, float, float]] = [start, start]
-                for p_i in range(1, len(graph_path)):
-                    # extend raw path by portal points between p_i-th node and p_i+1-th
-                    portal: Tuple[Tuple[float, float, float], Tuple[float, float, float]] = self._nodes[graph_path[p_i - 1]].get_portal(graph_path[p_i])
-                    raw_path.extend(portal)
-                raw_path.extend([finish, finish])
+                # next all pathes in the graph with allowed length
+                graph_collects = [graph_min_path] if length_limit_coefficient is None else graph.collect_pathes(graph_min_path, length_limit_coefficient)
+                to_return = []
+                min_length = float("inf")
+                for graph_path in graph_collects:
+                    # next create non-optimal path throw portals
+                    raw_path: List[Tuple[float, float, float]] = [start, start]
+                    for p_i in range(1, len(graph_path)):
+                        # extend raw path by portal points between p_i-th node and p_i+1-th
+                        portal: Tuple[Tuple[float, float, float], Tuple[float, float, float]] = self._nodes[graph_path[p_i - 1]].get_portal(graph_path[p_i])
+                        raw_path.extend(portal)
+                    raw_path.extend([finish, finish])
 
-                # finally, simplify the raw_path, by using pull the rope algorithm
-                # get it from https://github.com/donmccurdy/three-pathfinding
-                portal_apex: Tuple[float, float, float] = raw_path[0]
-                portal_left: Tuple[float, float, float] = raw_path[0]
-                portal_right: Tuple[float, float, float] = raw_path[1]
+                    # finally, simplify the raw_path, by using pull the rope algorithm
+                    # get it from https://github.com/donmccurdy/three-pathfinding
+                    portal_apex: Tuple[float, float, float] = raw_path[0]
+                    portal_left: Tuple[float, float, float] = raw_path[0]
+                    portal_right: Tuple[float, float, float] = raw_path[1]
 
-                apex_index: int = 0
-                left_index: int = 0
-                right_index: int = 0
+                    apex_index: int = 0
+                    left_index: int = 0
+                    right_index: int = 0
 
-                finall_path: List[Tuple[float, float, float]] = [portal_apex]
-                i: int = 1
-                while i < len(raw_path) // 2:
-                    left: Tuple[float, float, float] = raw_path[2 * i]
-                    right: Tuple[float, float, float] = raw_path[2 * i + 1]
+                    finall_path: List[Tuple[float, float, float]] = [portal_apex]
+                    i: int = 1
+                    while i < len(raw_path) // 2:
+                        left: Tuple[float, float, float] = raw_path[2 * i]
+                        right: Tuple[float, float, float] = raw_path[2 * i + 1]
 
-                    skip_next: bool = False
-                    # update right vertex
-                    if self._triangle_area_2(portal_apex, portal_right, right) <= 0.0:
-                        if self._v_equal(portal_apex, portal_right) or self._triangle_area_2(portal_apex, portal_left, right) > 0.0:
-                            portal_right = right
-                            right_index = i
-                        else:
-                            if not self._v_equal(portal_left, finall_path[-1]):
-                                finall_path.append(portal_left)
-                            # make current left the new apex
-                            portal_apex = portal_left
-                            apex_index = left_index
-                            # reset portal
-                            portal_left = portal_apex
-                            portal_right = portal_apex
-                            left_index = apex_index
-                            right_index = apex_index
-                            # restart scan
-                            i = apex_index
-                            skip_next = True
-                    if not skip_next:
-                        # update left vertex
-                        if self._triangle_area_2(portal_apex, portal_left, left) >= 0.0:
-                            if self._v_equal(portal_apex, portal_left) or self._triangle_area_2(portal_apex, portal_right, left) < 0.0:
-                                portal_left = left
-                                left_index = i
+                        skip_next: bool = False
+                        # update right vertex
+                        if self._triangle_area_2(portal_apex, portal_right, right) <= 0.0:
+                            if self._v_equal(portal_apex, portal_right) or self._triangle_area_2(portal_apex, portal_left, right) > 0.0:
+                                portal_right = right
+                                right_index = i
                             else:
-                                finall_path.append(portal_right)
-                                # make current right the new apex
-                                portal_apex = portal_right
-                                apex_index = right_index
+                                if not self._v_equal(portal_left, finall_path[-1]):
+                                    finall_path.append(portal_left)
+                                # make current left the new apex
+                                portal_apex = portal_left
+                                apex_index = left_index
                                 # reset portal
                                 portal_left = portal_apex
                                 portal_right = portal_apex
@@ -206,17 +212,54 @@ class Navmesh:
                                 right_index = apex_index
                                 # restart scan
                                 i = apex_index
-                    i += 1
-                if (len(finall_path) == 0 or not self._v_equal(finall_path[len(finall_path) - 1], raw_path[len(raw_path) - 2])):
-                    # append last point to path
-                    finall_path.append(raw_path[len(raw_path) - 2])
-                return finall_path
+                                skip_next = True
+                        if not skip_next:
+                            # update left vertex
+                            if self._triangle_area_2(portal_apex, portal_left, left) >= 0.0:
+                                if self._v_equal(portal_apex, portal_left) or self._triangle_area_2(portal_apex, portal_right, left) < 0.0:
+                                    portal_left = left
+                                    left_index = i
+                                else:
+                                    finall_path.append(portal_right)
+                                    # make current right the new apex
+                                    portal_apex = portal_right
+                                    apex_index = right_index
+                                    # reset portal
+                                    portal_left = portal_apex
+                                    portal_right = portal_apex
+                                    left_index = apex_index
+                                    right_index = apex_index
+                                    # restart scan
+                                    i = apex_index
+                        i += 1
+                    if (len(finall_path) == 0 or not self._v_equal(finall_path[len(finall_path) - 1], raw_path[len(raw_path) - 2])):
+                        # append last point to path
+                        finall_path.append(raw_path[len(raw_path) - 2])
+                    # calculate the length of the finall path in this iteration
+                    path_length = self._get_path_length(finall_path)
+                    if path_length < min_length:
+                        to_return = finall_path
+                        min_length = path_length
+
+                return to_return
             else:
                 # nodes in the different groups, so, there are no path between them
                 return []
         else:
             # start or finish node is None, so, no path
             return []
+
+    def _get_path_length(self, path: List[Tuple[float, float, float]]) -> float:
+        if len(path) == 0:
+            return 0.0
+        point = path[0]
+        length = 0.0
+        for i in range(1, len(path)):
+            next_point = path[i]
+            add_length = math.sqrt((next_point[0] - point[0])**2 + (next_point[1] - point[1])**2 + (next_point[2] - point[2])**2)
+            length += add_length
+            point = next_point
+        return length
 
     def _v_equal(self, a: Tuple[float, float, float], b: Tuple[float, float, float], epsilon: float = 0.0001) -> bool:
         '''a, b are points

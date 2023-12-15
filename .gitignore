@@ -5,7 +5,6 @@ _playcanvas_tutorial
 maps
 issues
 python/__pycache__
-README.txt
 test_types.py
 assemblyscript/node_modules
 assemblyscript/run.js
@@ -15,23 +14,16 @@ assemblyscript/bvh_test.js
 *.js
 *.nm
 *.obj
+*.txt
 python/issues
 python/map_benchmark.py
-python/navmeshdata.txt
-python/map_01.txt
-python/map_01_points.txt
-python/cube_and_plane.txt
 python/pynavmesh.egg-info
-python/level_two_zones.txt
 python/navmesh_test.py
 python/rvo_test.py
 python/baker_test.py
 python/test_write_text_to_binray.py
 assemblyscript/build
 assemblyscript/*.nm
-assemblyscript/build command.txt
-assemblyscript/map_02.txt
-assemblyscript/map_02_reduce.txt
 assemblyscript/build/*.js
 assemblyscript/build/*.py
 assemblyscript/build/*.wasm

@@ -2,6 +2,7 @@ import unittest
 
 from pathfinder.navmesh.navmesh_triangle import Triangle, TrianglesBVH, polygons_to_triangles, cross, dot
 from pathfinder.navmesh import Navmesh
+from pathfinder.navmesh.navmesh_graph import NavmeshGraph
 
 
 class TestTriangle(unittest.TestCase):
@@ -148,6 +149,88 @@ class TestTrianglesBVHRaycast(unittest.TestCase):
         origin = (-0.5, 1.0, 0.5)
         direction = (0.0, -1.0, 0.0)
         self.assertEqual(tree.raycast(origin, direction), None)
+
+
+class TestGraph(unittest.TestCase):
+    def test_search_01(self):
+        vertices = [(1.0, 0.0, 1.0), (3.0, 0.0, 2.0), (2.0, 0.0, 4.0), (2.0, 0.0, -1.0)]
+        names = [1, 2, 3, 4]
+        edges = [(1, 3), (2, 3), (1, 4), (2, 4)]
+        graph = NavmeshGraph(vertices, names, edges)
+        path = graph.search(1, 2)
+        self.assertEqual(path, [1, 3, 2])
+
+    def test_search_02(self):
+        vertices = [
+            (2.0, 0.0, 2.0),
+            (1.0, 0.0, 3.0),
+            (3.0, 0.0, 3.0),
+            (3.0, 0.0, 1.0),
+            (1.0, 0.0, 1.0),
+            (1.0, 0.0, 4.0),
+            (0.0, 0.0, 3.0),
+            (3.0, 0.0, 4.0),
+            (4.0, 0.0, 3.0),
+            (4.0, 0.0, 1.0),
+            (3.0, 0.0, 0.0),
+            (1.0, 0.0, 0.0),
+            (0.0, 0.0, 1.0)]
+        names = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+        edges = [(0, 1), (0, 2), (0, 3), (0, 4), (1, 5), (1, 6), (2, 7), (2, 8),
+                 (3, 9), (3, 10), (4, 11), (4, 12), (1, 2), (2, 3), (3, 4), (1, 4),
+                 (5, 6), (5, 7), (7, 8), (8, 9), (9, 10), (10, 11), (11, 12), (12, 6)]
+        graph = NavmeshGraph(vertices, names, edges)
+        self.assertEqual(graph.search(12, 9), [12, 4, 3, 9])
+        self.assertEqual(graph.search(11, 7), [11, 4, 0, 2, 7])
+        self.assertEqual(graph.search(3, 6), [3, 0, 1, 6])
+
+    def test_search_03(self):
+        vertices = [
+            (-2.0, 0.0, 0.0),
+            (-1.0, 0.0, -1.0),
+            (-1.0, 0.0, 1.0),
+            (1.0, 0.0, -1.0),
+            (1.0, 0.0, 1.0),
+            (2.0, 0.0, 0.0)]
+        names = [1, 5, 0, 2, 4, 3]
+        edges = [(1, 0), (1, 5), (0, 4), (5, 2), (4, 3), (2, 3), (0, 2), (5, 4)]
+        graph = NavmeshGraph(vertices, names, edges)
+        self.assertEqual(graph.search(1, 3), [1, 0, 4, 3])
+        self.assertEqual(graph.search(5, 3), [5, 2, 3])
+
+    def test_collect_01(self):
+        vertices = [(-2.0, 0.0, 0.0),
+                    (-1.0, 0.0, -1.0),
+                    (-1.0, 0.0, 1.0),
+                    (1.0, 0.0, -1.0),
+                    (1.0, 0.0, 1.0),
+                    (2.0, 0.0, 0.0)]
+        names = [1, 5, 0, 2, 4, 3]
+        edges = [(1, 0), (1, 5), (0, 4), (5, 2), (4, 3), (2, 3), (0, 2), (5, 4)]
+        graph = NavmeshGraph(vertices, names, edges)
+        min_path = graph.search(1, 3)
+        self.assertEqual(min_path, [1, 0, 4, 3])
+        self.assertEqual(graph.collect_pathes(min_path, 1.0), [[1, 0, 4, 3], [1, 5, 2, 3]])
+        self.assertEqual(graph.collect_pathes(min_path, 1.5), [[1, 0, 4, 3], [1, 0, 2, 3], [1, 5, 2, 3], [1, 5, 4, 3]])
+
+    def test_collet_02(self):
+        vertices = [(-0.025000000000000022, 0.0, -2.275), (-2.2750000000000004, 0.0, 0.12499999999999994), (2.375, 0.0, -0.025000000000000022), (0.12499999999999994, 0.0, 2.3750000000000004)]
+        names = [0, 1, 2, 3]
+        edges = [(0, 1), (0, 2), (1, 3), (2, 3)]
+        graph = NavmeshGraph(vertices, names, edges)
+        min_path = graph.search(0, 3)
+        self.assertEqual(min_path, [0, 2, 3])
+        self.assertEqual(graph.collect_pathes(min_path, 1.1), [[0, 1, 3], [0, 2, 3]])
+
+
+class TestNavmesh(unittest.TestCase):
+    def test_search_path(self):
+        vertices = [(-3.1, 0.0, -3.1), (-3.1, 0.0, 3.2), (3.2, 0.0, 3.2), (3.2, 0.0, -3.1), (-1.6, 0.0, -1.3), (1.4, 0.0, -1.6), (1.7, 0.0, 1.4), (-1.3, 0.0, 1.7)]
+        polygons = [[0, 4, 5, 3], [4, 0, 1, 7], [3, 5, 6, 2], [7, 1, 2, 6]]
+        navmesh = Navmesh(vertices, polygons)
+        self.assertEqual(navmesh.search_path((0.0, 0.0, -2.0), (0.0, 0.0, 2.0)), [(0.0, 0.0, -2.0), (1.4, 0.0, -1.6), (1.7, 0.0, 1.4), (0.0, 0.0, 2.0)])
+        self.assertEqual(navmesh.search_path((-2.0, 0.0, -2.5), (-2.0, 0.0, 2.5), 1.1), [(-2.0, 0.0, -2.5), (-2.0, 0.0, 2.5)])
+        self.assertEqual(navmesh.search_path((-2.0, 0.0, -2.5), (-2.0, 0.0, 2.5)), [(-2.0, 0.0, -2.5), (1.4, 0.0, -1.6), (1.7, 0.0, 1.4), (-2.0, 0.0, 2.5)])
 
 
 if __name__ == "__main__":
