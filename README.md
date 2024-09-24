@@ -35,9 +35,9 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 ## Citation
 
 ```
-Title: "Path Finder"
+Title: Path Finder
 Version: C.1
 DOI: 10.5281/zenodo.13832416 
 Release Data: 2024-09-24
-url: "https://github.com/Tugcga/Path-Finder"
+URL: https://github.com/Tugcga/Path-Finder
 ```
