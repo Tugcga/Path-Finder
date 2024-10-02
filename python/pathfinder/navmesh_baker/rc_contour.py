@@ -811,6 +811,10 @@ def build_contours(chf: CompactHeightfield,
                                     cset.conts[j].rverts = []
                                 cset.conts = new_conts
 
+                            # Check if the contour is valid
+                            if cset.nconts >= len(cset.conts):
+                                continue
+
                             cont: Contour = cset.conts[cset.nconts]
                             cset.nconts += 1
 
